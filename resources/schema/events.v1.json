@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ui.particle.academy/schema/charlotte/events.v1.json",
+  "title": "Charlotte event envelope, version 1",
+  "description": "One entry in a Charlotte session's ordered event log. Clients resume with after=<seq> and MUST ignore a type they do not recognise. Additive fields arrive in minor releases; a removal or a change of meaning bumps v.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "id", "seq", "session", "at", "type", "actor", "data"],
+  "properties": {
+    "v": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$", "description": "ULID, unique across sessions." },
+    "seq": { "type": "integer", "minimum": 1, "description": "Per-session, gap-free, monotonic cursor." },
+    "session": { "type": "string", "minLength": 1, "maxLength": 191 },
+    "at": { "type": "string", "description": "UTC, ISO 8601 with milliseconds and a Z suffix." },
+    "type": {
+      "type": "string",
+      "enum": [
+        "session.status",
+        "run.started", "run.finished", "run.failed",
+        "message.created", "message.delta", "message.completed",
+        "tool.call", "tool.result",
+        "doc.changed",
+        "proposal.created", "proposal.updated", "proposal.resolved",
+        "checks.result",
+        "draft.ready", "draft.published",
+        "usage.observed",
+        "error"
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["agent", "human", "system"] },
+        "id": { "type": "string", "maxLength": 191 }
+      }
+    },
+    "data": { "type": "object" }
+  }
+}

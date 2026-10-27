@@ -1,0 +1,53 @@
+{
+    "name": "particle-academy/charlotte",
+    "description": "Headless website-builder agent kit for Laravel: CMS page tools over fancy-cms drafts, a structured brief with code-derived fact checks, autonomy modes, and an ordered event log any chat UI can long-poll. Runs on prism-harness with any Prism provider.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["laravel", "ai", "agents", "cms", "website-builder", "prism", "fancy", "human-plus"],
+    "require": {
+        "php": "^8.4",
+        "illuminate/bus": "^13.0",
+        "illuminate/container": "^13.0",
+        "illuminate/contracts": "^13.0",
+        "illuminate/database": "^13.0",
+        "illuminate/http": "^13.0",
+        "illuminate/routing": "^13.0",
+        "illuminate/support": "^13.0",
+        "particle-academy/fancy-cms": ">=0.8.1 <2.0",
+        "particle-academy/prism": ">=0.135 <1.0",
+        "particle-academy/prism-harness": ">=0.17 <1.0"
+    },
+    "require-dev": {
+        "laravel/framework": "^13.30",
+        "pestphp/pest": "^4.0|^5.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Charlotte\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Charlotte\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "pest",
+        "lint": "@php tests/lint.php"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Charlotte\\Laravel\\CharlotteServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
