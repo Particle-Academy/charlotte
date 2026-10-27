@@ -12,6 +12,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-27
+
 **First release. Nothing to migrate:** install, publish the config, run the
 migrations, and register an authorization hook and a tenant resolver. Without
 a hook every route is refused, by design.
