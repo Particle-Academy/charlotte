@@ -12,6 +12,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-30
+
 **Nothing to migrate.** Both changes come from the first real consumer (the
 fancy-labs website-builder lab). A host that binds nothing new runs exactly as
 on 0.1.0; no public signature lost or changed a parameter.
