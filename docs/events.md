@@ -47,7 +47,7 @@ can test its reducer against.
 |---|---|---|
 | `session.status` | system | `status`: `idle`, `queued`, `running`, `stopping`, `stopped`, `failed` |
 | `message.created` | human | `messageId`, `role: "user"`, `text` |
-| `run.started` | system | `runId`, `mode`, `provider`, `model` |
+| `run.started` | system | `runId`, `mode`, `provider`, `model`; `continues` (the previous run's id) when the turn continues after a run stopped at the output limit |
 | `message.delta` | agent | `messageId`, `role: "assistant"`, `text` (a chunk). Coalesced to at most one per 250 ms plus a flush at the end, so append them in order |
 | `message.completed` | agent | `messageId`, `role`, `text` (the whole message; replace the deltas with it) |
 | `tool.call` | agent | `callId`, `tool`, `args` (JSON text, at most 1200 bytes), `truncated` |
@@ -64,8 +64,15 @@ can test its reducer against.
 | `run.failed` | system | `runId` (may be null), `code`. Never a provider message |
 | `error` | system | `code`, `message` (a fixed, safe sentence). Reserved: 0.1 does not emit it yet, but clients should render it |
 
-Failure codes include `run_failed`, `provider_error`, `guide_mode_stale`, and
-any `HasErrorCode` code prism-harness raises. Tool error codes include
+Failure codes include `run_failed`, `provider_error`, `guide_mode_stale`,
+`output_limit` (the turn kept stopping at the output-token limit before the
+page was ready, past `charlotte.max_continuations`), and any `HasErrorCode`
+code prism-harness raises.
+
+One turn may hold several runs. When a run finishes with `length` before the
+page is ready, it gets its own `run.finished` and the turn continues with a
+new `run.started` whose `continues` names that run. The session stays
+`running` throughout. Tool error codes include
 `surface_changed_under_you`, `invalid_request`, `invalid_operation`,
 `image_source_refused`, `link_refused` and `stopped`.
 

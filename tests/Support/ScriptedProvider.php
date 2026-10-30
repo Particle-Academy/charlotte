@@ -45,9 +45,15 @@ final class ScriptedProvider extends Provider
     /** @param list<list<array{text?:string,tools?:list<array{name:string,args:array|\Closure}>}>> $turns */
     public function __construct(public array $turns = []) {}
 
+    /** Called at the start of every stream call, e.g. to stop a session mid-turn. */
+    public ?\Closure $onStream = null;
+
     public function stream(TextRequest $request): Generator
     {
         $this->requests[] = $request;
+        if ($this->onStream !== null) {
+            ($this->onStream)();
+        }
         $steps = array_shift($this->turns) ?? [['text' => 'Done.']];
         $message = 'msg_'.count($this->requests);
         $at = time();
@@ -81,7 +87,15 @@ final class ScriptedProvider extends Provider
                 $this->calls[] = ['name' => $call['name'], 'args' => $args, 'result' => $result];
                 yield new ToolResultEvent('e-result-'.$i.'-'.$k, $at, new ToolResult($id, $call['name'], $args, $result), $message);
             }
-            yield new StepFinishEvent('e-sf-'.$i, $at, new Usage(100, 20), [], FinishReason::Stop);
+            // A step may END the call with a recorded finish reason, the way a
+            // provider does when output hits max_tokens (FinishReason::Length).
+            $finish = $step['finish'] ?? FinishReason::Stop;
+            yield new StepFinishEvent('e-sf-'.$i, $at, new Usage(100, 20), [], $finish);
+            if ($finish !== FinishReason::Stop) {
+                yield new StreamEndEvent('e-end', $at, $finish, new Usage(100 * ($i + 1), 20 * ($i + 1)));
+
+                return;
+            }
         }
 
         yield new StreamEndEvent('e-end', $at, FinishReason::Stop, new Usage(100 * count($steps), 20 * count($steps)));

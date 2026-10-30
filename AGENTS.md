@@ -20,7 +20,13 @@ read config through the container.
   fancy-cms is rethrown (host corruption); other PageSessionExceptions and
   `Policy\Refused` become `{isError, revision, error:{code}}` results.
 - `Runtime\Turns` (send/stop), `Runtime\TurnRunner` (one queued turn),
-  `Runtime\StreamRecorder` (Prism stream events -> log events).
+  `Runtime\StreamRecorder` (Prism stream events -> log events). A turn may
+  span several runs: a `length` finish before the page is ready is continued
+  (`CONTINUATION`, at most `max_continuations`, then `output_limit`) on the one
+  run context `forTurn` returned. Never call `forTurn` per continuation: the
+  host's caps must bound the whole turn (`LabRunRegressionTest` checks).
+- Tool argument errors name `$.arguments.<field>` with `expected` and `got`
+  (`PageTools::problem`). A bare `$.arguments` left the model nothing to fix.
 - `Runtime\TurnContextFactory` (optional host hook, `Charlotte::contextUsing()`):
   the per-turn prism-harness `RunContext`. Default `HarnessDefaults` returns
   null. `TurnRunner` calls it inside its try, so a host refusal is a coded

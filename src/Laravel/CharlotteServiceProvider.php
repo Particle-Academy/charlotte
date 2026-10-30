@@ -87,6 +87,7 @@ final class CharlotteServiceProvider extends ServiceProvider
         $this->app->bind(TurnRunner::class, fn (Application $app) => new TurnRunner(
             $app->make(Workspace::class), $app->make(Guides::class), $app->make(ModeRegistry::class),
             $app->make(PrismHarness::class), $app->make(AgentRuntime::class), $app->make(TurnContextFactory::class),
+            max(0, (int) $app['config']->get('charlotte.max_continuations', 3)),
         ));
         $this->app->singleton(Charlotte::class, fn (Application $app) => new Charlotte($app));
         $this->app->singletonIf(Authorizer::class, fn () => new DenyAll);

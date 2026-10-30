@@ -29,6 +29,14 @@ return [
     'max_steps' => (int) env('CHARLOTTE_MAX_STEPS', 40),
     'provider_options' => [],
 
+    // A response cut off at the output-token limit (finishReason `length`)
+    // before the page is ready is continued with a short host message, at
+    // most this many times per turn; past that the turn fails `output_limit`.
+    // Models that reason before acting (Anthropic adaptive thinking) can
+    // spend a small per-call output cap on reasoning alone. A host that caps
+    // output tightly should also lower reasoning effort in provider_options.
+    'max_continuations' => (int) env('CHARLOTTE_MAX_CONTINUATIONS', 3),
+
     // External origins an AGENT may link to. Relative paths, anchors,
     // mailto: and tel: are always allowed. e.g. ['https://example.com']
     'links' => [

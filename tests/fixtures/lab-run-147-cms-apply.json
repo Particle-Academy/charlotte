@@ -1,0 +1,550 @@
+{
+ "provenance": "flabs lab run 147 (test 39, SaaS landing), lane 368, Charlotte 0.1.0 session 01M675E1Y3VP2TEQRNCAJ4FHYQ, model claude-sonnet-5, 2026-10-30. Copied read-only from the harness thread (harness_threads.id 444), arguments exactly as the model sent them. \"build\": the first four accepted cms_apply calls and the accepted array re-send of the features section that followed the first refusal. \"strings\": all 8 calls that sent ops as a JSON STRING; every one is invalid JSON (one unclosed brace after a heading style md breakpoint), and Charlotte 0.1.0/0.2.0 answered each with invalid_request at $.arguments and nothing more. basedOn values are the lab page revisions and are replaced with the observed revision at replay.",
+ "build": [
+  {
+   "callId": "toolu_01M75eukgB83tj1wp4rxYhaL",
+   "arguments": {
+    "ops": [
+     {
+      "t": "set_theme",
+      "patch": {
+       "color": {
+        "primary": "#0f766e",
+        "ink": "#0f172a",
+        "muted": "#475569",
+        "surface": "#fbfaf7",
+        "line": "#e5e7eb"
+       },
+       "font": {
+        "body": "Inter, system-ui, sans-serif",
+        "display": "Inter, system-ui, sans-serif"
+       }
+      }
+     },
+     {
+      "t": "set_meta",
+      "patch": {
+       "title": "Ledgerline — Invoices, expenses and taxes, no accountant",
+       "description": "Invoices, expenses and taxes in one place, without an accountant. Start your free trial today."
+      }
+     }
+    ],
+    "basedOn": "rd33410f59b7536440b364ede4b741776"
+   }
+  },
+  {
+   "callId": "toolu_01Dn7kXjFDioW5Rwor9BWzai",
+   "arguments": {
+    "ops": [
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "header",
+       "type": "section",
+       "parent": null,
+       "order": "a",
+       "props": {
+        "as": "header"
+       },
+       "style": {
+        "base": {
+         "paddingY": {
+          "value": 16,
+          "unit": "px"
+         },
+         "paddingX": {
+          "value": 20,
+          "unit": "px"
+         },
+         "background": "var(--cms-color-surface)"
+        },
+        "md": {
+         "paddingX": {
+          "value": 32,
+          "unit": "px"
+         }
+        }
+       },
+       "layout": "stack"
+      }
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "header-stack",
+       "type": "stack",
+       "parent": "header",
+       "order": "a",
+       "props": [],
+       "style": {
+        "base": {
+         "maxWidth": {
+          "value": 1120,
+          "unit": "px"
+         },
+         "marginX": "auto",
+         "direction": "row",
+         "align": "center",
+         "justify": "between"
+        }
+       },
+       "layout": "stack"
+      }
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "header-logo",
+       "type": "heading",
+       "parent": "header-stack",
+       "order": "a",
+       "props": {
+        "content": "Ledgerline",
+        "level": 1
+       },
+       "style": {
+        "base": {
+         "fontSize": {
+          "value": 22,
+          "unit": "px"
+         },
+         "fontWeight": 700,
+         "color": "var(--cms-color-ink)"
+        }
+       }
+      }
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "header-cta",
+       "type": "button",
+       "parent": "header-stack",
+       "order": "b",
+       "props": {
+        "label": "See pricing",
+        "href": "#pricing",
+        "variant": "outline"
+       },
+       "style": {
+        "base": {
+         "paddingY": {
+          "value": 12,
+          "unit": "px"
+         },
+         "fontSize": {
+          "value": 16,
+          "unit": "px"
+         },
+         "radius": {
+          "value": 8,
+          "unit": "px"
+         }
+        }
+       }
+      }
+     }
+    ],
+    "basedOn": "r8a6c423e7b249c1da0253ed1725ae7e7"
+   }
+  },
+  {
+   "callId": "toolu_01HSNUWSR7E9y8a65Ufjz3t7",
+   "arguments": {
+    "ops": [
+     {
+      "t": "remove_node",
+      "id": "header-logo"
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "header-logo2",
+       "type": "text",
+       "parent": "header-stack",
+       "order": "a",
+       "props": {
+        "content": "Ledgerline"
+       },
+       "style": {
+        "base": {
+         "fontSize": {
+          "value": 22,
+          "unit": "px"
+         },
+         "fontWeight": 700,
+         "color": "var(--cms-color-ink)"
+        }
+       }
+      }
+     }
+    ],
+    "basedOn": "rb3c7b56a5c70afc17812cae372b43982"
+   }
+  },
+  {
+   "callId": "toolu_01C5V8WKYoGvzKBW77LeLuhB",
+   "arguments": {
+    "ops": [
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "hero",
+       "type": "section",
+       "parent": null,
+       "order": "b",
+       "props": {
+        "as": "section"
+       },
+       "style": {
+        "base": {
+         "paddingY": {
+          "value": 64,
+          "unit": "px"
+         },
+         "paddingX": {
+          "value": 20,
+          "unit": "px"
+         },
+         "background": "var(--cms-color-surface)"
+        },
+        "md": {
+         "paddingY": {
+          "value": 96,
+          "unit": "px"
+         },
+         "paddingX": {
+          "value": 32,
+          "unit": "px"
+         }
+        }
+       },
+       "layout": "stack"
+      }
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "hero-wrap",
+       "type": "stack",
+       "parent": "hero",
+       "order": "a",
+       "props": [],
+       "style": {
+        "base": {
+         "maxWidth": {
+          "value": 1120,
+          "unit": "px"
+         },
+         "marginX": "auto",
+         "direction": "column",
+         "gap": {
+          "value": 32,
+          "unit": "px"
+         },
+         "align": "center"
+        },
+        "md": {
+         "direction": "row",
+         "align": "center"
+        }
+       },
+       "layout": "stack"
+      }
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "hero-text",
+       "type": "stack",
+       "parent": "hero-wrap",
+       "order": "a",
+       "props": [],
+       "style": {
+        "base": {
+         "direction": "column",
+         "gap": {
+          "value": 24,
+          "unit": "px"
+         },
+         "maxWidth": {
+          "value": 560,
+          "unit": "px"
+         }
+        }
+       },
+       "layout": "stack"
+      }
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "hero-h1",
+       "type": "heading",
+       "parent": "hero-text",
+       "order": "a",
+       "props": {
+        "content": "Invoices, expenses and taxes in one place, without an accountant.",
+        "level": 1
+       },
+       "style": {
+        "base": {
+         "fontSize": {
+          "value": 40,
+          "unit": "px"
+         },
+         "lineHeight": 1.15,
+         "fontWeight": 700,
+         "color": "var(--cms-color-ink)"
+        },
+        "md": {
+         "fontSize": {
+          "value": 56,
+          "unit": "px"
+         }
+        }
+       }
+      }
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "hero-cta-row",
+       "type": "stack",
+       "parent": "hero-text",
+       "order": "b",
+       "props": [],
+       "style": {
+        "base": {
+         "direction": "column",
+         "gap": {
+          "value": 16,
+          "unit": "px"
+         },
+         "wrap": true
+        },
+        "md": {
+         "direction": "row"
+        }
+       },
+       "layout": "stack"
+      }
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "hero-cta-primary",
+       "type": "button",
+       "parent": "hero-cta-row",
+       "order": "a",
+       "props": {
+        "label": "Start your free trial",
+        "href": "https://app.example.com/signup",
+        "variant": "primary"
+       },
+       "style": {
+        "base": {
+         "paddingY": {
+          "value": 12,
+          "unit": "px"
+         },
+         "fontSize": {
+          "value": 16,
+          "unit": "px"
+         },
+         "radius": {
+          "value": 8,
+          "unit": "px"
+         }
+        }
+       }
+      }
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "hero-cta-secondary",
+       "type": "button",
+       "parent": "hero-cta-row",
+       "order": "b",
+       "props": {
+        "label": "See pricing",
+        "href": "#pricing",
+        "variant": "outline"
+       },
+       "style": {
+        "base": {
+         "paddingY": {
+          "value": 12,
+          "unit": "px"
+         },
+         "fontSize": {
+          "value": 16,
+          "unit": "px"
+         },
+         "radius": {
+          "value": 8,
+          "unit": "px"
+         }
+        }
+       }
+      }
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "hero-trial-note",
+       "type": "text",
+       "parent": "hero-text",
+       "order": "c",
+       "props": {
+        "content": "30-day free trial. No card required to start."
+       },
+       "style": {
+        "base": {
+         "fontSize": {
+          "value": 14,
+          "unit": "px"
+         },
+         "color": "var(--cms-color-muted)"
+        }
+       }
+      }
+     },
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "hero-image",
+       "type": "image",
+       "parent": "hero-wrap",
+       "order": "b",
+       "props": {
+        "asset": "hero",
+        "alt": "Blank laptop, receipt and calculator on a cream desk.",
+        "fit": "cover",
+        "loading": "eager"
+       },
+       "style": {
+        "base": {
+         "maxWidth": {
+          "value": 480,
+          "unit": "px"
+         },
+         "radius": {
+          "value": 12,
+          "unit": "px"
+         },
+         "aspectRatio": "4 / 3"
+        }
+       }
+      }
+     }
+    ],
+    "basedOn": "re1e1683b6e2aad2379a7df58e6f8fcb8"
+   }
+  },
+  {
+   "callId": "toolu_01HeChiXQWKLMMgMh8xujKUH",
+   "arguments": {
+    "ops": [
+     {
+      "t": "insert_node",
+      "node": {
+       "id": "features",
+       "type": "section",
+       "parent": null,
+       "order": "c",
+       "props": {
+        "as": "section",
+        "anchor": "features"
+       },
+       "style": {
+        "base": {
+         "paddingY": {
+          "value": 64,
+          "unit": "px"
+         },
+         "paddingX": {
+          "value": 20,
+          "unit": "px"
+         },
+         "background": "#ffffff"
+        },
+        "md": {
+         "paddingY": {
+          "value": 96,
+          "unit": "px"
+         },
+         "paddingX": {
+          "value": 32,
+          "unit": "px"
+         }
+        }
+       },
+       "layout": "stack"
+      }
+     }
+    ],
+    "basedOn": "rb7330ad957028296ea7cfccec94b5b11"
+   }
+  }
+ ],
+ "strings": [
+  {
+   "callId": "toolu_01U2p57Rd176KoVaYdm67KYq",
+   "arguments": {
+    "ops": "[{\"t\": \"insert_node\", \"node\": {\"id\": \"features\", \"type\": \"section\", \"parent\": null, \"order\": \"c\", \"props\": {\"as\": \"section\", \"anchor\": \"features\"}, \"style\": {\"base\": {\"paddingY\": {\"value\": 64, \"unit\": \"px\"}, \"paddingX\": {\"value\": 20, \"unit\": \"px\"}, \"background\": \"#ffffff\"}, \"md\": {\"paddingY\": {\"value\": 96, \"unit\": \"px\"}, \"paddingX\": {\"value\": 32, \"unit\": \"px\"}}}, \"layout\": \"stack\"}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"features-wrap\", \"type\": \"stack\", \"parent\": \"features\", \"order\": \"a\", \"props\": [], \"style\": {\"base\": {\"maxWidth\": {\"value\": 1120, \"unit\": \"px\"}, \"marginX\": \"auto\", \"direction\": \"column\", \"gap\": {\"value\": 32, \"unit\": \"px\"}}}, \"layout\": \"stack\"}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"features-h2\", \"type\": \"heading\", \"parent\": \"features-wrap\", \"order\": \"a\", \"props\": {\"content\": \"Everything your freelance finances need\", \"level\": 2}, \"style\": {\"base\": {\"fontSize\": {\"value\": 28, \"unit\": \"px\"}, \"lineHeight\": 1.15, \"fontWeight\": 700, \"color\": \"var(--cms-color-ink)\"}, \"md\": {\"fontSize\": {\"value\": 36, \"unit\": \"px\"}}}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"features-grid\", \"type\": \"grid\", \"parent\": \"features-wrap\", \"order\": \"b\", \"props\": [], \"style\": {\"base\": {\"columnMin\": {\"value\": 260, \"unit\": \"px\"}, \"gap\": {\"value\": 24, \"unit\": \"px\"}}}, \"layout\": \"grid\"}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-invoice\", \"type\": \"card\", \"parent\": \"features-grid\", \"order\": \"a\", \"props\": [], \"style\": {\"base\": {\"padding\": {\"value\": 24, \"unit\": \"px\"}, \"radius\": {\"value\": 12, \"unit\": \"px\"}, \"background\": \"var(--cms-color-surface)\", \"border\": \"1px solid var(--cms-color-line)\"}}, \"layout\": \"stack\"}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-invoice-icon\", \"type\": \"icon\", \"parent\": \"card-invoice\", \"order\": \"a\", \"props\": {\"name\": \"file-text\", \"decorative\": true}, \"style\": {\"base\": {\"fontSize\": {\"value\": 28, \"unit\": \"px\"}, \"color\": \"var(--cms-color-primary)\"}}}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-invoice-h3\", \"type\": \"heading\", \"parent\": \"card-invoice\", \"order\": \"b\", \"props\": {\"content\": \"Send an invoice in under a minute\", \"level\": 3}, \"style\": {\"base\": {\"fontSize\": {\"value\": 20, \"unit\": \"px\"}, \"fontWeight\": 600, \"color\": \"var(--cms-color-ink)\", \"marginY\": {\"value\": 8, \"unit\": \"px\"}}}}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-invoice-text\", \"type\": \"text\", \"parent\": \"card-invoice\", \"order\": \"c\", \"props\": {\"content\": \"Create and send a professional invoice before your coffee gets cold.\"}, \"style\": {\"base\": {\"fontSize\": {\"value\": 17, \"unit\": \"px\"}, \"lineHeight\": 1.6, \"color\": \"var(--cms-color-muted)\"}}}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-receipt\", \"type\": \"card\", \"parent\": \"features-grid\", \"order\": \"b\", \"props\": [], \"style\": {\"base\": {\"padding\": {\"value\": 24, \"unit\": \"px\"}, \"radius\": {\"value\": 12, \"unit\": \"px\"}, \"background\": \"var(--cms-color-surface)\", \"border\": \"1px solid var(--cms-color-line)\"}}, \"layout\": \"stack\"}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-receipt-icon\", \"type\": \"icon\", \"parent\": \"card-receipt\", \"order\": \"a\", \"props\": {\"name\": \"receipt\", \"decorative\": true}, \"style\": {\"base\": {\"fontSize\": {\"value\": 28, \"unit\": \"px\"}, \"color\": \"var(--cms-color-primary)\"}}}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-receipt-h3\", \"type\": \"heading\", \"parent\": \"card-receipt\", \"order\": \"b\", \"props\": {\"content\": \"Snap a receipt, done\", \"level\": 3}, \"style\": {\"base\": {\"fontSize\": {\"value\": 20, \"unit\": \"px\"}, \"fontWeight\": 600, \"color\": \"var(--cms-color-ink)\", \"marginY\": {\"value\": 8, \"unit\": \"px\"}}}}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-receipt-text\", \"type\": \"text\", \"parent\": \"card-receipt\", \"order\": \"c\", \"props\": {\"content\": \"Snap a photo of a receipt and it's categorised for you automatically.\"}, \"style\": {\"base\": {\"fontSize\": {\"value\": 17, \"unit\": \"px\"}, \"lineHeight\": 1.6, \"color\": \"var(--cms-color-muted)\"}}}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-tax\", \"type\": \"card\", \"parent\": \"features-grid\", \"order\": \"c\", \"props\": [], \"style\": {\"base\": {\"padding\": {\"value\": 24, \"unit\": \"px\"}, \"radius\": {\"value\": 12, \"unit\": \"px\"}, \"background\": \"var(--cms-color-surface)\", \"border\": \"1px solid var(--cms-color-line)\"}}, \"layout\": \"stack\"}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-tax-icon\", \"type\": \"icon\", \"parent\": \"card-tax\", \"order\": \"a\", \"props\": {\"name\": \"calculator\", \"decorative\": true}, \"style\": {\"base\": {\"fontSize\": {\"value\": 28, \"unit\": \"px\"}, \"color\": \"var(--cms-color-primary)\"}}}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-tax-h3\", \"type\": \"heading\", \"parent\": \"card-tax\", \"order\": \"b\", \"props\": {\"content\": \"Know your tax before it's due\", \"level\": 3}, \"style\": {\"base\": {\"fontSize\": {\"value\": 20, \"unit\": \"px\"}, \"fontWeight\": 600, \"color\": \"var(--cms-color-ink)\", \"marginY\": {\"value\": 8, \"unit\": \"px\"}}}}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"card-tax-text\", \"type\": \"text\", \"parent\": \"card-tax\", \"order\": \"c\", \"props\": {\"content\": \"See a running estimate of the tax you'll owe this quarter, updated as you go.\"}, \"style\": {\"base\": {\"fontSize\": {\"value\": 17, \"unit\": \"px\"}, \"lineHeight\": 1.6, \"color\": \"var(--cms-color-muted)\"}}}}]",
+    "basedOn": "rb7330ad957028296ea7cfccec94b5b11"
+   }
+  },
+  {
+   "callId": "toolu_01RzeqPCbZwoRRUUcdaXsczg",
+   "arguments": {
+    "ops": "[{\"t\": \"insert_node\", \"node\": {\"id\": \"features-wrap\", \"type\": \"stack\", \"parent\": \"features\", \"order\": \"a\", \"props\": [], \"style\": {\"base\": {\"maxWidth\": {\"value\": 1120, \"unit\": \"px\"}, \"marginX\": \"auto\", \"direction\": \"column\", \"gap\": {\"value\": 32, \"unit\": \"px\"}}}, \"layout\": \"stack\"}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"features-h2\", \"type\": \"heading\", \"parent\": \"features-wrap\", \"order\": \"a\", \"props\": {\"content\": \"Everything your freelance finances need\", \"level\": 2}, \"style\": {\"base\": {\"fontSize\": {\"value\": 28, \"unit\": \"px\"}, \"lineHeight\": 1.15, \"fontWeight\": 700, \"color\": \"var(--cms-color-ink)\"}, \"md\": {\"fontSize\": {\"value\": 36, \"unit\": \"px\"}}}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"features-grid\", \"type\": \"grid\", \"parent\": \"features-wrap\", \"order\": \"b\", \"props\": [], \"style\": {\"base\": {\"columnMin\": {\"value\": 260, \"unit\": \"px\"}, \"gap\": {\"value\": 24, \"unit\": \"px\"}}}, \"layout\": \"grid\"}}]",
+    "basedOn": "r4d3e27dd52033c13c7bb534baa050f45"
+   }
+  },
+  {
+   "callId": "toolu_01CSZWcSHW9GHeyFykyJNG1T",
+   "arguments": {
+    "ops": "[{\"t\": \"insert_node\", \"node\": {\"id\": \"features-h2\", \"type\": \"heading\", \"parent\": \"features-wrap\", \"order\": \"a\", \"props\": {\"content\": \"Everything your freelance finances need\", \"level\": 2}, \"style\": {\"base\": {\"fontSize\": {\"value\": 28, \"unit\": \"px\"}, \"lineHeight\": 1.15, \"fontWeight\": 700, \"color\": \"var(--cms-color-ink)\"}, \"md\": {\"fontSize\": {\"value\": 36, \"unit\": \"px\"}}}}]",
+    "basedOn": "re5d371a21e8f90c8aa8d7cfdd0051224"
+   }
+  },
+  {
+   "callId": "toolu_01VyRbqUx84FNGd3FzWyao1r",
+   "arguments": {
+    "ops": "[{\"t\": \"insert_node\", \"node\": {\"id\": \"pricing\", \"type\": \"section\", \"parent\": null, \"order\": \"d\", \"props\": {\"as\": \"section\", \"anchor\": \"pricing\"}, \"style\": {\"base\": {\"paddingY\": {\"value\": 64, \"unit\": \"px\"}, \"paddingX\": {\"value\": 20, \"unit\": \"px\"}, \"background\": \"var(--cms-color-surface)\"}, \"md\": {\"paddingY\": {\"value\": 96, \"unit\": \"px\"}, \"paddingX\": {\"value\": 32, \"unit\": \"px\"}}}, \"layout\": \"stack\"}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"pricing-wrap\", \"type\": \"stack\", \"parent\": \"pricing\", \"order\": \"a\", \"props\": [], \"style\": {\"base\": {\"maxWidth\": {\"value\": 1120, \"unit\": \"px\"}, \"marginX\": \"auto\", \"direction\": \"column\", \"gap\": {\"value\": 32, \"unit\": \"px\"}}}, \"layout\": \"stack\"}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"pricing-h2\", \"type\": \"heading\", \"parent\": \"pricing-wrap\", \"order\": \"a\", \"props\": {\"content\": \"Simple pricing for solo work and small teams\", \"level\": 2}, \"style\": {\"base\": {\"fontSize\": {\"value\": 28, \"unit\": \"px\"}, \"lineHeight\": 1.15, \"fontWeight\": 700, \"color\": \"var(--cms-color-ink)\"}, \"md\": {\"fontSize\": {\"value\": 36, \"unit\": \"px\"}}}}, {\"t\": \"insert_node\", \"node\": {\"id\": \"pricing-grid\", \"type\": \"grid\", \"parent\": \"pricing-wrap\", \"order\": \"b\", \"props\": [], \"style\": {\"base\": {\"columnMin\": {\"value\": 280, \"unit\": \"px\"}, \"gap\": {\"value\": 24, \"unit\": \"px\"}}}, \"layout\": \"grid\"}}]",
+    "basedOn": "r3e578338b778107104bcb44656c1e304"
+   }
+  },
+  {
+   "callId": "toolu_01ARPdBfYVnm6j4RU2e219Zr",
+   "arguments": {
+    "ops": "[{\"t\": \"insert_node\", \"node\": {\"id\": \"pricing-h2\", \"type\": \"heading\", \"parent\": \"pricing-wrap\", \"order\": \"a\", \"props\": {\"content\": \"Simple pricing for solo work and small teams\", \"level\": 2}, \"style\": {\"base\": {\"fontSize\": {\"value\": 28, \"unit\": \"px\"}, \"lineHeight\": 1.15, \"fontWeight\": 700, \"color\": \"var(--cms-color-ink)\"}, \"md\": {\"fontSize\": {\"value\": 36, \"unit\": \"px\"}}}}]",
+    "basedOn": "re4e2a70ada6fa67749249f8e9bb714a0"
+   }
+  },
+  {
+   "callId": "toolu_016vBvjp97as2Gfh6LkrwAFe",
+   "arguments": {
+    "ops": "[{\"t\": \"insert_node\", \"node\": {\"id\": \"pricing-h2\", \"type\": \"heading\", \"parent\": \"pricing-wrap\", \"order\": \"a\", \"props\": {\"content\": \"Simple pricing for solo work and small teams\", \"level\": 2}, \"style\": {\"base\": {\"fontSize\": {\"value\": 28, \"unit\": \"px\"}, \"lineHeight\": 1.15, \"fontWeight\": 700, \"color\": \"var(--cms-color-ink)\"}, \"md\": {\"fontSize\": {\"value\": 36, \"unit\": \"px\"}}}}]",
+    "basedOn": "re4e2a70ada6fa67749249f8e9bb714a0"
+   }
+  },
+  {
+   "callId": "toolu_01YHa6MhMC6TsUNAze6KgekS",
+   "arguments": {
+    "ops": "[{\"t\": \"insert_node\", \"node\": {\"id\": \"pricing-h2\", \"type\": \"heading\", \"parent\": \"pricing-wrap\", \"order\": \"a\", \"props\": {\"content\": \"Pricing\", \"level\": 2}, \"style\": {\"base\": {\"fontSize\": {\"value\": 28, \"unit\": \"px\"}, \"lineHeight\": 1.15, \"fontWeight\": 700, \"color\": \"var(--cms-color-ink)\"}, \"md\": {\"fontSize\": {\"value\": 36, \"unit\": \"px\"}}}}]",
+    "basedOn": "re4e2a70ada6fa67749249f8e9bb714a0"
+   }
+  },
+  {
+   "callId": "toolu_01CU7FCspLw4VTcnba9aDyoy",
+   "arguments": {
+    "ops": "[{\"t\": \"insert_node\", \"node\": {\"id\": \"ph2test\", \"type\": \"heading\", \"parent\": \"pricing-wrap\", \"order\": \"a\", \"props\": {\"content\": \"Pricing\", \"level\": 2}, \"style\": {\"base\": {\"fontSize\": {\"value\": 28, \"unit\": \"px\"}, \"lineHeight\": 1.15, \"fontWeight\": 700, \"color\": \"var(--cms-color-ink)\"}, \"md\": {\"fontSize\": {\"value\": 36, \"unit\": \"px\"}}}}]",
+    "basedOn": "re4e2a70ada6fa67749249f8e9bb714a0"
+   }
+  }
+ ]
+}

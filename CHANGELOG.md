@@ -12,6 +12,47 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+Fixes from Charlotte's first paid lab run (flabs runs 146-149, 2026-10-30,
+`claude-sonnet-5`, 4096 output tokens per call): all four builds ended without
+a finished page. Regression tests replay the recorded evidence
+(`tests/Feature/LabRunRegressionTest.php`, `tests/fixtures/lab-run-147-cms-apply.json`).
+
+**BREAKING (behaviour, small):** a turn that keeps stopping at the output limit
+before the page is ready now ends `run.failed` with code `output_limit` and
+session status `failed`, where 0.2.0 recorded `run.finished` and went `idle`.
+**What to do:** if your host treats only `idle` as "the agent stopped
+normally", nothing; an `output_limit` failure was already an unfinished page.
+If you branch on `run.failed` codes, add `output_limit`. Set
+`charlotte.max_continuations` to `0` to fail on the first cut-off instead.
+
+### Fixed
+- **A response cut off at the output limit no longer ends the turn with
+  nothing built.** When a run finishes with `length` before the page is ready
+  (no `cms_finish` at the current revision) and nobody asked to stop, Charlotte
+  continues the turn with a short host message
+  (`TurnRunner::CONTINUATION`), up to `charlotte.max_continuations` times
+  (default 3), on the SAME host run context, so a host's step and cost caps
+  bound the whole turn. Each continuation is its own run: `run.finished`
+  (`finishReason: "length"`), then `run.started` carrying the new field
+  `continues` (the previous run's id). In run 146 the model spent 3,962 of its
+  4,096 output tokens on adaptive thinking, emitted no tool call, and the
+  session went idle unfinished; runs 148 and 149 ended the same way.
+- **`cms_apply` (and every tool) argument errors now name the field.** An
+  `invalid_request` error reads
+  `{index: null, path: "$.arguments.<field>", expected, got, hint}` instead of
+  a bare `$.arguments`. When `ops` arrives as a string that is not valid JSON,
+  `got` says so and counts the unclosed or extra braces and brackets. In run
+  147, 8 of 20 `cms_apply` calls sent `ops` as a string; every one was invalid
+  JSON with one unclosed `{`, and with nothing naming it the model resent the
+  same broken heading six more times.
+
+### Changed
+- `cms_apply` accepts `ops` sent as a string holding a VALID JSON array of ops.
+  The decoded ops go through the same fancy-cms validation as an array. Strings
+  that are not valid JSON are never repaired, because where a missing brace
+  belongs is a guess. The `ops` parameter description now says "a JSON array
+  of op objects (not a string)".
+
 ## [0.2.0] - 2026-10-30
 
 **Nothing to migrate.** Both changes come from the first real consumer (the

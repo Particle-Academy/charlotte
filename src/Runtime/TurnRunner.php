@@ -28,6 +28,11 @@ use Throwable;
  */
 final class TurnRunner
 {
+    /** Sent as the next user message when a run stops at the output limit. */
+    public const CONTINUATION = 'Your last response stopped at the output limit before the page was finished. '
+        .'Continue from the current draft: keep your reasoning short, send one section per cms_apply as a small batch, '
+        .'and call cms_finish when the page is ready.';
+
     public function __construct(
         private readonly Workspace $workspace,
         private readonly Guides $guides,
@@ -35,7 +40,17 @@ final class TurnRunner
         private readonly PrismHarness $harness,
         private readonly AgentRuntime $runtime,
         private readonly TurnContextFactory $contexts = new HarnessDefaults,
+        private readonly int $maxContinuations = 3,
     ) {}
+
+    /** The page was marked ready at the revision it is at now. */
+    private function ready(string $sessionId): bool
+    {
+        $session = $this->workspace->session($sessionId);
+
+        return $session->readyRevision !== null
+            && hash_equals($session->readyRevision, (string) $this->workspace->view($session)['revision']);
+    }
 
     public function run(string $sessionId, string $text): void
     {
@@ -71,22 +86,52 @@ final class TurnRunner
             // any provider call.
             $context = $this->contexts->forTurn(new Turn($session, $harness, $text));
 
-            foreach ($this->runtime->stream($harness, $text, BuilderMode::TOOLS, context: $context) as $event) {
-                if ($event instanceof StreamStartEvent && $runId === null) {
-                    $runId = (string) ($harness->run()['id'] ?? '');
-                    $this->workspace->record($session->id, EventTypes::RUN_STARTED, Workspace::SYSTEM,
-                        ['runId' => $runId, 'mode' => BuilderMode::NAME, 'provider' => $session->provider, 'model' => $session->model]);
+            // One turn may span several runs: a response cut off at the output
+            // limit (`length`) before the page is ready is continued, up to
+            // maxContinuations times, on the SAME run context, so a host's
+            // step and cost caps bound the whole turn. Without this a model
+            // that spends its output on reasoning ends the turn with nothing
+            // built (flabs runs 146, 148, 149; and lane 358 before Charlotte).
+            $prompt = $text;
+            $continues = null;
+            $continuations = 0;
+            while (true) {
+                $runId = null;
+                foreach ($this->runtime->stream($harness, $prompt, BuilderMode::TOOLS, context: $context) as $event) {
+                    if ($event instanceof StreamStartEvent && $runId === null) {
+                        $runId = (string) ($harness->run()['id'] ?? '');
+                        $this->workspace->record($session->id, EventTypes::RUN_STARTED, Workspace::SYSTEM,
+                            ['runId' => $runId, 'mode' => BuilderMode::NAME, 'provider' => $session->provider, 'model' => $session->model]
+                            + ($continues === null ? [] : ['continues' => $continues]));
+                    }
+                    $recorder->record($event);
                 }
-                $recorder->record($event);
-            }
-            $recorder->complete();
-            if ($recorder->failed) {
-                $this->fail($session, $runId, 'provider_error');
+                $recorder->complete();
+                if ($recorder->failed) {
+                    $this->fail($session, $runId, 'provider_error');
 
-                return;
+                    return;
+                }
+                $finish = $recorder->finishReason ?? 'unknown';
+                $recorder->finishReason = null;
+                if ($finish === 'length' && ! $this->workspace->session($session->id)->stopped() && ! $this->ready($session->id)) {
+                    if ($continuations >= $this->maxContinuations) {
+                        $this->fail($session, $runId, 'output_limit');
+
+                        return;
+                    }
+                    $this->workspace->record($session->id, EventTypes::RUN_FINISHED, Workspace::SYSTEM,
+                        ['runId' => $runId, 'finishReason' => $finish]);
+                    $continuations++;
+                    $continues = $runId;
+                    $prompt = self::CONTINUATION;
+
+                    continue;
+                }
+                $this->workspace->record($session->id, EventTypes::RUN_FINISHED, Workspace::SYSTEM,
+                    ['runId' => $runId, 'finishReason' => $finish]);
+                break;
             }
-            $this->workspace->record($session->id, EventTypes::RUN_FINISHED, Workspace::SYSTEM,
-                ['runId' => $runId, 'finishReason' => $recorder->finishReason ?? 'unknown']);
             $this->settle($session, 'idle');
         } catch (Throwable $e) {
             $recorder->complete();
