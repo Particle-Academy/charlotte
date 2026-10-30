@@ -12,6 +12,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-30
+
 Fixes from Charlotte's first paid lab run (flabs runs 146-149, 2026-10-30,
 `claude-sonnet-5`, 4096 output tokens per call): all four builds ended without
 a finished page. Regression tests replay the recorded evidence
