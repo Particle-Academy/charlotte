@@ -27,8 +27,18 @@ final class UsageTelemetry
 {
     public const PRISM_EVENT = 'Prism\Prism\Events\Telemetry\GenerationCompleted';
 
-    /** @param array<string, array<string, array{input: float|int, output: float|int}>> $prices */
-    public function __construct(private readonly Workspace $workspace, private readonly array $prices = []) {}
+    /**
+     * The workspace may be passed as a resolver, and the listener does: it is
+     * built only after the flags and the session key say this generation is
+     * Charlotte's. Prism fires GenerationCompleted for EVERY generation in the
+     * host, and a host may scope Charlotte's dependencies (LinkPolicy,
+     * AssetCatalogue, PageRepository) to a builder turn, so resolving them for
+     * an unrelated generation would throw into an unrelated agent role.
+     *
+     * @param  Workspace|(Closure(): Workspace)  $workspace
+     * @param  array<string, array<string, array{input: float|int, output: float|int}>>  $prices
+     */
+    public function __construct(private readonly Workspace|Closure $workspace, private readonly array $prices = []) {}
 
     /** @param (Closure(string): bool)|null $classExists */
     public static function available(?Closure $classExists = null): bool
@@ -79,7 +89,8 @@ final class UsageTelemetry
             } elseif (is_float($usage->cost ?? null) || is_int($usage->cost ?? null)) {
                 $cost = (float) $usage->cost; // a cost the provider itself reported
             }
-            $this->workspace->record($session, EventTypes::USAGE_OBSERVED, Workspace::SYSTEM, [
+            $workspace = $this->workspace instanceof Closure ? ($this->workspace)() : $this->workspace;
+            $workspace->record($session, EventTypes::USAGE_OBSERVED, Workspace::SYSTEM, [
                 'provider' => $provider, 'model' => $model, 'inputTokens' => $input, 'outputTokens' => $output,
                 'costUsd' => $cost, 'priced' => $cost !== null,
             ]);

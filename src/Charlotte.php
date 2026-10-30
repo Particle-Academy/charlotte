@@ -14,7 +14,11 @@ use Charlotte\Guide\Guides;
 use Charlotte\Http\Authorizer;
 use Charlotte\Http\CallbackAuthorizer;
 use Charlotte\Laravel\Routes;
+use Charlotte\Runtime\CallbackTurnContextFactory;
+use Charlotte\Runtime\Turn;
+use Charlotte\Runtime\TurnContextFactory;
 use Charlotte\Runtime\Turns;
+use Prism\Harness\Subagents\RunContext;
 use Charlotte\Sessions\SessionRecord;
 use Charlotte\Storage\SessionStore;
 use Closure;
@@ -134,6 +138,22 @@ final class Charlotte
     public function resolveTenantUsing(Closure $resolver): void
     {
         $this->tenantResolver = $resolver;
+    }
+
+    /**
+     * OPTIONAL: the host's run context for each turn (budget, pricing, cost
+     * observer). Return null to keep the harness defaults for that turn; throw
+     * to refuse the turn before any provider call. Without one, every turn
+     * runs on the harness's own configuration. Same as binding a
+     * {@see TurnContextFactory}.
+     *
+     *     Charlotte::contextUsing(fn (Turn $turn): ?RunContext => $budgets->contextFor($turn->session->tenant));
+     *
+     * @param  Closure(Turn): ?RunContext  $factory
+     */
+    public function contextUsing(Closure $factory): void
+    {
+        $this->container->instance(TurnContextFactory::class, new CallbackTurnContextFactory($factory));
     }
 
     public function tenantFor(mixed $request): ?string

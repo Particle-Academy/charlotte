@@ -127,6 +127,20 @@ CHARLOTTE_TELEMETRY=true
 A model without a price reports `costUsd: null`. Nothing is ever refused for
 lack of a price.
 
+Prism fires its telemetry for every generation in your app, not only
+Charlotte's. Charlotte checks its flag and the session first, and builds its
+`Workspace` (and with it your `PageRepository`, `AssetCatalogue` and
+`LinkPolicy` bindings) only for its own sessions, so a binding you scope to a
+builder turn is never resolved for another agent role.
+
+## 8. Optional host budgets
+
+Charlotte never requires billing. If you meter spend yourself, give each turn
+your own prism-harness `RunContext` (budget, pricing, cost observer); see the
+README's "Host budgets" section. Return `null` to keep the harness defaults;
+throw an exception implementing `HasErrorCode` to refuse a turn before any
+provider call.
+
 ## Testing your integration
 
 Register a custom Prism provider with `PrismManager::extend()` that plays a

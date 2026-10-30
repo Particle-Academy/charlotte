@@ -21,6 +21,10 @@ read config through the container.
   `Policy\Refused` become `{isError, revision, error:{code}}` results.
 - `Runtime\Turns` (send/stop), `Runtime\TurnRunner` (one queued turn),
   `Runtime\StreamRecorder` (Prism stream events -> log events).
+- `Runtime\TurnContextFactory` (optional host hook, `Charlotte::contextUsing()`):
+  the per-turn prism-harness `RunContext`. Default `HarnessDefaults` returns
+  null. `TurnRunner` calls it inside its try, so a host refusal is a coded
+  `run.failed` before any provider call.
 - `Storage\*`: the default DB implementations. `Drafts\PageRepository` is the
   host-replaceable contract for drafts and the published copy.
 - `Http\Api`: the transport contract without a framework. `Laravel\CharlotteController`
@@ -51,7 +55,11 @@ read config through the container.
   also requires the harness scope to be `charlotte:<id>`.
 - **Telemetry is optional.** `Telemetry\UsageTelemetry` is the only reader of
   Prism telemetry, swallows its own failures, and nothing reads
-  `usage.observed`. Never make a turn depend on it.
+  `usage.observed`. Never make a turn depend on it. Prism fires its event for
+  EVERY generation in the host: check the flags and the session key before
+  resolving anything from the container (`TelemetryLazyTest`).
+- **Billing is optional.** Nothing may require a `TurnContextFactory`; with
+  none bound a turn passes `context: null` and runs on harness config.
 - **Event types**: adding one means updating `Events\EventTypes::ALL`,
   `resources/schema/events.v1.json`, `tests/fixtures/events.v1.json` and
   `docs/events.md`; `EventContractTest` fails until all agree.

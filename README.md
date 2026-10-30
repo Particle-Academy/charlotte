@@ -68,6 +68,48 @@ $cursor = $session->send('Build the landing page from the brief.', (string) $req
 
 Full setup: [docs/laravel-quickstart.md](docs/laravel-quickstart.md).
 
+## Host budgets (optional)
+
+Charlotte never requires billing: with nothing bound, every turn runs on
+prism-harness's own configuration. If your app meters spend (per tenant, per
+lane, durably), hand each turn your own prism-harness `RunContext`, carrying
+its budget, its pricing and its `CallCostObserver`. You do not rebuild the
+dispatcher, the runner or the runtime.
+
+```php
+use Charlotte\Facades\Charlotte;
+use Charlotte\Runtime\Turn;
+use Prism\Harness\Subagents\RunBudget;
+use Prism\Harness\Subagents\RunContext;
+
+Charlotte::contextUsing(function (Turn $turn) use ($budgets): ?RunContext {
+    $account = $budgets->for($turn->session->tenant, $turn->session->page);
+    if ($account === null) {
+        return null; // harness defaults for this turn
+    }
+
+    return RunContext::root('charlotte-'.$turn->session->id,
+        new RunBudget(maxSteps: 40, maxCostUsd: $account->remainingUsd(), maxOutputTokensPerCall: 4096),
+        pricing: $account->pricing(),          // [provider => [model => ['inputPerMTok' => .., 'outputPerMTok' => .., 'toolOverheadTokens' => ..]]]
+        observer: $account->observer(),        // your CallCostObserver: reserve, then settle, every provider call
+    );
+});
+```
+
+Or bind your own `Charlotte\Runtime\TurnContextFactory` in the container; the
+closure is shorthand for that. The factory is called once per turn, before the
+run starts, with the stored session (`tenant`, `page`, `provider`, `model`),
+the harness session and the person's message.
+
+- Return `null` to keep the harness defaults for that turn.
+- Throw to refuse the turn before any provider call. The turn fails with your
+  exception's `HasErrorCode::code()` (else `run_failed`), never its message.
+- prism-harness enforces the rest: a context with a cost cap needs a price for
+  the session's model, a per-call output cap and, since the builder has tools,
+  `toolOverheadTokens`, or the call is refused (`budget_unpriced`,
+  `budget_unbounded_output`, `budget_input_unbounded`). A cost observer needs a
+  cost cap.
+
 ## Requirements
 
 - PHP 8.4, Laravel 13 (illuminate components), a queue worker.

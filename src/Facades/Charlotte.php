@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Charlotte\Guide\Guides guides()
  * @method static void authorizeUsing(\Closure $callback)
  * @method static void resolveTenantUsing(\Closure $resolver)
+ * @method static void contextUsing(\Closure $factory)
  * @method static void routes(array $options = [])
  *
  * @see \Charlotte\Charlotte

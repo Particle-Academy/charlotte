@@ -12,6 +12,37 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+**Nothing to migrate.** Both changes come from the first real consumer (the
+fancy-labs website-builder lab). A host that binds nothing new runs exactly as
+on 0.1.0; no public signature lost or changed a parameter.
+
+### Added
+- An optional per-turn run context for hosts that meter spend:
+  `Charlotte::contextUsing(fn (Turn $turn): ?RunContext => ...)`, or bind a
+  `Charlotte\Runtime\TurnContextFactory`. Each turn's prism-harness
+  `RunContext` (budget, pricing, cost observer) can now come from the host
+  without rebuilding `TurnDispatcher`, `TurnRunner` or `AgentRuntime`. The
+  default, `Runtime\HarnessDefaults`, returns `null`, which keeps the harness's
+  own configuration; billing stays optional. A factory that throws refuses the
+  turn before any provider call, as `run.failed` with the exception's
+  `HasErrorCode::code()` (else `run_failed`). See "Host budgets" in the README.
+- `TurnRunner` takes the factory as an optional sixth constructor argument,
+  defaulting to `HarnessDefaults`, so a host constructing it with five
+  arguments keeps working.
+
+### Fixed
+- Optional usage telemetry no longer resolves host dependencies for
+  generations that are not Charlotte's. Prism fires `GenerationCompleted` for
+  every generation in the app, and the listener built a `Workspace` (and so the
+  host's `PageRepository`, `AssetCatalogue` and `LinkPolicy` bindings) before
+  checking `charlotte.telemetry.enabled` or the session key. A host binding
+  scoped to a builder turn therefore threw into unrelated agent roles, even
+  with Charlotte's telemetry off. The flag and the session are now checked
+  first and the workspace is resolved lazily, only for Charlotte's own
+  sessions; a failure resolving it is swallowed like any other telemetry
+  failure. `UsageTelemetry`'s constructor now also accepts a
+  `Closure(): Workspace` (a `Workspace` still works).
+
 ## [0.1.0] - 2026-10-27
 
 **First release. Nothing to migrate:** install, publish the config, run the

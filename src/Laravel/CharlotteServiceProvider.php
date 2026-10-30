@@ -16,6 +16,8 @@ use Charlotte\Http\DenyAll;
 use Charlotte\Policy\AssetCatalogue;
 use Charlotte\Policy\EmptyAssetCatalogue;
 use Charlotte\Policy\LinkPolicy;
+use Charlotte\Runtime\HarnessDefaults;
+use Charlotte\Runtime\TurnContextFactory;
 use Charlotte\Runtime\TurnDispatcher;
 use Charlotte\Runtime\TurnRunner;
 use Charlotte\Runtime\Turns;
@@ -79,9 +81,12 @@ final class CharlotteServiceProvider extends ServiceProvider
         $this->app->bind(Turns::class, fn (Application $app) => new Turns(
             $app->make(Workspace::class), $app->make(SessionStore::class), $app['db']->connection(), $app->make(TurnDispatcher::class),
         ));
+        // Optional: a host binds its own to supply each turn's RunContext
+        // (budget, pricing, cost observer). The default keeps the harness's.
+        $this->app->bindIf(TurnContextFactory::class, fn () => new HarnessDefaults);
         $this->app->bind(TurnRunner::class, fn (Application $app) => new TurnRunner(
             $app->make(Workspace::class), $app->make(Guides::class), $app->make(ModeRegistry::class),
-            $app->make(PrismHarness::class), $app->make(AgentRuntime::class),
+            $app->make(PrismHarness::class), $app->make(AgentRuntime::class), $app->make(TurnContextFactory::class),
         ));
         $this->app->singleton(Charlotte::class, fn (Application $app) => new Charlotte($app));
         $this->app->singletonIf(Authorizer::class, fn () => new DenyAll);
@@ -136,10 +141,15 @@ final class CharlotteServiceProvider extends ServiceProvider
 
         // Optional usage/cost observation. Listens only if the installed Prism
         // has telemetry events at all; records only while both flags are on.
+        // Prism fires this for EVERY generation in the host, so nothing of the
+        // host's is resolved here: the workspace is built lazily, inside
+        // handle(), only once the flags and the session key say the generation
+        // is Charlotte's. A host-scoped dependency that throws outside a
+        // builder turn must not reach an unrelated agent role.
         if (class_exists(UsageTelemetry::PRISM_EVENT)) {
             $this->app['events']->listen(UsageTelemetry::PRISM_EVENT, function (object $event): void {
                 (new UsageTelemetry(
-                    $this->app->make(Workspace::class),
+                    fn (): Workspace => $this->app->make(Workspace::class),
                     (array) $this->app['config']->get('charlotte.telemetry.prices', []),
                 ))->handle($event);
             });

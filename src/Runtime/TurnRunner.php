@@ -34,6 +34,7 @@ final class TurnRunner
         private readonly ModeRegistry $modes,
         private readonly PrismHarness $harness,
         private readonly AgentRuntime $runtime,
+        private readonly TurnContextFactory $contexts = new HarnessDefaults,
     ) {}
 
     public function run(string $sessionId, string $text): void
@@ -64,7 +65,13 @@ final class TurnRunner
                 ->usingModel($session->model)
                 ->usingCapability('charlotte', ['session' => $session->id]);
 
-            foreach ($this->runtime->stream($harness, $text, BuilderMode::TOOLS) as $event) {
+            // The host's run context for this turn (budget, pricing, cost
+            // observer), or null for the harness defaults. Inside the try: a
+            // host refusing admission fails the turn with its code, before
+            // any provider call.
+            $context = $this->contexts->forTurn(new Turn($session, $harness, $text));
+
+            foreach ($this->runtime->stream($harness, $text, BuilderMode::TOOLS, context: $context) as $event) {
                 if ($event instanceof StreamStartEvent && $runId === null) {
                     $runId = (string) ($harness->run()['id'] ?? '');
                     $this->workspace->record($session->id, EventTypes::RUN_STARTED, Workspace::SYSTEM,
