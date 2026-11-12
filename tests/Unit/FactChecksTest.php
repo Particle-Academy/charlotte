@@ -61,7 +61,63 @@ test('an invented price is caught as an unsupported claim', function (): void {
     $claims = defectsBy(FactChecks::check($page, factBrief()), 'unsupported_claim');
 
     expect($claims)->toHaveCount(1)
-        ->and($claims[0])->toMatchArray(['severity' => 'warning', 'kind' => 'currency', 'claim' => '$29', 'node' => 't1']);
+        ->and($claims[0])->toMatchArray(['severity' => 'error', 'kind' => 'currency', 'claim' => '$29', 'node' => 't1']);
+});
+
+test('an unsupported figure is an error that gates cms_finish; an unsupported quote stays a warning', function (): void {
+    $page = pageWithCopy(['$19/month hello@example.com', 'Trusted by 500+ trucks', '"Best app ever" said everyone']);
+
+    $claims = defectsBy(FactChecks::check($page, factBrief()), 'unsupported_claim');
+
+    expect(array_column($claims, 'severity', 'kind'))->toEqual(['quote' => 'warning', 'count' => 'error']);
+});
+
+/** The conference brief from flabs run 426, as text. */
+function conferenceBrief(): Brief
+{
+    return Brief::fromArray(['summary' => 'Northwind DevDay 2027. Date: Thursday 18 March 2027, 09:00-18:00. '
+        .'Tickets: Early bird $149 until 31 January 2027, then $219. Booking from June 2027.']);
+}
+
+test('run 426: a date the brief never gave ("From 1 February 2027") is an unsupported date claim', function (): void {
+    $page = pageWithCopy(['Early bird $149', 'Until 31 January 2027', 'Standard $219', 'From 1 February 2027']);
+
+    $claims = defectsBy(FactChecks::check($page, conferenceBrief(), 2026), 'unsupported_claim');
+
+    expect($claims)->toHaveCount(1)
+        ->and($claims[0])->toMatchArray(['severity' => 'error', 'kind' => 'date', 'claim' => '1 February 2027', 'node' => 't3']);
+});
+
+test('a brief date written another way is the same date', function (string $copy): void {
+    expect(defectsBy(FactChecks::check(pageWithCopy([$copy]), conferenceBrief(), 2026), 'unsupported_claim'))->toBe([]);
+})->with([
+    'month first' => ['Thursday, March 18, 2027'],
+    'short month' => ['Early bird until 31 Jan 2027'],
+    'ordinal' => ['On the 18th of March'],
+    'month and year' => ['Booking from June 2027'],
+]);
+
+test('an invented month and year is caught, though its year alone is supported', function (): void {
+    $claims = defectsBy(FactChecks::check(pageWithCopy(['Booking from July 2027']), conferenceBrief(), 2026), 'unsupported_claim');
+
+    expect(array_column($claims, 'claim'))->toBe(['July 2027'])
+        ->and($claims[0]['kind'])->toBe('date');
+});
+
+test('the real run 426 page is caught on its invented date and nothing else', function (): void {
+    $fixture = json_decode((string) file_get_contents(__DIR__.'/../fixtures/lab-run-426-page.json'), true);
+
+    $claims = defectsBy(FactChecks::check($fixture['doc'], Brief::fromArray($fixture['brief']), 2026), 'unsupported_claim');
+
+    expect(array_column($claims, 'claim'))->toBe(['1 February 2027']);
+});
+
+test('a CSS length an agent put in props ({value, unit}) is not a figure', function (): void {
+    $page = pageWithCopy(['$19/month hello@example.com']);
+    $page['nodes']['grid'] = ['id' => 'grid', 'type' => 'grid', 'parent' => 'root', 'order' => 'c0', 'style' => ['base' => []],
+        'props' => ['columnMin' => ['value' => 260, 'unit' => 'px']]];
+
+    expect(defectsBy(FactChecks::check($page, factBrief(), 2026), 'unsupported_claim'))->toBe([]);
 });
 
 test('a missing required fact is an error naming the fact', function (): void {

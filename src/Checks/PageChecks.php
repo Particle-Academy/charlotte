@@ -129,7 +129,9 @@ final class PageChecks
         }
         if ($description === '' || mb_strlen($description) > self::DESCRIPTION_MAX) {
             $defects[] = self::defect('meta_description', 'error', $description === ''
-                ? 'The page has no meta description.'
+                ? 'The page has no meta description. '.(is_string($meta['description'] ?? null) && trim($meta['description']) !== ''
+                    ? 'It was written to meta.description, which nothing reads; the description is meta.seo.description. '
+                    : '').'Set it with {"t":"set_meta","patch":{"seo":{"description":"<one sentence from the brief, under '.self::DESCRIPTION_MAX.' characters>"}}}.'
                 : 'The meta description is '.mb_strlen($description).' characters; keep it under '.self::DESCRIPTION_MAX.'.');
         }
 

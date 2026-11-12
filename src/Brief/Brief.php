@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Charlotte\Brief;
 
 use Charlotte\Checks\PageChecks;
+use Charlotte\Policy\AssetPolicy;
 
 /**
  * The structured brief: the page's content truth, as data.
@@ -15,7 +16,7 @@ use Charlotte\Checks\PageChecks;
  */
 final readonly class Brief
 {
-    private const KEYS = ['summary', 'facts', 'forbid', 'audience', 'tone', 'cta'];
+    private const KEYS = ['summary', 'facts', 'forbid', 'audience', 'tone', 'cta', 'images'];
 
     private const FACT_KEYS = ['id', 'kind', 'label', 'value', 'attribution', 'required'];
 
@@ -23,6 +24,7 @@ final readonly class Brief
      * @param  list<Fact>  $facts
      * @param  list<string>  $forbid
      * @param  array{label:string,href:string}|null  $cta
+     * @param  list<string>  $images  asset handles the page must place (cms_finish refuses until it does)
      */
     public function __construct(
         public string $summary,
@@ -31,6 +33,7 @@ final readonly class Brief
         public ?string $audience = null,
         public ?string $tone = null,
         public ?array $cta = null,
+        public array $images = [],
     ) {}
 
     /** @param array<string, mixed> $input */
@@ -99,6 +102,16 @@ final readonly class Brief
             }
         }
 
+        $images = $input['images'] ?? [];
+        if (! is_array($images) || ! array_is_list($images) || count($images) > 20) {
+            throw new InvalidBrief('$.images', 'a list of at most 20 asset handles');
+        }
+        foreach ($images as $i => $handle) {
+            if (! is_string($handle) || preg_match(AssetPolicy::HANDLE, $handle) !== 1 || array_search($handle, $images, true) !== $i) {
+                throw new InvalidBrief('$.images.'.$i, 'an asset handle from the host catalogue, listed once');
+            }
+        }
+
         return new self(
             summary: $summary,
             facts: $facts,
@@ -106,6 +119,7 @@ final readonly class Brief
             audience: isset($input['audience']) ? self::text($input['audience'], '$.audience', 1000) : null,
             tone: isset($input['tone']) ? self::text($input['tone'], '$.tone', 1000) : null,
             cta: $cta,
+            images: $images,
         );
     }
 
@@ -125,6 +139,7 @@ final readonly class Brief
             'audience' => $this->audience,
             'tone' => $this->tone,
             'cta' => $this->cta,
+            'images' => $this->images === [] ? null : $this->images,
         ], fn ($v) => $v !== null);
     }
 

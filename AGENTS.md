@@ -54,6 +54,25 @@ read config through the container.
   spawns a `charlotte` page sub-agent on the selected document; `TurnRunner`
   picks the mode per session. Proposals are keyed by `page_key` for site sessions
   (null for page sessions, as in 0.3).
+- **Finish gates**: `Checks\QualityChecks` (`layout_missing`, `link_spacing`,
+  `responsive_layout`, `required_image_missing` / `required_image_unavailable`)
+  runs in `Checks::run` with the AssetCatalogue's `catalogue()`.
+  `Checks::FINISH_GATES` + `gates()` are what `Workspace::finish` and
+  `SiteWorkspace::finish` refuse on (`Refused('not_ready', details: defects)`);
+  every other error only reports. Both record `checks.result` BEFORE deciding
+  and throw after the transaction, so a refusal is logged and nothing is marked.
+  `unsupported_claim` is an error for every kind but `quote`; dates compare by
+  meaning (`FactChecks::dates()`). Never make `required_image_unavailable` a
+  gate: the agent cannot place an asset the host never supplied. Site pages skip
+  `Checks::SITE_WIDE` (judged across docs in `siteDefects`); regions skip
+  `REGION_SKIP`; a `not_found` page also skips `responsive_layout`
+  (`SiteWorkspace::skip()`, `skipFor()` for a page sub-agent's finish).
+  Why: fancy-cms emits `display:flex`/`grid` ONLY from a node's `layout`; a
+  stack or grid without it is a block (flabs runs 423-463).
+- `Design\Starter`: the responsive skeleton/type/spacing data `cms_describe`
+  returns as `starter`. Its nav id is `SiteWorkspace::NAV_ID` so `site_nav_set`
+  fills it. `FinishGateTest` proves the skeleton clears the gates once filled
+  and that fancy-cms's CssEmitter renders it as flex and grid.
 - `Checks\SiteChecks`: broken links, anchors, orphans, unrouted pages, home,
   404, nav consistency, region h1/anchors, duplicate titles, and
   `missing_required_fact` across the whole site.

@@ -11,19 +11,29 @@ use Charlotte\Brief\Brief;
  *
  * - `missing_required_fact` (error): a required fact's value does not appear
  *   in the page's visible copy. Code-derived and exact after normalization.
- * - `unsupported_claim` (warning): a high-risk claim shape (a price, a
- *   percentage, an "N+" count, a phone number, an email address, a year or a
- *   quotation) that traces to nothing in the brief. A warning rather than an
- *   error, because a pattern cannot prove a claim was invented; it can only
- *   show that the brief does not support it.
+ * - `unsupported_claim`: a high-risk claim shape (a price, a percentage, an
+ *   "N+" count, a phone number, an email address, a date, a year, a typed
+ *   figure or a quotation) that traces to nothing in the brief. An ERROR,
+ *   and a cms_finish gate, for every kind but `quote`: a figure or date the
+ *   brief never gave is what the lab's reviewer scored 0 (run 426 invented
+ *   "From 1 February 2027"). A quotation stays a warning, because quote marks
+ *   are also typography and the pattern cannot tell the two apart.
+ *
+ * Dates compare by meaning, not spelling: "18 March 2027", "March 18, 2027"
+ * and "18th of March" are one date, and "31 Jan" is "31 January".
  *
  * No model and no network, so it is free, deterministic and always available.
  */
 final class FactChecks
 {
+    private const MONTHS = 'january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sept|sep|oct|nov|dec';
+
     /** Applied in order; each match is blanked before the next pattern runs. */
     private const CLAIMS = [
         'email' => '/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i',
+        'date' => '/\b\d{1,2}(?:st|nd|rd|th)?(?:\s+of)?\s+(?:'.self::MONTHS.')\b\.?(?:,?\s+(?:19|20)\d{2}\b)?/iu',
+        'date_md' => '/\b(?:'.self::MONTHS.')\b\.?\s+\d{1,2}(?:st|nd|rd|th)?\b(?:,?\s+(?:19|20)\d{2}\b)?/iu',
+        'date_my' => '/\b(?:'.self::MONTHS.')\b\.?,?\s+(?:19|20)\d{2}\b/iu',
         'currency' => '/(?:[$€£¥]\s?\d[\d,]*(?:\.\d+)?|\b\d[\d,]*(?:\.\d+)?\s?(?:usd|eur|gbp|dollars|euros|pounds)\b)/iu',
         'percentage' => '/\b\d+(?:\.\d+)?\s?%/',
         'phone' => '/\+?\(?\d[\d\s().-]{6,}\d/',
@@ -64,7 +74,7 @@ final class FactChecks
             if (self::supportedFigure($figure, $evidence)) {
                 continue;
             }
-            $defects[] = ['code' => 'unsupported_claim', 'severity' => 'warning', 'kind' => 'figure', 'claim' => $figure, 'node' => $node,
+            $defects[] = ['code' => 'unsupported_claim', 'severity' => 'error', 'kind' => 'figure', 'claim' => $figure, 'node' => $node,
                 'message' => "The page shows the figure {$figure}, which no brief fact supports. Bind figures to host data instead of typing them."];
         }
 
@@ -74,8 +84,10 @@ final class FactChecks
                     continue;
                 }
                 $where = isset($source['node']) ? ['node' => $source['node']] : ['field' => $source['field']];
-                $defects[] = ['code' => 'unsupported_claim', 'severity' => 'warning', 'kind' => $kind, 'claim' => $claim, ...$where,
-                    'message' => "The page states {$claim}, which no brief fact supports."];
+                $defects[] = ['code' => 'unsupported_claim', 'severity' => $kind === 'quote' ? 'warning' : 'error', 'kind' => $kind, 'claim' => $claim, ...$where,
+                    'message' => $kind === 'date'
+                        ? "The page states the date {$claim}, which the brief never gives. Remove it, or use a date exactly as the brief states it."
+                        : "The page states {$claim}, which no brief fact supports. Remove it, or use the brief's exact value."];
             }
         }
 
@@ -161,8 +173,8 @@ final class FactChecks
             }
             $walk = function (mixed $value, bool $figure) use (&$walk, &$out, $id): void {
                 if (is_array($value)) {
-                    if (array_key_exists('$bind', $value)) {
-                        return;
+                    if (array_key_exists('$bind', $value) || self::isLength($value)) {
+                        return; // a binding is host evidence; a {value, unit} length is a style the agent misplaced, not copy
                     }
                     foreach ($value as $k => $v) {
                         $walk($v, $figure || (is_string($k) && in_array(strtolower($k), self::FIGURE_KEYS, true)));
@@ -175,6 +187,13 @@ final class FactChecks
         }
 
         return $out;
+    }
+
+    /** A fancy-cms Length: exactly {value: number, unit: px|%|vw|vh|rem|fr}. */
+    private static function isLength(array $value): bool
+    {
+        return count($value) === 2 && (is_int($value['value'] ?? null) || is_float($value['value'] ?? null))
+            && in_array($value['unit'] ?? null, ['px', '%', 'vw', 'vh', 'rem', 'fr'], true);
     }
 
     private static function number(int|float $value): string
@@ -218,7 +237,7 @@ final class FactChecks
                     default => true,
                 };
                 if ($keep) {
-                    $found[] = [$kind, $kind === 'currency' ? self::currency($claim) : $claim];
+                    $found[] = [str_starts_with($kind, 'date') ? 'date' : $kind, $kind === 'currency' ? self::currency($claim) : rtrim($claim, ',.')];
                 }
 
                 return str_repeat(' ', strlen($m[0]));
@@ -248,8 +267,74 @@ final class FactChecks
 
             return false;
         }
+        if ($kind === 'date') {
+            return self::supportedDate($claim, $evidence['dates']);
+        }
 
         return self::contains($evidence['text'], self::normalize($claim));
+    }
+
+    /**
+     * Every date in a text as [day|null, month 1-12, year|null], whatever its
+     * spelling: "18 March 2027", "March 18, 2027", "18th of Mar", "June 2027".
+     *
+     * @return list<array{0: ?int, 1: int, 2: ?int}>
+     */
+    public static function dates(string $text): array
+    {
+        $found = [];
+        foreach (['date', 'date_md', 'date_my'] as $kind) {
+            $text = preg_replace_callback(self::CLAIMS[$kind], function (array $m) use (&$found): string {
+                $date = self::parseDate($m[0]);
+                if ($date !== null) {
+                    $found[] = $date;
+                }
+
+                return str_repeat(' ', strlen($m[0]));
+            }, $text) ?? $text;
+        }
+
+        return $found;
+    }
+
+    /** @return array{0: ?int, 1: int, 2: ?int}|null */
+    private static function parseDate(string $text): ?array
+    {
+        if (preg_match('/\b('.self::MONTHS.')\b/i', $text, $month) !== 1) {
+            return null;
+        }
+        $index = array_search(substr(strtolower($month[1]), 0, 3), ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'], true);
+        $year = preg_match('/\b((?:19|20)\d{2})\b/', $text, $y) === 1 ? (int) $y[1] : null;
+        $rest = $year === null ? $text : str_replace($y[1], '', $text);
+        $day = preg_match('/\b(\d{1,2})(?:st|nd|rd|th)?\b/i', $rest, $d) === 1 ? (int) $d[1] : null;
+
+        return $index === false ? null : [$day, $index + 1, $year];
+    }
+
+    /**
+     * A date is supported when the brief names the same day and month (and,
+     * when the claim gives one, a year the brief puts with it), or, for a
+     * month and year with no day, that month in that year.
+     *
+     * @param  list<array{0: ?int, 1: int, 2: ?int}>  $dates
+     */
+    private static function supportedDate(string $claim, array $dates): bool
+    {
+        $date = self::parseDate($claim);
+        if ($date === null) {
+            return false;
+        }
+        [$day, $month, $year] = $date;
+        foreach ($dates as [$d, $m, $y]) {
+            if ($m !== $month || ($day !== null && $d !== $day)) {
+                continue;
+            }
+            if ($year === null || $y === null || $y === $year) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Substring match that will not let "$1" pass on the strength of "$19". */
@@ -272,6 +357,6 @@ final class FactChecks
             $digits[] = preg_replace('/\D/', '', $fact->value) ?? '';
         }
 
-        return ['text' => self::normalize(implode("\n", $parts)), 'digits' => $digits];
+        return ['text' => self::normalize(implode("\n", $parts)), 'digits' => $digits, 'dates' => self::dates(implode("\n", $parts))];
     }
 }

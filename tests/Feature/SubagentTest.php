@@ -26,7 +26,7 @@ function childBuild(string $heading = 'Acme Ledger'): array
 {
     return [
         ['tools' => [['name' => 'cms_get', 'args' => []]]],
-        ['tools' => [['name' => 'cms_apply', 'args' => fn (array $calls) => ['ops' => sectionOps('hero', 'a0', $heading), 'basedOn' => json_decode(end($calls)['result'], true)['revision']]]]],
+        ['tools' => [['name' => 'cms_apply', 'args' => fn (array $calls) => ['ops' => finishablePageOps($heading), 'basedOn' => json_decode(end($calls)['result'], true)['revision']]]]],
         ['tools' => [['name' => 'cms_finish', 'args' => fn (array $calls) => ['basedOn' => json_decode(end($calls)['result'], true)['revision']]]]],
         ['text' => fn (array $calls) => json_encode(['draft' => json_decode(end($calls)['result'], true)['draft']])],
     ];
@@ -235,7 +235,7 @@ test('the child\'s cms_finish marks the page ready and returns its reference, wi
     $site = openSite();
     tool($site, 'site_page_create', ['page' => 'home', 'title' => 'Acme Ledger', 'kind' => 'page', 'route' => '/']);
     $child = new \Charlotte\Tools\PageTools(app(\Charlotte\Workspace::class), $site->id(), app(\Charlotte\SiteWorkspace::class), child: true);
-    $revision = json_decode($child->call('cms_get'), true)['revision'];
+    $revision = json_decode($child->call('cms_apply', ['ops' => finishablePageOps(), 'basedOn' => json_decode($child->call('cms_get'), true)['revision']]), true)['revision'];
 
     $result = json_decode($child->call('cms_finish', ['basedOn' => $revision]), true);
 

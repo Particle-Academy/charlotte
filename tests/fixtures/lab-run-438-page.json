@@ -1,0 +1,1400 @@
+{
+    "source": "flabs run 438 (bakery-local-site-images-v1), charlotte 0.4.0 63257c4, finished revision rbdb66d5e3e08713e87cf9f33f95ef62e",
+    "review": "All required facts, exact prices, the 48-hour notice, tel and mailto links, and relevant supplied illustrations are present with no invented claims. The layout is a bare stacked default: it does not adapt to desktop, spacing is missing, nav and footer links run together, and the result is far from professional.",
+    "brief": {
+        "summary": "Build the page for Crumb & Co., a neighbourhood bakery at 14 Alder Street.\nHours: Tuesday to Friday 7:00-15:00, Saturday and Sunday 8:00-14:00, closed Monday.\nKnown for: sourdough (baked daily, $8 a loaf), cardamom buns ($4.50), and a\nseasonal fruit galette (from $26, order 48 hours ahead).\nPre-orders: by phone, (555) 010-4477, or email orders@example.com.\nThey want it to feel warm and hand-made, not corporate. Supplied synthetic illustrations show sourdough and cardamom buns, not photographs of the actual bakery.\n\nImage version: images-v1. Up to four supplied images are available through cms_assets(). Use only its approved handles. Every image is a synthetic illustration, not evidence of actual people, premises, results or product interfaces. Do not turn incidental objects, finishes or accessories into product claims. Choose relevant images and supply descriptive alt text; no external image URLs.",
+        "facts": [
+            {
+                "id": "source-0",
+                "kind": "other",
+                "value": "Build the page for Crumb & Co., a neighbourhood bakery at 14 Alder Street.\nHours: Tuesday to Friday 7:00-15:00, Saturday and Sunday 8:00-14:00, closed Monday.\nKnown for: sourdough (baked daily, $8 a loaf), cardamom buns ($4.50), and a\nseasonal fruit galette (from $26, order 48 hours ahead).\nPre-orders: by phone, (555) 010-4477, or email orders@example.com.\nThey want it to feel warm and hand-made, not corporate. Supplied synthetic illustrations show sourdough and cardamom buns, not photographs of the actual bakery.\n\nImage version: images-v1. Up to four supplied images are available through cms_assets(). Use only its approved handles. Every image is a synthetic illustration, not evidence of actual people, premises, results or product interfaces. Do not turn incidental objects, finishes or accessories into product claims. Choose relevant images and supply descriptive alt text; no external image URLs.",
+                "required": false
+            }
+        ]
+    },
+    "assets": [
+        {
+            "handle": "hero"
+        },
+        {
+            "handle": "sourdough"
+        },
+        {
+            "handle": "buns"
+        },
+        {
+            "handle": "galette"
+        }
+    ],
+    "doc": {
+        "id": "lane-680",
+        "seq": 66,
+        "meta": {
+            "title": "Crumb & Co. — Neighbourhood Bakery, 14 Alder Street",
+            "slug": "/",
+            "scrollMode": "smooth",
+            "description": "Daily-baked sourdough, cardamom buns and seasonal fruit galettes at Crumb & Co., 14 Alder Street. Pre-order by phone or email.",
+            "seo": {
+                "description": "Daily-baked sourdough, cardamom buns and seasonal fruit galettes at Crumb & Co., 14 Alder Street. Pre-order by phone or email."
+            }
+        },
+        "theme": {
+            "color": {
+                "primary": "#92400e",
+                "ink": "#292524",
+                "muted": "#78716c",
+                "surface": "#fffaf3",
+                "line": "#e7e0d4"
+            },
+            "font": {
+                "body": "Inter, system-ui, sans-serif",
+                "display": "Inter, system-ui, sans-serif"
+            }
+        },
+        "breakpoints": [
+            "base",
+            "md",
+            "lg"
+        ],
+        "nodes": {
+            "header": {
+                "id": "header",
+                "type": "section",
+                "parent": null,
+                "order": "a0",
+                "props": {
+                    "as": "header"
+                },
+                "style": {
+                    "base": {
+                        "background": "var(--cms-color-surface)",
+                        "paddingY": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "header-stack": {
+                "id": "header-stack",
+                "type": "stack",
+                "parent": "header",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "row",
+                        "align": "center",
+                        "justify": "between",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "wrap": true
+                    }
+                }
+            },
+            "brand": {
+                "id": "brand",
+                "type": "heading",
+                "parent": "header-stack",
+                "order": "a0",
+                "props": {
+                    "content": "Crumb & Co.",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "nav-row": {
+                "id": "nav-row",
+                "type": "stack",
+                "parent": "header-stack",
+                "order": "a1",
+                "props": {
+                    "as": "nav"
+                },
+                "style": {
+                    "base": {
+                        "direction": "row",
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "align": "center",
+                        "wrap": true
+                    }
+                }
+            },
+            "nav-menu": {
+                "id": "nav-menu",
+                "type": "link",
+                "parent": "nav-row",
+                "order": "a0",
+                "props": {
+                    "content": "Menu",
+                    "href": "#menu"
+                },
+                "style": {
+                    "base": {
+                        "color": "var(--cms-color-ink)",
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "nav-hours": {
+                "id": "nav-hours",
+                "type": "link",
+                "parent": "nav-row",
+                "order": "a1",
+                "props": {
+                    "content": "Hours",
+                    "href": "#hours"
+                },
+                "style": {
+                    "base": {
+                        "color": "var(--cms-color-ink)",
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "nav-order": {
+                "id": "nav-order",
+                "type": "link",
+                "parent": "nav-row",
+                "order": "a2",
+                "props": {
+                    "content": "Pre-order",
+                    "href": "#order"
+                },
+                "style": {
+                    "base": {
+                        "color": "var(--cms-color-ink)",
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero": {
+                "id": "hero",
+                "type": "section",
+                "parent": null,
+                "order": "b0",
+                "props": {
+                    "as": "main"
+                },
+                "style": {
+                    "base": {
+                        "background": "var(--cms-color-surface)",
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-stack": {
+                "id": "hero-stack",
+                "type": "stack",
+                "parent": "hero",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        },
+                        "align": "center"
+                    },
+                    "md": {
+                        "direction": "row",
+                        "align": "center"
+                    }
+                }
+            },
+            "hero-text": {
+                "id": "hero-text",
+                "type": "stack",
+                "parent": "hero-stack",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "column",
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "maxWidth": {
+                            "value": 560,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-h1": {
+                "id": "hero-h1",
+                "type": "heading",
+                "parent": "hero-text",
+                "order": "a0",
+                "props": {
+                    "content": "Warm, hand-made bread for the neighbourhood",
+                    "level": 1
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 40,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 56,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-sub": {
+                "id": "hero-sub",
+                "type": "text",
+                "parent": "hero-text",
+                "order": "a1",
+                "props": {
+                    "content": "Crumb & Co. is a neighbourhood bakery at 14 Alder Street, baking sourdough fresh every day alongside cardamom buns and seasonal fruit galettes."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "hero-cta-row": {
+                "id": "hero-cta-row",
+                "type": "stack",
+                "parent": "hero-text",
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "row",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "wrap": true
+                    }
+                }
+            },
+            "hero-cta": {
+                "id": "hero-cta",
+                "type": "button",
+                "parent": "hero-cta-row",
+                "order": "a0",
+                "props": {
+                    "label": "Pre-order now",
+                    "href": "#order",
+                    "variant": "primary"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-primary)",
+                        "color": "#ffffff"
+                    }
+                }
+            },
+            "hero-cta-secondary": {
+                "id": "hero-cta-secondary",
+                "type": "button",
+                "parent": "hero-cta-row",
+                "order": "a1",
+                "props": {
+                    "label": "See the menu",
+                    "href": "#menu",
+                    "variant": "outline"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-image": {
+                "id": "hero-image",
+                "type": "image",
+                "parent": "hero-stack",
+                "order": "a1",
+                "props": {
+                    "asset": "hero",
+                    "alt": "Sourdough loaf on a wooden board in soft daylight.",
+                    "fit": "cover",
+                    "loading": "eager"
+                },
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 480,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "aspectRatio": "4 / 3"
+                    }
+                }
+            },
+            "menu": {
+                "id": "menu",
+                "type": "section",
+                "parent": null,
+                "order": "c0",
+                "props": {
+                    "as": "section",
+                    "anchor": "menu"
+                },
+                "style": {
+                    "base": {
+                        "background": "#fff4e0",
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "menu-stack": {
+                "id": "menu-stack",
+                "type": "stack",
+                "parent": "menu",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "menu-h2": {
+                "id": "menu-h2",
+                "type": "heading",
+                "parent": "menu-stack",
+                "order": "a0",
+                "props": {
+                    "content": "What we bake",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 36,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "menu-grid": {
+                "id": "menu-grid",
+                "type": "grid",
+                "parent": "menu-stack",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "columnMin": {
+                            "value": 260,
+                            "unit": "px"
+                        },
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "card-sourdough": {
+                "id": "card-sourdough",
+                "type": "card",
+                "parent": "menu-grid",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "background": "var(--cms-color-surface)",
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)"
+                    }
+                }
+            },
+            "sourdough-img": {
+                "id": "sourdough-img",
+                "type": "image",
+                "parent": "card-sourdough",
+                "order": "a0",
+                "props": {
+                    "asset": "sourdough",
+                    "alt": "Sliced sourdough with a golden crust and open crumb.",
+                    "fit": "cover",
+                    "loading": "lazy"
+                },
+                "style": {
+                    "base": {
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "aspectRatio": "4 / 3"
+                    }
+                }
+            },
+            "sourdough-h3": {
+                "id": "sourdough-h3",
+                "type": "heading",
+                "parent": "card-sourdough",
+                "order": "a1",
+                "props": {
+                    "content": "Sourdough",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)",
+                        "margin": {
+                            "value": 0,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "sourdough-p": {
+                "id": "sourdough-p",
+                "type": "text",
+                "parent": "card-sourdough",
+                "order": "a2",
+                "props": {
+                    "content": "Baked daily. $8 a loaf."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "card-buns": {
+                "id": "card-buns",
+                "type": "card",
+                "parent": "menu-grid",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "background": "var(--cms-color-surface)",
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)"
+                    }
+                }
+            },
+            "buns-img": {
+                "id": "buns-img",
+                "type": "image",
+                "parent": "card-buns",
+                "order": "a0",
+                "props": {
+                    "asset": "buns",
+                    "alt": "Cardamom buns arranged on plain parchment.",
+                    "fit": "cover",
+                    "loading": "lazy"
+                },
+                "style": {
+                    "base": {
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "aspectRatio": "4 / 3"
+                    }
+                }
+            },
+            "buns-h3": {
+                "id": "buns-h3",
+                "type": "heading",
+                "parent": "card-buns",
+                "order": "a1",
+                "props": {
+                    "content": "Cardamom buns",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)",
+                        "margin": {
+                            "value": 0,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "buns-p": {
+                "id": "buns-p",
+                "type": "text",
+                "parent": "card-buns",
+                "order": "a2",
+                "props": {
+                    "content": "$4.50 each."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "card-galette": {
+                "id": "card-galette",
+                "type": "card",
+                "parent": "menu-grid",
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "background": "var(--cms-color-surface)",
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)"
+                    }
+                }
+            },
+            "galette-img": {
+                "id": "galette-img",
+                "type": "image",
+                "parent": "card-galette",
+                "order": "a0",
+                "props": {
+                    "asset": "galette",
+                    "alt": "Rustic fruit galette with folded pastry edges.",
+                    "fit": "cover",
+                    "loading": "lazy"
+                },
+                "style": {
+                    "base": {
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "aspectRatio": "4 / 3"
+                    }
+                }
+            },
+            "galette-h3": {
+                "id": "galette-h3",
+                "type": "heading",
+                "parent": "card-galette",
+                "order": "a1",
+                "props": {
+                    "content": "Seasonal fruit galette",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)",
+                        "margin": {
+                            "value": 0,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "galette-p": {
+                "id": "galette-p",
+                "type": "text",
+                "parent": "card-galette",
+                "order": "a2",
+                "props": {
+                    "content": "From $26. Order 48 hours ahead."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "hours": {
+                "id": "hours",
+                "type": "section",
+                "parent": null,
+                "order": "d0",
+                "props": {
+                    "as": "section",
+                    "anchor": "hours"
+                },
+                "style": {
+                    "base": {
+                        "background": "var(--cms-color-surface)",
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hours-stack": {
+                "id": "hours-stack",
+                "type": "stack",
+                "parent": "hours",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "direction": "row",
+                        "justify": "between"
+                    }
+                }
+            },
+            "hours-col": {
+                "id": "hours-col",
+                "type": "stack",
+                "parent": "hours-stack",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "column",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "maxWidth": {
+                            "value": 480,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hours-h2": {
+                "id": "hours-h2",
+                "type": "heading",
+                "parent": "hours-col",
+                "order": "a0",
+                "props": {
+                    "content": "Hours",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 36,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hours-list": {
+                "id": "hours-list",
+                "type": "list",
+                "parent": "hours-col",
+                "order": "a1",
+                "props": {
+                    "items": [
+                        "Tuesday to Friday: 7:00–15:00",
+                        "Saturday and Sunday: 8:00–14:00",
+                        "Closed Monday"
+                    ],
+                    "ordered": false
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "order-col": {
+                "id": "order-col",
+                "type": "stack",
+                "parent": "hours-stack",
+                "order": "a1",
+                "props": {
+                    "anchor": "order"
+                },
+                "style": {
+                    "base": {
+                        "direction": "column",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "maxWidth": {
+                            "value": 480,
+                            "unit": "px"
+                        },
+                        "background": "#fff4e0",
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "order-h2": {
+                "id": "order-h2",
+                "type": "heading",
+                "parent": "order-col",
+                "order": "a0",
+                "props": {
+                    "content": "Pre-order",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 36,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "order-p": {
+                "id": "order-p",
+                "type": "text",
+                "parent": "order-col",
+                "order": "a1",
+                "props": {
+                    "content": "Reach us at 14 Alder Street to reserve your sourdough, cardamom buns or a seasonal fruit galette (order 48 hours ahead)."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "order-links": {
+                "id": "order-links",
+                "type": "stack",
+                "parent": "order-col",
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "column",
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "order-phone-row": {
+                "id": "order-phone-row",
+                "type": "stack",
+                "parent": "order-links",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "row",
+                        "gap": {
+                            "value": 8,
+                            "unit": "px"
+                        },
+                        "align": "center"
+                    }
+                }
+            },
+            "icon-phone": {
+                "id": "icon-phone",
+                "type": "icon",
+                "parent": "order-phone-row",
+                "order": "a0",
+                "props": {
+                    "name": "phone",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 18,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "order-phone": {
+                "id": "order-phone",
+                "type": "link",
+                "parent": "order-phone-row",
+                "order": "a1",
+                "props": {
+                    "content": "(555) 010-4477",
+                    "href": "tel:+15550104477"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "order-email-row": {
+                "id": "order-email-row",
+                "type": "stack",
+                "parent": "order-links",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "row",
+                        "gap": {
+                            "value": 8,
+                            "unit": "px"
+                        },
+                        "align": "center"
+                    }
+                }
+            },
+            "icon-mail": {
+                "id": "icon-mail",
+                "type": "icon",
+                "parent": "order-email-row",
+                "order": "a0",
+                "props": {
+                    "name": "mail",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 18,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "order-email": {
+                "id": "order-email",
+                "type": "link",
+                "parent": "order-email-row",
+                "order": "a1",
+                "props": {
+                    "content": "orders@example.com",
+                    "href": "mailto:orders@example.com"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "order-cta": {
+                "id": "order-cta",
+                "type": "button",
+                "parent": "order-col",
+                "order": "a3",
+                "props": {
+                    "label": "Call to pre-order",
+                    "href": "tel:+15550104477",
+                    "variant": "primary"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-primary)",
+                        "color": "#ffffff"
+                    }
+                }
+            },
+            "footer": {
+                "id": "footer",
+                "type": "section",
+                "parent": null,
+                "order": "e0",
+                "props": {
+                    "as": "footer"
+                },
+                "style": {
+                    "base": {
+                        "background": "#2a1c10",
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-stack": {
+                "id": "footer-stack",
+                "type": "stack",
+                "parent": "footer",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "direction": "row",
+                        "justify": "between"
+                    }
+                }
+            },
+            "footer-brand-col": {
+                "id": "footer-brand-col",
+                "type": "stack",
+                "parent": "footer-stack",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "column",
+                        "gap": {
+                            "value": 8,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-brand": {
+                "id": "footer-brand",
+                "type": "heading",
+                "parent": "footer-brand-col",
+                "order": "a0",
+                "props": {
+                    "content": "Crumb & Co.",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "#fffaf3"
+                    }
+                }
+            },
+            "footer-address": {
+                "id": "footer-address",
+                "type": "text",
+                "parent": "footer-brand-col",
+                "order": "a1",
+                "props": {
+                    "content": "14 Alder Street"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "color": "#e7dccb"
+                    }
+                }
+            },
+            "footer-nav": {
+                "id": "footer-nav",
+                "type": "stack",
+                "parent": "footer-stack",
+                "order": "a1",
+                "props": {
+                    "as": "nav"
+                },
+                "style": {
+                    "base": {
+                        "direction": "column",
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "direction": "row"
+                    }
+                }
+            },
+            "footer-link-menu": {
+                "id": "footer-link-menu",
+                "type": "link",
+                "parent": "footer-nav",
+                "order": "a0",
+                "props": {
+                    "content": "Menu",
+                    "href": "#menu"
+                },
+                "style": {
+                    "base": {
+                        "color": "#fffaf3",
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-link-hours": {
+                "id": "footer-link-hours",
+                "type": "link",
+                "parent": "footer-nav",
+                "order": "a1",
+                "props": {
+                    "content": "Hours",
+                    "href": "#hours"
+                },
+                "style": {
+                    "base": {
+                        "color": "#fffaf3",
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-link-order": {
+                "id": "footer-link-order",
+                "type": "link",
+                "parent": "footer-nav",
+                "order": "a2",
+                "props": {
+                    "content": "Pre-order",
+                    "href": "#order"
+                },
+                "style": {
+                    "base": {
+                        "color": "#fffaf3",
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-contact-col": {
+                "id": "footer-contact-col",
+                "type": "stack",
+                "parent": "footer-stack",
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "column",
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-phone": {
+                "id": "footer-phone",
+                "type": "link",
+                "parent": "footer-contact-col",
+                "order": "a0",
+                "props": {
+                    "content": "(555) 010-4477",
+                    "href": "tel:+15550104477"
+                },
+                "style": {
+                    "base": {
+                        "color": "#fffaf3",
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-email": {
+                "id": "footer-email",
+                "type": "link",
+                "parent": "footer-contact-col",
+                "order": "a1",
+                "props": {
+                    "content": "orders@example.com",
+                    "href": "mailto:orders@example.com"
+                },
+                "style": {
+                    "base": {
+                        "color": "#fffaf3",
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

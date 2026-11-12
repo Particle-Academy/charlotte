@@ -26,19 +26,37 @@ use Charlotte\Policy\LinkPolicy;
 final class Checks
 {
     /** Codes that make no sense on a shared region (it is not a page). */
-    public const REGION_SKIP = ['h1_count', 'meta_title', 'meta_description', 'anchor_target', 'missing_required_fact'];
+    public const REGION_SKIP = ['h1_count', 'meta_title', 'meta_description', 'anchor_target', 'missing_required_fact',
+        'responsive_layout', 'required_image_missing', 'required_image_unavailable'];
+
+    /** What a site judges across all its documents rather than per page. */
+    public const SITE_WIDE = ['missing_required_fact', 'required_image_missing', 'required_image_unavailable'];
+
+    /**
+     * The codes that, at `error` severity, make cms_finish refuse: what the
+     * lab's reviewer scored a page down or to 0 for (runs 423-463). Every
+     * other error is still reported and still lets the draft be marked ready.
+     */
+    public const FINISH_GATES = ['layout_missing', 'link_spacing', 'responsive_layout', 'required_image_missing', 'meta_description', 'unsupported_claim'];
+
+    /** The defects that hold cms_finish back. */
+    public static function gates(array $defects): array
+    {
+        return array_values(array_filter($defects, fn (array $d) => $d['severity'] === 'error' && in_array($d['code'], self::FINISH_GATES, true)));
+    }
 
     /**
      * @param  list<string>  $alsoAccept  other revisions a report may name (a site revision)
      * @param  list<string>  $skip  defect codes the caller judges elsewhere
      * @param  string|null  $unavailable  why no report could be obtained, when the caller tried
+     * @param  list<array{handle: string}>  $assets  the host AssetCatalogue's catalogue(), for the required-image check
      * @return array{revision: string, summary: array{errors: int, warnings: int, info: int}, defects: list<array>, facts: array, contrast: array}
      */
     public static function run(array $doc, string $revision, Brief $brief, LinkPolicy $links, ?RenderedEvidence $rendered = null,
-        array $alsoAccept = [], array $skip = [], ?string $unavailable = null, ?DataCatalogue $data = null): array
+        array $alsoAccept = [], array $skip = [], ?string $unavailable = null, ?DataCatalogue $data = null, array $assets = []): array
     {
         $facts = PageChecks::facts($doc);
-        $defects = [...PageChecks::check($doc), ...FactChecks::check($doc, $brief)];
+        $defects = [...PageChecks::check($doc), ...FactChecks::check($doc, $brief), ...QualityChecks::check($doc, $brief, $assets)];
         if ($data !== null) {
             foreach (Bindings::validate($doc, $data) as $error) {
                 $defects[] = ['code' => 'invalid_binding', 'severity' => 'error', 'path' => $error['path'], 'expected' => $error['expected'], 'got' => $error['got'],

@@ -188,7 +188,7 @@ final class Workspace
         }
         [$rendered, $unavailable] = $this->rendered($session);
 
-        return Checks::run($view['doc'], $view['revision'], $session->brief, $this->links, $rendered, $alsoAccept, $skip, $unavailable, $this->data());
+        return Checks::run($view['doc'], $view['revision'], $session->brief, $this->links, $rendered, $alsoAccept, $skip, $unavailable, $this->data(), $this->assets->catalogue());
     }
 
     /**
@@ -196,12 +196,17 @@ final class Workspace
      * `$markSession` false (one page of a site, finished by its page sub-agent) records the page's
      * readiness without setting the session's ready revision, which on a site is the SITE revision.
      */
-    public function finish(SessionRecord $session, string $basedOn, bool $markSession = true): array
+    public function finish(SessionRecord $session, string $basedOn, bool $markSession = true, array $skip = []): array
     {
-        return $this->db->transaction(function () use ($session, $basedOn, $markSession): array {
+        $result = $this->db->transaction(function () use ($session, $basedOn, $markSession, $skip): array {
             $view = $this->view($session);
             $this->assertCurrent($view['revision'], $basedOn);
-            $checks = $this->check($session, $basedOn);
+            $checks = $this->checkResult($session, $basedOn, $skip);
+            $this->events->append($session->id, EventTypes::CHECKS_RESULT, self::SYSTEM, $checks);
+            $gates = Checks::gates($checks['defects']);
+            if ($gates !== []) {
+                return ['refused' => $gates, 'revision' => $view['revision']]; // the checks.result stays on the log
+            }
             if ($markSession) {
                 $this->sessions->update($session->id, ['ready_revision' => $view['revision']]);
             }
@@ -210,6 +215,11 @@ final class Workspace
 
             return ['revision' => $view['revision'], 'ready' => true, 'staged' => $view['staged'], 'checks' => $checks['summary']];
         });
+        if (isset($result['refused'])) {
+            throw new Refused('not_ready', $result['revision'], ['defects' => $result['refused']]);
+        }
+
+        return $result;
     }
 
     /**

@@ -108,8 +108,10 @@ a working chat on nothing but `fetch`.
 - Under `approve_on_save`, the agent's edits wait in a change set:
   `$session->approve($proposalId, $userId)` saves it to the draft,
   `$session->reject(...)` discards it.
-- `cms_finish` marks the draft ready (`draft.ready`) and runs the checks
-  (`checks.result`). It does not publish.
+- `cms_finish` runs the checks (`checks.result`) and marks the draft ready
+  (`draft.ready`), or refuses with `not_ready` while a finish gate fails
+  (layout, link spacing, responsive layout, a required image, the meta
+  description, an unsupported figure or date). It does not publish.
 - Publishing is yours alone: `$session->publish($revision, $userId)` copies the
   draft at the revision the person reviewed. Render it with fancy-cms's
   `PageRenderer`, read from `PageRepository::published()`.

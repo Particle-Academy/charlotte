@@ -23,11 +23,15 @@ the same page at the same time, and may be reading every step you take.
 ## Start here
 
 1. Call `charlotte_brief`. It is the page's source of truth.
-2. Call `cms_describe` for the exact operations, elements and styles.
+2. Call `cms_describe` for the exact operations, elements and styles, and
+   its `starter`: a responsive skeleton, type scale and spacing scale.
 3. Call `cms_assets` for the images you may use.
-4. Build section by section, then call `cms_check` and fix what it reports.
-5. Call `cms_finish` with the revision you checked. It marks the draft ready
-   for the person's review; it does not publish.
+4. First `cms_apply`: the theme, the meta, and `starter.skeleton` (header,
+   page, footer). Then fill it section by section.
+5. Call `cms_check` and fix what it reports.
+6. Call `cms_finish` with the revision you checked. It marks the draft ready
+   for the person's review; it does not publish. While a gate below fails it
+   refuses with `not_ready` and the defects: fix them and finish again.
 
 ## Building a whole site
 
@@ -47,10 +51,11 @@ you are building several pages that share one header and one footer.
    refused with `route_reserved`.
 4. The `cms_*` tools act on the selected page or region. Select with
    `site_page_select`; `site_page_create` selects the page it creates.
-5. Build the shared regions ONCE: select `@header`, add the site name and a
-   `props.as: "header"` section, then call `site_nav_set` with every page in
-   order and style the links it writes. Select `@footer` for the footer. Do
-   not repeat the header or footer inside pages, and put no h1 in a region.
+5. Build the shared regions ONCE: select `@header`, apply
+   `starter.skeleton.header` and add the site name, then call `site_nav_set`
+   with every page in order and style the links it writes. Select `@footer`
+   for `starter.skeleton.footer`. Pages take `starter.skeleton.page`. Do not
+   repeat the header or footer inside pages, and put no h1 in a region.
 6. Link pages to each other with their routes (`/pricing`, `/pricing#plans`).
    A link to a route no page has is broken. A page nothing links to is an
    orphan. Every routed page belongs in the nav.
@@ -89,15 +94,20 @@ from styles alone, which cannot see inside an island.
 - Placeholder copy fails: "Lorem ipsum", "Feature 1", "Your headline here",
   "TODO", and editor defaults such as "New heading" or `href: "#"`.
 
-`cms_check` reports `missing_required_fact` as an error and anything priced,
-counted, quoted or dated that no brief fact supports as `unsupported_claim`.
-Treat an unsupported claim as a mistake to remove unless the brief supports it.
+`cms_check` reports `missing_required_fact`, and `unsupported_claim` for any
+price, count, percentage, phone, email, date or year the brief does not give.
+Dates count by meaning ("18 March" is "March 18"). Never add a start date,
+deadline, opening time or year the brief lacks, even one that seems implied:
+an early-bird end date does not give the full price a start date.
 
 ## Images and links
 
 - Use only the literal `asset` handles from `cms_assets`. Never write an image
   `src`, `srcSet`, width or height, and never use CSS `url()`, `image-set()` or
   `@import`. Image sources and dimensions belong to the host.
+- Place every image the brief requires: its `images` list, and any image file
+  it names (`/images/buns.jpg`) that `cms_assets` has under that name (`buns`).
+  If `cms_assets` lacks one, you cannot place it; say so in your reply.
 - Every content image needs real alt text that says what it shows.
 - Give images in one row the same `aspectRatio` so they crop alike.
 - Links may point to this site (`/pricing`), an in-page anchor (`#plans`),
@@ -117,12 +127,46 @@ Treat an unsupported claim as a mistake to remove unless the brief supports it.
   sections, and `props.anchor` for in-page navigation.
 - Decorative frames and shapes take `props.decorative: true`.
 
-## Responsive layout
+## Responsive composition
 
-- Breakpoints are `base`, `md` (768) and `lg` (1024). Check the page at 375,
-  768 and 1280 in your head: no horizontal overflow at any of them.
-- Prefer 2 columns at `md` and 3 at `lg` over three squeezed columns at 768.
+`layout` is what makes a container a row or a grid. A `stack` or `grid` with
+no `layout` renders as a plain block, and its `direction`, `gap`, `justify` and
+`columns` do nothing: one column at every width, links run together. Give every
+stack `"layout": "stack"` and every grid `"layout": "grid"` in its insert_node.
+
+- Breakpoints are `base`, `md` (768) and `lg` (1024). A style applies from its
+  breakpoint upward. Check the page at 375, 768 and 1280: no overflow at any.
+- A section is a plain block with the section spacing (`starter.spacing.section`)
+  holding one container: `maxWidth` 1120, `marginX` "auto".
+- Every content section changes at `md` or `lg`, and the page has real columns
+  at both: repeated items in a grid, a hero as two columns (copy, image) at `lg`.
+- Choose counts with no orphan on the last row: 2 items 1 then 2; 3 items 1
+  then 3 at `md`; 4 items 1, 2, then 4 at `lg`; 6 items 1, 2, then 3.
+- Links and buttons side by side sit in a row stack with a gap, never loose.
+- Type from `starter.typeScale`: `display` for the h1, `h2` for section titles,
+  `h3` in cards, `lead` under the h1, `body`, `small` (never under 14px).
 - Leave about 10% slack on headline measure.
+
+A grid of plans, then a nav:
+
+```json
+{"t":"insert_node","node":{"id":"plans-grid","type":"grid","layout":"grid","parent":"plans-inner","order":"a1","props":{},
+ "style":{"base":{"columns":1,"gap":{"value":24,"unit":"px"}},"md":{"columns":3}}}}
+{"t":"insert_node","node":{"id":"nav","type":"stack","layout":"stack","parent":"header-bar","order":"a1","props":{"as":"nav"},
+ "style":{"base":{"direction":"row","wrap":true,"gap":{"value":16,"unit":"px"}}}}}
+```
+
+## What cms_finish refuses
+
+`cms_finish` returns `not_ready` while any of these errors remains:
+
+- `layout_missing`, `link_spacing`, `responsive_layout`: above.
+- `meta_description`: `{"t":"set_meta","patch":{"seo":{"description":"…"}}}`,
+  one sentence under 155 characters. `meta.description` is not read.
+- `required_image_missing`: a required image is not on the page.
+- `unsupported_claim`: a figure or date the brief does not give.
+
+Other errors (headings, contrast, links) are reported too: fix them as well.
 
 ## Design that reviewers rewarded
 

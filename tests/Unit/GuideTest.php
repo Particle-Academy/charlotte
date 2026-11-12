@@ -28,6 +28,15 @@ test('Charlotte\'s guide carries the webmaster lessons the lab learned', functio
     }
 });
 
+test('Charlotte\'s guide teaches responsive composition, the starter and what cms_finish refuses', function (): void {
+    $text = PublishedGuide::charlotteGuide();
+
+    foreach (['"layout": "stack"', '"layout": "grid"', 'starter.skeleton', 'starter.typeScale', '`md`', '`lg`', 'orphan',
+        'not_ready', 'layout_missing', 'link_spacing', 'responsive_layout', 'required_image_missing', '"seo"', 'unsupported_claim'] as $lesson) {
+        expect(str_contains($text, $lesson))->toBeTrue("Missing lesson: {$lesson}");
+    }
+});
+
 test('Charlotte\'s guide covers whole sites, islands and the rendered contrast check', function (): void {
     $text = strtolower(PublishedGuide::charlotteGuide());
 

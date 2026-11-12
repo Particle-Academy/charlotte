@@ -157,7 +157,7 @@ test('cms_check reports page facts and catches an invented price and a missing f
 
 test('cms_finish marks the draft ready, runs the checks and does not publish', function (): void {
     $session = openSession();
-    $rev = tool($session, 'cms_apply', ['ops' => sectionOps(), 'basedOn' => $session->state()['revision']])['revision'];
+    $rev = tool($session, 'cms_apply', ['ops' => finishablePageOps(), 'basedOn' => $session->state()['revision']])['revision'];
 
     $result = tool($session, 'cms_finish', ['basedOn' => $rev]);
     $state = $session->state();

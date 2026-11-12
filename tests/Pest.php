@@ -159,3 +159,30 @@ function eventsOf(CharlotteSession $session, string $type): array
 {
     return array_values(array_filter($session->events(0)['events'], fn (array $e) => $e['type'] === $type));
 }
+
+/**
+ * A page that clears every cms_finish gate: a meta description, stacks and
+ * grids with their layout, a section spacing scale, and a grid of 1, 2 at md
+ * and 3 at lg. Its copy carries briefArray()'s facts and nothing else.
+ */
+function finishablePageOps(string $heading = 'Acme Ledger', string $prefix = ''): array
+{
+    $px = fn (int $v): array => ['value' => $v, 'unit' => 'px'];
+    $key = fn (string $id): string => $prefix === '' ? $id : $prefix.'-'.$id;
+    $node = fn (string $id, string $type, ?string $parent, string $order, array $props = [], array $style = [], ?string $layout = null): array => ['t' => 'insert_node',
+        'node' => ['id' => $key($id), 'type' => $type, 'parent' => $parent === null ? null : $key($parent), 'order' => $order, 'props' => $props, 'style' => $style + ['base' => []]]
+            + ($layout === null ? [] : ['layout' => $layout])];
+    $section = ['base' => ['paddingY' => $px(48), 'paddingX' => $px(20)], 'md' => ['paddingY' => $px(72), 'paddingX' => $px(32)]];
+
+    return [
+        ['t' => 'set_meta', 'patch' => ['title' => $heading, 'seo' => ['description' => 'Bookkeeping for food trucks.']]],
+        $node('hero', 'section', null, 'a0', [], $section, 'stack'),
+        $node('hero-h', 'heading', 'hero', 'a0', ['content' => $heading, 'level' => 1]),
+        $node('plans', 'section', null, 'a1', [], $section, 'stack'),
+        $node('plans-grid', 'grid', 'plans', 'a0', [], ['base' => ['columns' => 1, 'gap' => $px(24)], 'md' => ['columns' => 2], 'lg' => ['columns' => 3]], 'grid'),
+        $node('plan-a', 'card', 'plans-grid', 'a0', [], ['base' => ['gap' => $px(12)]], 'stack'),
+        $node('plan-a-t', 'text', 'plan-a', 'a0', ['content' => 'Starter plan: $19/month']),
+        $node('plan-b', 'card', 'plans-grid', 'a1', [], ['base' => ['gap' => $px(12)]], 'stack'),
+        $node('plan-b-t', 'text', 'plan-b', 'a0', ['content' => 'Write to hello@example.com']),
+    ];
+}

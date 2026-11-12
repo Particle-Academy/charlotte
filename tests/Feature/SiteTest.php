@@ -209,16 +209,21 @@ test('tenant, site and actor are never arguments', function (array $arguments): 
 test('cms_finish on a site pins the SITE revision and marks the whole site ready', function (): void {
     $site = openSite();
     createPage($site, 'home', '/');
+    $child = new \Charlotte\Tools\PageTools(app(\Charlotte\Workspace::class), $site->id(), app(\Charlotte\SiteWorkspace::class), child: true);
+    $bare = tool($site, 'cms_finish', ['basedOn' => tool($site, 'site_get')['site']['revision']]);
+    $child->call('cms_apply', ['ops' => finishablePageOps(), 'basedOn' => tool($site, 'cms_get')['revision']]);
     $pageRev = tool($site, 'cms_get')['revision'];
     $siteRev = tool($site, 'site_get')['site']['revision'];
 
     $stale = tool($site, 'cms_finish', ['basedOn' => $pageRev]);
     $done = tool($site, 'cms_finish', ['basedOn' => $siteRev]);
 
-    expect($stale['error']['code'])->toBe('surface_changed_under_you')
+    expect($bare['error']['code'])->toBe('not_ready')
+        ->and($stale['error']['code'])->toBe('surface_changed_under_you')
         ->and($done['ready'])->toBeTrue()
         ->and($done['revision'])->toBe($siteRev)
         ->and($site->state()['readyRevision'])->toBe($siteRev)
+        // Errors that are not finish gates (here: no 404 page) are still reported, not refused.
         ->and($done['checks']['errors'])->toBeGreaterThan(0);
 });
 

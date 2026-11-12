@@ -150,7 +150,7 @@ function finishingTurn(): array
     return [
         ['tools' => [['name' => 'cms_get', 'args' => []]]],
         ['tools' => [['name' => 'cms_apply', 'args' => fn (array $calls) => [
-            'ops' => sectionOps(),
+            'ops' => finishablePageOps(),
             'basedOn' => json_decode(end($calls)['result'], true)['revision'],
         ]]]],
         ['tools' => [['name' => 'cms_finish', 'args' => fn (array $calls) => [

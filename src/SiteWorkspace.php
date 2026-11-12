@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Charlotte;
 
 use Charlotte\Checks\Checks;
+use Charlotte\Checks\QualityChecks;
 use Charlotte\Checks\SiteChecks;
 use Charlotte\Drafts\NodeTypes;
 use Charlotte\Events\EventTypes;
@@ -230,7 +231,7 @@ final class SiteWorkspace
         $site = $this->site($session);
         $selected = $site->idFor($session->page) ?? '@header';
         $siteRevision = $this->revision($session);
-        $result = $this->workspace->checkResult($session, $basedOn, self::skip($selected), [$siteRevision]);
+        $result = $this->workspace->checkResult($session, $basedOn, self::skip($site, $selected), [$siteRevision]);
         $result['defects'] = array_map(fn (array $d) => ['page' => $selected] + $d, $result['defects']);
         $siteDefects = $this->siteDefects($session, $site);
         $result['defects'] = [...$result['defects'], ...$siteDefects];
@@ -245,7 +246,7 @@ final class SiteWorkspace
     /** `cms_finish` on a site: pinned to the SITE revision; checks every document. */
     public function finish(SessionRecord $session, string $basedOn): array
     {
-        return $this->db->transaction(function () use ($session, $basedOn): array {
+        $result = $this->db->transaction(function () use ($session, $basedOn): array {
             $session = $this->fresh($session);
             $site = $this->site($session);
             $revision = $this->revision($session);
@@ -257,7 +258,7 @@ final class SiteWorkspace
             foreach ($site->documentIds() as $id) {
                 $doc = $session->onPage($site->documentKey($id));
                 $staged = $staged || $this->workspace->view($doc)['staged'];
-                $result = $this->workspace->checkResult($doc, null, self::skip($id), [$revision]);
+                $result = $this->workspace->checkResult($doc, null, self::skip($site, $id), [$revision]);
                 $contrast[$id] = $result['contrast'];
                 foreach ($result['defects'] as $defect) {
                     $defects[] = ['page' => $id] + $defect;
@@ -267,11 +268,28 @@ final class SiteWorkspace
             $summary = Checks::summary($defects);
             $this->workspace->record($session->id, EventTypes::CHECKS_RESULT, Workspace::SYSTEM,
                 ['revision' => $revision, 'site' => $site->key, 'summary' => $summary, 'defects' => $defects, 'contrast' => $contrast]);
+            $gates = Checks::gates($defects);
+            if ($gates !== []) {
+                return ['refused' => $gates, 'revision' => $revision]; // the checks.result stays on the log
+            }
             $this->sessions->update($session->id, ['ready_revision' => $revision]);
             $this->workspace->record($session->id, EventTypes::DRAFT_READY, Workspace::AGENT, ['revision' => $revision, 'staged' => $staged, 'site' => $site->key]);
 
             return ['revision' => $revision, 'ready' => true, 'staged' => $staged, 'checks' => $summary];
         });
+        if (isset($result['refused'])) {
+            throw new Refused('not_ready', $result['revision'], ['defects' => $result['refused']]);
+        }
+
+        return $result;
+    }
+
+    /** The codes a document of this site is not judged on by itself (see {@see self::skip()}). */
+    public function skipFor(SessionRecord $session): array
+    {
+        $site = $this->site($session);
+
+        return self::skip($site, $site->idFor($session->page) ?? '@header');
     }
 
     /** Whether the site was marked ready at the revision it is at now. */
@@ -350,13 +368,24 @@ final class SiteWorkspace
     {
         $docs = $this->documents($session);
 
-        return [...SiteChecks::check($site, $docs, $this->reserved), ...SiteChecks::facts($site, $docs, $session->brief)];
+        return [...SiteChecks::check($site, $docs, $this->reserved), ...SiteChecks::facts($site, $docs, $session->brief),
+            ...QualityChecks::images(array_values($docs), $session->brief, $this->workspace->assets()->catalogue())];
     }
 
-    /** @return list<string> */
-    private static function skip(string $id): array
+    /**
+     * Codes a document is not judged on by itself: what the site judges
+     * across every document (required facts and images), everything a
+     * region is not (it is not a page), and a page layout for the 404 page.
+     *
+     * @return list<string>
+     */
+    private static function skip(Site $site, string $id): array
     {
-        return in_array($id, Site::REGIONS, true) ? Checks::REGION_SKIP : ['missing_required_fact'];
+        if (in_array($id, Site::REGIONS, true)) {
+            return Checks::REGION_SKIP;
+        }
+
+        return ($site->page($id)['kind'] ?? null) === 'not_found' ? [...Checks::SITE_WIDE, 'responsive_layout'] : Checks::SITE_WIDE;
     }
 
     private function fresh(SessionRecord $session): SessionRecord

@@ -26,11 +26,17 @@ UI you build reads it. A plain `fetch` loop is enough
   `approve_on_save` collects edits in a change set a person approves or rejects.
 - **A structured brief with code-derived fact checks.** Required facts must
   appear on the page (`missing_required_fact`), and prices, percentages,
-  counts, phone numbers, emails, years and quotes that no fact supports are
-  flagged (`unsupported_claim`). No model is involved.
+  counts, phone numbers, emails, dates, years and quotes that no fact supports
+  are flagged (`unsupported_claim`). No model is involved.
 - **Page checks.** Heading outline, alt text, contrast where it can be
   computed, link safety, placeholder copy and meta, lifted from the Fancy lab
   that measured them.
+- **Finish gates and a responsive starter.** `cms_finish` refuses (`not_ready`,
+  with the defects) a page whose stacks and grids have no `layout`, whose links
+  run together, that never changes at tablet or desktop width, that lacks an
+  image the brief requires or a meta description, or that states a figure or
+  date the brief does not give. `cms_describe` hands the agent a responsive
+  skeleton, type scale and spacing scale to start from, as fancy-cms data.
 - **A versioned, overridable guide.** fancy-cms's authoring guide plus
   Charlotte's own (drafts, autonomy, content truth, the webmaster lessons).
   Layer your house style on top; every session records the guide hash it ran.

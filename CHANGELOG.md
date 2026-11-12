@@ -26,8 +26,19 @@ adds or changes a binding is refused `binding_invalid`. A host that never
 bound data sees no difference; one that let pages bind `repeat.each` must
 declare those streams. And a **literal number in a data prop** (`value`,
 `delta`, `rows`, `series`, `data`, `categories` …) is now an
-`unsupported_claim` (kind `figure`) unless the brief carries it. It is a
-warning, as every claim is.
+`unsupported_claim` (kind `figure`) unless the brief carries it.
+
+**BREAKING, `cms_finish` now refuses a page that is not ready** (flabs runs
+423-463: 23 of 23 Charlotte pages had their facts right and were judged "bare
+default"). It returns `isError` with code `not_ready` and the failing defects,
+and marks nothing ready, while any of these errors remains: `layout_missing`,
+`link_spacing`, `responsive_layout`, `required_image_missing`,
+`meta_description`, `unsupported_claim`. Every other error is still only
+reported, as before. **What to do:** nothing in a host, unless your own tests
+finish deliberately bare pages; those now get `not_ready`. An agent reads the
+defects and fixes them. And **`unsupported_claim` is now an ERROR** for every
+kind except `quote` (still a warning), so `cms_check` summaries count more
+errors.
 
 **Upgrading:** run the new migration (`2026_11_11_000000_add_charlotte_sites`:
 a `charlotte_sites` table, nullable `charlotte_sessions.site_key` and
@@ -180,6 +191,44 @@ instead of resolving it from the container need to change.
   one (`tenant`, `page`) is reported as `$.arguments.<field>: no such field`
   instead of failing inside the PHP call with a generic error.
 - `draft.ready` from one page of a site carries `page`.
+- **Finish gates** (`Checks\QualityChecks`, `Checks::FINISH_GATES`,
+  `Checks::gates()`), in `cms_check` and enforced by `cms_finish`:
+  - `layout_missing`: a `stack` or `grid` with no `layout`, or another
+    container using `direction`, `gap`, `columns`, `columnMin`, `justify`,
+    `align` or `wrap` with none. fancy-cms emits `display:flex`/`grid` only
+    from `layout`, so those styles did nothing; this was 18 of the 23 lab pages.
+    The message names the `set_layout` op to send.
+  - `link_spacing`: two or more links or buttons side by side in a container
+    that is not a stack or grid with a gap at base (nav and footer links that
+    "run together").
+  - `responsive_layout`: a content section with no `md` or `lg` style
+    anywhere in it, or a page with no multi-column layout at `md` or at `lg`
+    (a grid's columns, a `columnMin` grid judged at 704 and 960 px, or a row
+    stack, counting only children that make a column: a row of buttons is not
+    a layout). Header, footer and nav landmarks do not count; a site's regions
+    and its 404 page are not held to it.
+  - `required_image_missing`: an image the brief requires that no page
+    places. Required = the brief's new `images` list, plus image files its text
+    names (`/images/buns.jpg`) that the host catalogue has under that name. One
+    the catalogue lacks is `required_image_unavailable`, a WARNING and never a
+    gate: the agent cannot place what the host never supplied. On a site it is
+    judged across all pages.
+- **Brief `images`**: an optional list of asset handles the page must place.
+- **Date claims.** `unsupported_claim` kind `date`: a day and month, or a
+  month and year, the brief does not give (run 426 added "From 1 February
+  2027"). Dates compare by meaning: "18 March 2027", "March 18, 2027", "18th
+  of March" and "31 Jan" match their brief spellings.
+- **The responsive starter** (`Design\Starter`), in `cms_describe` as
+  `starter`: a skeleton of ops (`header`, `page`, `footer`: header row with a
+  wrapping nav, a two-column hero at lg, a grid of 1, 2 at md and 3 at lg, a
+  CTA band, a footer row), a type scale (display, h2, h3, lead, body, small,
+  eyebrow per breakpoint), the section spacing scale and a card style. All
+  fancy-cms StyleProps, no CSS; fancy-cms's CssEmitter renders it as real flex
+  and grid layouts (tested). The skeleton's nav is `site-nav`, so on a site
+  `site_nav_set` fills it.
+- The guide teaches responsive composition (why `layout` matters, columns per
+  breakpoint, no orphan cards, the type scale), the starter, and what
+  `cms_finish` refuses, with two worked examples.
 
 ### Changed
 
@@ -190,6 +239,20 @@ instead of resolving it from the container need to change.
   fancy-cms 0.9.0's own BREAKING note first: it matters only if your documents
   already use a node type named `chart`, `kpi`, `table`, `leaderboard` or
   `input` for something of your own.
+- **`cms_finish` refuses with `not_ready`** while a finish gate fails, and
+  `unsupported_claim` is an error for every kind but `quote` (see the BREAKING
+  note above).
+- `cms_finish` records its `checks.result` before deciding, so a refusal is on
+  the event log too. A site page's own finish skips what the site judges across
+  pages (required facts and images).
+
+### Fixed
+
+- A missing `meta_description` now says how to set it, and says so when the
+  description was written to `meta.description` (which nothing reads) instead
+  of `meta.seo.description`. Three lab pages (runs 427, 434, 453) did that.
+- A CSS length an agent put in props (`{"value": 260, "unit": "px"}`) is no
+  longer reported as an unsupported figure.
 
 ## [0.3.0] - 2026-10-30
 

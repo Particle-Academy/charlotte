@@ -1,0 +1,1305 @@
+{
+    "source": "flabs run 427 (nonprofit-donation-site), charlotte 0.4.0 63257c4, finished revision r6b5323a6e659fecb0a23839aa12a3c3c",
+    "review": "The page is correct and accurate, with all required facts and no invented content, but it is generic and bare. It omits the supplied photo, has flat hierarchy, and shows orphaned cards at tablet width. It falls short of professional quality.}",
+    "brief": {
+        "summary": "Build the donation page for Riverlight, a charity that runs after-school reading\nclubs for children aged 7-11. Last year: 38 clubs, 1,140 children, 210 volunteers.\nWhat a gift does: $25 buys a book bag for one child; $60 runs a club for a week;\n$300 trains a new volunteer.\nDonate at https://give.example.org/riverlight (one-off or monthly).\nRegistered charity number 1180042. 89p of every $1 goes to the clubs.\nTone: hopeful and specific, not pitying. A photo of a reading club is at\n/images/club.jpg.",
+        "facts": [
+            {
+                "id": "source-0",
+                "kind": "other",
+                "value": "Build the donation page for Riverlight, a charity that runs after-school reading\nclubs for children aged 7-11. Last year: 38 clubs, 1,140 children, 210 volunteers.\nWhat a gift does: $25 buys a book bag for one child; $60 runs a club for a week;\n$300 trains a new volunteer.\nDonate at https://give.example.org/riverlight (one-off or monthly).\nRegistered charity number 1180042. 89p of every $1 goes to the clubs.\nTone: hopeful and specific, not pitying. A photo of a reading club is at\n/images/club.jpg.",
+                "required": false
+            }
+        ]
+    },
+    "assets": [],
+    "doc": {
+        "id": "lane-669",
+        "seq": 58,
+        "meta": {
+            "title": "Riverlight — Give kids a reading club",
+            "slug": "/",
+            "scrollMode": "smooth",
+            "description": "Riverlight runs after-school reading clubs for children 7-11. $25 buys a book bag, $60 runs a club for a week. Donate one-off or monthly."
+        },
+        "theme": {
+            "color": {
+                "primary": "#b45309",
+                "ink": "#1f2937",
+                "muted": "#57534e",
+                "surface": "#fffaf3",
+                "line": "#e7e0d4"
+            },
+            "font": {
+                "body": "Inter, system-ui, sans-serif",
+                "display": "Inter, system-ui, sans-serif"
+            }
+        },
+        "breakpoints": [
+            "base",
+            "md",
+            "lg"
+        ],
+        "nodes": {
+            "header": {
+                "id": "header",
+                "type": "section",
+                "parent": null,
+                "order": "a0",
+                "props": {
+                    "as": "header"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-surface)"
+                    }
+                }
+            },
+            "header-stack": {
+                "id": "header-stack",
+                "type": "stack",
+                "parent": "header",
+                "order": "a0",
+                "props": [],
+                "layout": "stack",
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "row",
+                        "justify": "between",
+                        "align": "center"
+                    }
+                }
+            },
+            "header-name": {
+                "id": "header-name",
+                "type": "heading",
+                "parent": "header-stack",
+                "order": "a0",
+                "props": {
+                    "content": "Riverlight",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "header-cta": {
+                "id": "header-cta",
+                "type": "button",
+                "parent": "header-stack",
+                "order": "a1",
+                "props": {
+                    "label": "Donate",
+                    "href": "https://give.example.org/riverlight",
+                    "variant": "primary"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero": {
+                "id": "hero",
+                "type": "section",
+                "parent": null,
+                "order": "a1",
+                "props": {
+                    "as": "section"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-stack": {
+                "id": "hero-stack",
+                "type": "stack",
+                "parent": "hero",
+                "order": "a0",
+                "props": [],
+                "layout": "stack",
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-h1": {
+                "id": "hero-h1",
+                "type": "heading",
+                "parent": "hero-stack",
+                "order": "a0",
+                "props": {
+                    "content": "Every week, 1,140 children open a book with someone cheering them on.",
+                    "level": 1
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 40,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)",
+                        "maxWidth": {
+                            "value": 680,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 56,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-sub": {
+                "id": "hero-sub",
+                "type": "text",
+                "parent": "hero-stack",
+                "order": "a1",
+                "props": {
+                    "content": "Riverlight runs after-school reading clubs for children aged 7-11. Last year: 38 clubs, 1,140 children, 210 volunteers. Your gift keeps a club running — give once or monthly."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)",
+                        "maxWidth": {
+                            "value": 680,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-cta": {
+                "id": "hero-cta",
+                "type": "button",
+                "parent": "hero-stack",
+                "order": "a2",
+                "props": {
+                    "label": "Donate now",
+                    "href": "https://give.example.org/riverlight",
+                    "variant": "primary"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "proof": {
+                "id": "proof",
+                "type": "section",
+                "parent": null,
+                "order": "a2",
+                "props": {
+                    "as": "section"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-line)"
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "proof-stack": {
+                "id": "proof-stack",
+                "type": "stack",
+                "parent": "proof",
+                "order": "a0",
+                "props": [],
+                "layout": "stack",
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "proof-h2": {
+                "id": "proof-h2",
+                "type": "heading",
+                "parent": "proof-stack",
+                "order": "a0",
+                "props": {
+                    "content": "Last year",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 36,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "proof-grid": {
+                "id": "proof-grid",
+                "type": "grid",
+                "parent": "proof-stack",
+                "order": "a1",
+                "props": [],
+                "layout": "grid",
+                "style": {
+                    "base": {
+                        "columnMin": {
+                            "value": 220,
+                            "unit": "px"
+                        },
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "proof-card-1": {
+                "id": "proof-card-1",
+                "type": "card",
+                "parent": "proof-grid",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-surface)"
+                    }
+                }
+            },
+            "proof-icon-1": {
+                "id": "proof-icon-1",
+                "type": "icon",
+                "parent": "proof-card-1",
+                "order": "a0",
+                "props": {
+                    "name": "book-open",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "proof-stat-1": {
+                "id": "proof-stat-1",
+                "type": "heading",
+                "parent": "proof-card-1",
+                "order": "a1",
+                "props": {
+                    "content": "38 clubs",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "proof-card-2": {
+                "id": "proof-card-2",
+                "type": "card",
+                "parent": "proof-grid",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-surface)"
+                    }
+                }
+            },
+            "proof-icon-2": {
+                "id": "proof-icon-2",
+                "type": "icon",
+                "parent": "proof-card-2",
+                "order": "a0",
+                "props": {
+                    "name": "users",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "proof-stat-2": {
+                "id": "proof-stat-2",
+                "type": "heading",
+                "parent": "proof-card-2",
+                "order": "a1",
+                "props": {
+                    "content": "1,140 children",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "proof-card-3": {
+                "id": "proof-card-3",
+                "type": "card",
+                "parent": "proof-grid",
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-surface)"
+                    }
+                }
+            },
+            "proof-icon-3": {
+                "id": "proof-icon-3",
+                "type": "icon",
+                "parent": "proof-card-3",
+                "order": "a0",
+                "props": {
+                    "name": "heart",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "proof-stat-3": {
+                "id": "proof-stat-3",
+                "type": "heading",
+                "parent": "proof-card-3",
+                "order": "a1",
+                "props": {
+                    "content": "210 volunteers",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "gifts": {
+                "id": "gifts",
+                "type": "section",
+                "parent": null,
+                "order": "a3",
+                "props": {
+                    "as": "section",
+                    "anchor": "give"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "gifts-stack": {
+                "id": "gifts-stack",
+                "type": "stack",
+                "parent": "gifts",
+                "order": "a0",
+                "props": [],
+                "layout": "stack",
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "gifts-h2": {
+                "id": "gifts-h2",
+                "type": "heading",
+                "parent": "gifts-stack",
+                "order": "a0",
+                "props": {
+                    "content": "What your gift does",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 36,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "gifts-grid": {
+                "id": "gifts-grid",
+                "type": "grid",
+                "parent": "gifts-stack",
+                "order": "a1",
+                "props": [],
+                "layout": "grid",
+                "style": {
+                    "base": {
+                        "columnMin": {
+                            "value": 260,
+                            "unit": "px"
+                        },
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "gift-1": {
+                "id": "gift-1",
+                "type": "card",
+                "parent": "gifts-grid",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-surface)",
+                        "border": "1px solid var(--cms-color-line)"
+                    }
+                }
+            },
+            "gift-1-icon": {
+                "id": "gift-1-icon",
+                "type": "icon",
+                "parent": "gift-1",
+                "order": "a0",
+                "props": {
+                    "name": "book",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "gift-1-h3": {
+                "id": "gift-1-h3",
+                "type": "heading",
+                "parent": "gift-1",
+                "order": "a1",
+                "props": {
+                    "content": "$25",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "gift-1-text": {
+                "id": "gift-1-text",
+                "type": "text",
+                "parent": "gift-1",
+                "order": "a2",
+                "props": {
+                    "content": "Buys a book bag for one child."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "gift-2": {
+                "id": "gift-2",
+                "type": "card",
+                "parent": "gifts-grid",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-surface)",
+                        "border": "1px solid var(--cms-color-line)"
+                    }
+                }
+            },
+            "gift-2-icon": {
+                "id": "gift-2-icon",
+                "type": "icon",
+                "parent": "gift-2",
+                "order": "a0",
+                "props": {
+                    "name": "book-open",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "gift-2-h3": {
+                "id": "gift-2-h3",
+                "type": "heading",
+                "parent": "gift-2",
+                "order": "a1",
+                "props": {
+                    "content": "$60",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "gift-2-text": {
+                "id": "gift-2-text",
+                "type": "text",
+                "parent": "gift-2",
+                "order": "a2",
+                "props": {
+                    "content": "Runs a club for a week."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "gift-3": {
+                "id": "gift-3",
+                "type": "card",
+                "parent": "gifts-grid",
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-surface)",
+                        "border": "1px solid var(--cms-color-line)"
+                    }
+                }
+            },
+            "gift-3-icon": {
+                "id": "gift-3-icon",
+                "type": "icon",
+                "parent": "gift-3",
+                "order": "a0",
+                "props": {
+                    "name": "users",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "gift-3-h3": {
+                "id": "gift-3-h3",
+                "type": "heading",
+                "parent": "gift-3",
+                "order": "a1",
+                "props": {
+                    "content": "$300",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "gift-3-text": {
+                "id": "gift-3-text",
+                "type": "text",
+                "parent": "gift-3",
+                "order": "a2",
+                "props": {
+                    "content": "Trains a new volunteer."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "gifts-cta": {
+                "id": "gifts-cta",
+                "type": "button",
+                "parent": "gifts-stack",
+                "order": "a2",
+                "props": {
+                    "label": "Give monthly or once",
+                    "href": "https://give.example.org/riverlight",
+                    "variant": "primary"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "trust": {
+                "id": "trust",
+                "type": "section",
+                "parent": null,
+                "order": "a4",
+                "props": {
+                    "as": "section"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-line)"
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "trust-stack": {
+                "id": "trust-stack",
+                "type": "stack",
+                "parent": "trust",
+                "order": "a0",
+                "props": [],
+                "layout": "stack",
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "align": "start"
+                    },
+                    "md": {
+                        "direction": "row",
+                        "align": "center",
+                        "justify": "between"
+                    }
+                }
+            },
+            "trust-left": {
+                "id": "trust-left",
+                "type": "stack",
+                "parent": "trust-stack",
+                "order": "a0",
+                "props": [],
+                "layout": "stack",
+                "style": {
+                    "base": {
+                        "direction": "row",
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "align": "center"
+                    }
+                }
+            },
+            "trust-icon": {
+                "id": "trust-icon",
+                "type": "icon",
+                "parent": "trust-left",
+                "order": "a0",
+                "props": {
+                    "name": "shield-check",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "trust-text": {
+                "id": "trust-text",
+                "type": "text",
+                "parent": "trust-left",
+                "order": "a1",
+                "props": {
+                    "content": "89p of every $1 goes to the clubs. Registered charity number 1180042."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-ink)",
+                        "maxWidth": {
+                            "value": 560,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "final-cta": {
+                "id": "final-cta",
+                "type": "section",
+                "parent": null,
+                "order": "a5",
+                "props": {
+                    "as": "section"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "final-cta-stack": {
+                "id": "final-cta-stack",
+                "type": "stack",
+                "parent": "final-cta",
+                "order": "a0",
+                "props": [],
+                "layout": "stack",
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "align": "center"
+                    }
+                }
+            },
+            "final-cta-h2": {
+                "id": "final-cta-h2",
+                "type": "heading",
+                "parent": "final-cta-stack",
+                "order": "a0",
+                "props": {
+                    "content": "Help a child open their next book",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)",
+                        "textAlign": "center"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 36,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "final-cta-sub": {
+                "id": "final-cta-sub",
+                "type": "text",
+                "parent": "final-cta-stack",
+                "order": "a1",
+                "props": {
+                    "content": "Give once or set up a monthly gift at give.example.org/riverlight."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)",
+                        "textAlign": "center"
+                    }
+                }
+            },
+            "final-cta-btn": {
+                "id": "final-cta-btn",
+                "type": "button",
+                "parent": "final-cta-stack",
+                "order": "a2",
+                "props": {
+                    "label": "Donate to Riverlight",
+                    "href": "https://give.example.org/riverlight",
+                    "variant": "primary"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer": {
+                "id": "footer",
+                "type": "section",
+                "parent": null,
+                "order": "a6",
+                "props": {
+                    "as": "footer"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 48,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-stack": {
+                "id": "footer-stack",
+                "type": "stack",
+                "parent": "footer",
+                "order": "a0",
+                "props": [],
+                "layout": "stack",
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "direction": "row",
+                        "justify": "between",
+                        "align": "center"
+                    }
+                }
+            },
+            "footer-name": {
+                "id": "footer-name",
+                "type": "text",
+                "parent": "footer-stack",
+                "order": "a0",
+                "props": {
+                    "content": "Riverlight — Registered charity number 1180042"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-surface)"
+                    }
+                }
+            },
+            "footer-nav": {
+                "id": "footer-nav",
+                "type": "stack",
+                "parent": "footer-stack",
+                "order": "a1",
+                "props": [],
+                "layout": "stack",
+                "style": {
+                    "base": {
+                        "direction": "row",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-link-give": {
+                "id": "footer-link-give",
+                "type": "link",
+                "parent": "footer-nav",
+                "order": "a0",
+                "props": {
+                    "content": "What your gift does",
+                    "href": "#give"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-surface)"
+                    }
+                }
+            },
+            "footer-link-donate": {
+                "id": "footer-link-donate",
+                "type": "link",
+                "parent": "footer-nav",
+                "order": "a1",
+                "props": {
+                    "content": "Donate",
+                    "href": "https://give.example.org/riverlight"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-surface)"
+                    }
+                }
+            }
+        }
+    }
+}

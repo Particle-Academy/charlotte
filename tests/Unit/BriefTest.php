@@ -64,3 +64,24 @@ test('duplicate fact ids are refused', function (): void {
 test('an unsafe CTA href is refused', function (): void {
     Brief::fromArray(acmeBrief(['cta' => ['label' => 'Go', 'href' => 'javascript:alert(1)']]));
 })->throws(InvalidBrief::class);
+
+test('a brief may list required image handles; they round-trip and are checked as handles', function (): void {
+    $brief = Brief::fromArray(acmeBrief(['images' => ['hero', 'sourdough-loaf']]));
+
+    expect($brief->images)->toBe(['hero', 'sourdough-loaf'])
+        ->and($brief->toArray()['images'])->toBe(['hero', 'sourdough-loaf'])
+        ->and(Brief::fromArray(acmeBrief())->toArray())->not->toHaveKey('images');
+});
+
+test('a malformed images list is refused with its path', function (mixed $images, string $path): void {
+    try {
+        Brief::fromArray(acmeBrief(['images' => $images]));
+        test()->fail('Expected InvalidBrief.');
+    } catch (InvalidBrief $e) {
+        expect($e->path)->toBe($path);
+    }
+})->with([
+    'not a list' => [['a' => 'hero'], '$.images'],
+    'a url' => [['https://example.com/x.jpg'], '$.images.0'],
+    'duplicate' => [['hero', 'hero'], '$.images.1'],
+]);

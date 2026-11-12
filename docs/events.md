@@ -92,8 +92,8 @@ page is ready, it gets its own `run.finished` and the turn continues with a
 new `run.started` whose `continues` names that run. The session stays
 `running` throughout. Tool error codes include
 `surface_changed_under_you`, `invalid_request`, `invalid_operation`,
-`image_source_refused`, `link_refused`, `island_invalid` (with `errors`) and
-`stopped`; on a site also `route_reserved`, `route_invalid`, `route_taken`,
+`image_source_refused`, `link_refused`, `island_invalid` (with `errors`),
+`not_ready` (with `defects`) and `stopped`; on a site also `route_reserved`, `route_invalid`, `route_taken`,
 `site_page_missing`, `site_page_exists`, `site_page_unrouted`,
 `site_not_found_exists` and `site_full`.
 
@@ -106,15 +106,23 @@ All code-derived; no model is involved.
 | `h1_count`, `heading_skip`, `image_alt`, `link_target`, `anchor_target`, `placeholder_copy`, `contrast`, `meta_title`, `meta_description`, `document` | error | PageChecks |
 | `contrast_unchecked` | info | PageChecks: contrast could not be computed, which is never read as a pass |
 | `missing_required_fact` (with `fact`) | error | FactChecks |
-| `unsupported_claim` (with `kind`, `claim`, `node` or `field`) | warning | FactChecks: a price, percentage, count, phone, email, year or quote no brief fact supports |
+| `unsupported_claim` (with `kind`, `claim`, `node` or `field`) | error (warning for `kind: quote`) | FactChecks: a price, percentage, count, phone, email, date, year, typed figure or quote no brief fact supports |
+| `layout_missing`, `link_spacing`, `responsive_layout` (with `breakpoint` when page-wide), `required_image_missing` (with `asset`) | error | QualityChecks |
+| `required_image_unavailable` (with `image`) | warning | QualityChecks: the brief names an image the host catalogue does not have |
 | `link_not_allowlisted` | warning | an external link outside the host's allowlist |
 | `contrast` with `source: "rendered"` (and `target`, `node`?, `island`?, `ratio`?, `needed`?) | error | a rendered report: the browser measured this element below the minimum |
 | `site_link_broken`, `site_anchor_broken`, `site_orphan_page`, `site_page_unrouted`, `site_missing_home`, `site_missing_404`, `site_nav_missing`, `site_region_h1` | error | SiteChecks (site sessions) |
 | `site_404_no_home_link`, `site_nav_incomplete`, `site_nav_duplicate`, `site_nav_in_page`, `site_region_anchor`, `site_title_duplicate` | warning | SiteChecks (site sessions) |
 
-On a site, `missing_required_fact` is judged across every page (a fact may
-live on any of them), and a shared region is not held to `h1_count`,
-`meta_title`, `meta_description` or `anchor_target`.
+On a site, `missing_required_fact` and the required images are judged across
+every page (they may live on any of them), a shared region is not held to
+`h1_count`, `meta_title`, `meta_description`, `anchor_target` or
+`responsive_layout`, and the 404 page is not held to `responsive_layout`.
+
+`cms_finish` refuses with tool error `not_ready` (carrying `defects`) while any
+`layout_missing`, `link_spacing`, `responsive_layout`, `required_image_missing`,
+`meta_description` or `unsupported_claim` error remains (`Checks::FINISH_GATES`).
+It still records its `checks.result`, and emits no `draft.ready`.
 
 ## Delivery
 

@@ -1,0 +1,1465 @@
+{
+    "source": "flabs run 426 (conference-event-site), charlotte 0.4.0 63257c4, finished revision rc05c2d917bb356d30d6aa0777a92dbdc",
+    "review": "All required facts are present and nothing overflows, but the page looks like unstyled defaults: the nav links are jammed together, the desktop layout is a single stack of wide cards, and spacing is weak. It adds an invented 1 February standard-ticket start date and a 'Doors open' line, so it is not professional.",
+    "brief": {
+        "summary": "Build the event page for Northwind DevDay 2027, a one-day developer conference.\nDate: Thursday 18 March 2027, 09:00-18:00. Venue: The Foundry, 200 Mill Lane.\nThree tracks: Web Platform, Data & AI, DevOps. Keynote: Priya Raman, \"Shipping\nwithout fear\". 24 talks, 3 workshops.\nTickets: Early bird $149 until 31 January 2027, then $219. Student $59 with a valid ID.\nRegister at https://tickets.example.com/devday-2027.\nCode of conduct at https://example.com/devday/conduct.",
+        "facts": [
+            {
+                "id": "source-0",
+                "kind": "other",
+                "value": "Build the event page for Northwind DevDay 2027, a one-day developer conference.\nDate: Thursday 18 March 2027, 09:00-18:00. Venue: The Foundry, 200 Mill Lane.\nThree tracks: Web Platform, Data & AI, DevOps. Keynote: Priya Raman, \"Shipping\nwithout fear\". 24 talks, 3 workshops.\nTickets: Early bird $149 until 31 January 2027, then $219. Student $59 with a valid ID.\nRegister at https://tickets.example.com/devday-2027.\nCode of conduct at https://example.com/devday/conduct.",
+                "required": false
+            }
+        ]
+    },
+    "assets": [],
+    "doc": {
+        "id": "lane-668",
+        "seq": 67,
+        "meta": {
+            "title": "Northwind DevDay 2027 — 18 March, The Foundry",
+            "slug": "/",
+            "scrollMode": "smooth",
+            "description": "Northwind DevDay 2027: one-day developer conference, 18 March, The Foundry. Early bird $149 until 31 Jan 2027.",
+            "seo": {
+                "description": "Northwind DevDay 2027: one-day developer conference, 18 March, The Foundry. Early bird $149 until 31 Jan 2027."
+            }
+        },
+        "theme": {
+            "color": {
+                "primary": "#4f46e5",
+                "ink": "#0f172a",
+                "muted": "#475569",
+                "surface": "#fbfaf7",
+                "line": "#e5e7eb"
+            },
+            "font": {
+                "body": "Inter, system-ui, sans-serif",
+                "display": "Inter, system-ui, sans-serif"
+            }
+        },
+        "breakpoints": [
+            "base",
+            "md",
+            "lg"
+        ],
+        "nodes": {
+            "header": {
+                "id": "header",
+                "type": "section",
+                "parent": null,
+                "order": "a0",
+                "props": {
+                    "as": "header"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-surface)",
+                        "border": "0 0 1px 0 solid var(--cms-color-line)"
+                    }
+                }
+            },
+            "header-stack": {
+                "id": "header-stack",
+                "type": "stack",
+                "parent": "header",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "row",
+                        "justify": "between",
+                        "align": "center",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "header-title": {
+                "id": "header-title",
+                "type": "heading",
+                "parent": "header-stack",
+                "order": "a0",
+                "props": {
+                    "content": "Northwind DevDay 2027",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "header-nav": {
+                "id": "header-nav",
+                "type": "stack",
+                "parent": "header-stack",
+                "order": "a1",
+                "props": {
+                    "as": "nav"
+                },
+                "style": {
+                    "base": {
+                        "direction": "row",
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "align": "center",
+                        "wrap": true
+                    }
+                }
+            },
+            "nav-tracks": {
+                "id": "nav-tracks",
+                "type": "link",
+                "parent": "header-nav",
+                "order": "a0",
+                "props": {
+                    "content": "Tracks",
+                    "href": "#tracks"
+                },
+                "style": {
+                    "base": {
+                        "color": "var(--cms-color-ink)",
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "nav-schedule": {
+                "id": "nav-schedule",
+                "type": "link",
+                "parent": "header-nav",
+                "order": "a1",
+                "props": {
+                    "content": "Schedule",
+                    "href": "#schedule"
+                },
+                "style": {
+                    "base": {
+                        "color": "var(--cms-color-ink)",
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "nav-tickets": {
+                "id": "nav-tickets",
+                "type": "link",
+                "parent": "header-nav",
+                "order": "a2",
+                "props": {
+                    "content": "Tickets",
+                    "href": "#tickets"
+                },
+                "style": {
+                    "base": {
+                        "color": "var(--cms-color-ink)",
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "nav-register": {
+                "id": "nav-register",
+                "type": "button",
+                "parent": "header-nav",
+                "order": "a3",
+                "props": {
+                    "label": "Register",
+                    "href": "https://tickets.example.com/devday-2027",
+                    "variant": "primary"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero": {
+                "id": "hero",
+                "type": "section",
+                "parent": null,
+                "order": "a1",
+                "props": {
+                    "as": "main"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-surface)"
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-stack": {
+                "id": "hero-stack",
+                "type": "stack",
+                "parent": "hero",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-h1": {
+                "id": "hero-h1",
+                "type": "heading",
+                "parent": "hero-stack",
+                "order": "a0",
+                "props": {
+                    "content": "Northwind DevDay 2027",
+                    "level": 1
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 40,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)",
+                        "maxWidth": {
+                            "value": 680,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 56,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-sub": {
+                "id": "hero-sub",
+                "type": "text",
+                "parent": "hero-stack",
+                "order": "a1",
+                "props": {
+                    "content": "A one-day developer conference. Thursday 18 March 2027, 09:00–18:00, at The Foundry, 200 Mill Lane."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)",
+                        "maxWidth": {
+                            "value": 680,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-cta-row": {
+                "id": "hero-cta-row",
+                "type": "stack",
+                "parent": "hero-stack",
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "column",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "align": "start"
+                    },
+                    "md": {
+                        "direction": "row",
+                        "align": "center"
+                    }
+                }
+            },
+            "hero-cta": {
+                "id": "hero-cta",
+                "type": "button",
+                "parent": "hero-cta-row",
+                "order": "a0",
+                "props": {
+                    "label": "Register",
+                    "href": "https://tickets.example.com/devday-2027",
+                    "variant": "primary"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-cta-note": {
+                "id": "hero-cta-note",
+                "type": "text",
+                "parent": "hero-cta-row",
+                "order": "a1",
+                "props": {
+                    "content": "Early bird $149 until 31 January 2027"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "tracks": {
+                "id": "tracks",
+                "type": "section",
+                "parent": null,
+                "order": "a2",
+                "props": {
+                    "as": "section",
+                    "anchor": "tracks"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-surface)"
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "tracks-stack": {
+                "id": "tracks-stack",
+                "type": "stack",
+                "parent": "tracks",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "tracks-h2": {
+                "id": "tracks-h2",
+                "type": "heading",
+                "parent": "tracks-stack",
+                "order": "a0",
+                "props": {
+                    "content": "Three tracks, one day",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 36,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "tracks-sub": {
+                "id": "tracks-sub",
+                "type": "text",
+                "parent": "tracks-stack",
+                "order": "a1",
+                "props": {
+                    "content": "24 talks and 3 workshops across Web Platform, Data & AI, and DevOps."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)",
+                        "maxWidth": {
+                            "value": 680,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "tracks-grid": {
+                "id": "tracks-grid",
+                "type": "grid",
+                "parent": "tracks-stack",
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "columnMin": {
+                            "value": 260,
+                            "unit": "px"
+                        },
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "track-1": {
+                "id": "track-1",
+                "type": "card",
+                "parent": "tracks-grid",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)",
+                        "background": "#ffffff"
+                    }
+                }
+            },
+            "track-1-icon": {
+                "id": "track-1-icon",
+                "type": "icon",
+                "parent": "track-1",
+                "order": "a0",
+                "props": {
+                    "name": "code",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "track-1-h3": {
+                "id": "track-1-h3",
+                "type": "heading",
+                "parent": "track-1",
+                "order": "a1",
+                "props": {
+                    "content": "Web Platform",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "track-2": {
+                "id": "track-2",
+                "type": "card",
+                "parent": "tracks-grid",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)",
+                        "background": "#ffffff"
+                    }
+                }
+            },
+            "track-2-icon": {
+                "id": "track-2-icon",
+                "type": "icon",
+                "parent": "track-2",
+                "order": "a0",
+                "props": {
+                    "name": "database",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "track-2-h3": {
+                "id": "track-2-h3",
+                "type": "heading",
+                "parent": "track-2",
+                "order": "a1",
+                "props": {
+                    "content": "Data & AI",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "track-3": {
+                "id": "track-3",
+                "type": "card",
+                "parent": "tracks-grid",
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)",
+                        "background": "#ffffff"
+                    }
+                }
+            },
+            "track-3-icon": {
+                "id": "track-3-icon",
+                "type": "icon",
+                "parent": "track-3",
+                "order": "a0",
+                "props": {
+                    "name": "infinity",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "track-3-h3": {
+                "id": "track-3-h3",
+                "type": "heading",
+                "parent": "track-3",
+                "order": "a1",
+                "props": {
+                    "content": "DevOps",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "schedule": {
+                "id": "schedule",
+                "type": "section",
+                "parent": null,
+                "order": "a3",
+                "props": {
+                    "as": "section",
+                    "anchor": "schedule"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "#ffffff"
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "schedule-stack": {
+                "id": "schedule-stack",
+                "type": "stack",
+                "parent": "schedule",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "direction": "row",
+                        "align": "start"
+                    }
+                }
+            },
+            "schedule-left": {
+                "id": "schedule-left",
+                "type": "stack",
+                "parent": "schedule-stack",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "column",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "maxWidth": {
+                            "value": 480,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "schedule-h2": {
+                "id": "schedule-h2",
+                "type": "heading",
+                "parent": "schedule-left",
+                "order": "a0",
+                "props": {
+                    "content": "Keynote: Shipping without fear",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 36,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "schedule-speaker": {
+                "id": "schedule-speaker",
+                "type": "text",
+                "parent": "schedule-left",
+                "order": "a1",
+                "props": {
+                    "content": "Priya Raman"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "schedule-details": {
+                "id": "schedule-details",
+                "type": "list",
+                "parent": "schedule-left",
+                "order": "a2",
+                "props": {
+                    "items": [
+                        "Thursday 18 March 2027, 09:00–18:00",
+                        "The Foundry, 200 Mill Lane",
+                        "24 talks across three tracks",
+                        "3 hands-on workshops"
+                    ]
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "schedule-right": {
+                "id": "schedule-right",
+                "type": "stack",
+                "parent": "schedule-stack",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "column",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)",
+                        "background": "var(--cms-color-surface)"
+                    }
+                }
+            },
+            "schedule-right-icon": {
+                "id": "schedule-right-icon",
+                "type": "icon",
+                "parent": "schedule-right",
+                "order": "a0",
+                "props": {
+                    "name": "calendar",
+                    "decorative": false,
+                    "label": "Event date"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "schedule-right-text": {
+                "id": "schedule-right-text",
+                "type": "text",
+                "parent": "schedule-right",
+                "order": "a1",
+                "props": {
+                    "content": "Doors open 09:00. A full day of talks and workshops runs through 18:00."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "tickets": {
+                "id": "tickets",
+                "type": "section",
+                "parent": null,
+                "order": "a4",
+                "props": {
+                    "as": "section",
+                    "anchor": "tickets"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-surface)"
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "tickets-stack": {
+                "id": "tickets-stack",
+                "type": "stack",
+                "parent": "tickets",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "tickets-h2": {
+                "id": "tickets-h2",
+                "type": "heading",
+                "parent": "tickets-stack",
+                "order": "a0",
+                "props": {
+                    "content": "Tickets",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.15,
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 36,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "tickets-grid": {
+                "id": "tickets-grid",
+                "type": "grid",
+                "parent": "tickets-stack",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "columnMin": {
+                            "value": 260,
+                            "unit": "px"
+                        },
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "ticket-early": {
+                "id": "ticket-early",
+                "type": "card",
+                "parent": "tickets-grid",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)",
+                        "background": "#ffffff",
+                        "direction": "column",
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "ticket-early-h3": {
+                "id": "ticket-early-h3",
+                "type": "heading",
+                "parent": "ticket-early",
+                "order": "a0",
+                "props": {
+                    "content": "Early bird",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "ticket-early-price": {
+                "id": "ticket-early-price",
+                "type": "text",
+                "parent": "ticket-early",
+                "order": "a1",
+                "props": {
+                    "content": "$149"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "ticket-early-note": {
+                "id": "ticket-early-note",
+                "type": "text",
+                "parent": "ticket-early",
+                "order": "a2",
+                "props": {
+                    "content": "Until 31 January 2027"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "ticket-standard": {
+                "id": "ticket-standard",
+                "type": "card",
+                "parent": "tickets-grid",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)",
+                        "background": "#ffffff",
+                        "direction": "column",
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "ticket-standard-h3": {
+                "id": "ticket-standard-h3",
+                "type": "heading",
+                "parent": "ticket-standard",
+                "order": "a0",
+                "props": {
+                    "content": "Standard",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "ticket-standard-price": {
+                "id": "ticket-standard-price",
+                "type": "text",
+                "parent": "ticket-standard",
+                "order": "a1",
+                "props": {
+                    "content": "$219"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "ticket-standard-note": {
+                "id": "ticket-standard-note",
+                "type": "text",
+                "parent": "ticket-standard",
+                "order": "a2",
+                "props": {
+                    "content": "From 1 February 2027"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "ticket-student": {
+                "id": "ticket-student",
+                "type": "card",
+                "parent": "tickets-grid",
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)",
+                        "background": "#ffffff",
+                        "direction": "column",
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "ticket-student-h3": {
+                "id": "ticket-student-h3",
+                "type": "heading",
+                "parent": "ticket-student",
+                "order": "a0",
+                "props": {
+                    "content": "Student",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "ticket-student-price": {
+                "id": "ticket-student-price",
+                "type": "text",
+                "parent": "ticket-student",
+                "order": "a1",
+                "props": {
+                    "content": "$59"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "fontWeight": 700,
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "ticket-student-note": {
+                "id": "ticket-student-note",
+                "type": "text",
+                "parent": "ticket-student",
+                "order": "a2",
+                "props": {
+                    "content": "Valid student ID required"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "tickets-cta": {
+                "id": "tickets-cta",
+                "type": "button",
+                "parent": "tickets-stack",
+                "order": "a2",
+                "props": {
+                    "label": "Register",
+                    "href": "https://tickets.example.com/devday-2027",
+                    "variant": "primary"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer": {
+                "id": "footer",
+                "type": "section",
+                "parent": null,
+                "order": "a5",
+                "props": {
+                    "as": "footer"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-stack": {
+                "id": "footer-stack",
+                "type": "stack",
+                "parent": "footer",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "direction": "row",
+                        "justify": "between",
+                        "align": "center"
+                    }
+                }
+            },
+            "footer-title": {
+                "id": "footer-title",
+                "type": "text",
+                "parent": "footer-stack",
+                "order": "a0",
+                "props": {
+                    "content": "Northwind DevDay 2027 — Thursday 18 March 2027, The Foundry, 200 Mill Lane"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "#ffffff"
+                    }
+                }
+            },
+            "footer-links": {
+                "id": "footer-links",
+                "type": "stack",
+                "parent": "footer-stack",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "row",
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "wrap": true
+                    }
+                }
+            },
+            "footer-link-tracks": {
+                "id": "footer-link-tracks",
+                "type": "link",
+                "parent": "footer-links",
+                "order": "a0",
+                "props": {
+                    "content": "Tracks",
+                    "href": "#tracks"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "#ffffff"
+                    }
+                }
+            },
+            "footer-link-schedule": {
+                "id": "footer-link-schedule",
+                "type": "link",
+                "parent": "footer-links",
+                "order": "a1",
+                "props": {
+                    "content": "Schedule",
+                    "href": "#schedule"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "#ffffff"
+                    }
+                }
+            },
+            "footer-link-tickets": {
+                "id": "footer-link-tickets",
+                "type": "link",
+                "parent": "footer-links",
+                "order": "a2",
+                "props": {
+                    "content": "Tickets",
+                    "href": "#tickets"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "#ffffff"
+                    }
+                }
+            },
+            "footer-link-conduct": {
+                "id": "footer-link-conduct",
+                "type": "link",
+                "parent": "footer-links",
+                "order": "a3",
+                "props": {
+                    "content": "Code of conduct",
+                    "href": "https://example.com/devday/conduct"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "color": "#ffffff"
+                    }
+                }
+            }
+        }
+    }
+}
