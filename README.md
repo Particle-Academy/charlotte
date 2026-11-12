@@ -106,6 +106,17 @@ sub-agent gets 40 steps, a budget nested within the turn's, and a fresh
 context. The orchestrator never loads a whole document; it keeps page ids and
 outcomes. `charlotte.site.max_steps` bounds the whole tree.
 
+> **A site turn needs a cost-capped host `RunContext` for now.** Until
+> prism-harness ships **G-261** (an uncapped `stream()` drops declared
+> sub-agents) and **G-262** (an uncapped run does not count the parent's
+> steps), only a cost-capped run meters every page sub-agent call against the
+> tree. Without one, a page sub-agent admitted near the cap could overshoot it
+> by a whole run. So a site turn with no host context, or with one that has no
+> `maxCostUsd`, is refused with `site_needs_capped_context` before any
+> provider call. Return a capped, priced context from `Charlotte::contextUsing()`
+> (see "Host budgets" below). Page sessions and pages delegated with
+> `Charlotte::delegate()` don't need one.
+
 ## Reports / dashboards
 
 Charlotte can build report and dashboard pages for your app. **The figures

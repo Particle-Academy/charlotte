@@ -132,13 +132,21 @@ instead of resolving it from the container need to change.
   `{"draft": {"page", "revision"}}`. Its run is its own harness run, linked
   beneath the parent's thread. A child capability copied to another address
   or participant binds no tools.
+- **BREAKING (site sessions only, unreleased until now): a site turn needs a
+  cost-capped host `RunContext`.** Until prism-harness ships G-261 (an
+  uncapped `stream()` drops declared sub-agents) and G-262 (an uncapped run
+  does not count the parent's steps), a site turn with no host context, or one
+  with no `maxCostUsd`, fails `site_needs_capped_context` before any provider
+  call. On an uncapped tree an admitted page sub-agent could overshoot the cap
+  by a whole run; a capped tree reserves every call first, so a child admitted
+  near the cap stops before it spends. **What to do:** return a capped, priced
+  `RunContext` from `Charlotte::contextUsing()` for site sessions. Page
+  sessions and `Charlotte::delegate()` pages are unaffected. This guard comes
+  out when G-261 and G-262 ship.
 - **One run tree per site turn.** The orchestrator's stream and every page
-  sub-agent share one `RunContext`: the host's, or (with no host context) the
-  same root the harness would have built, held by Charlotte. A child's spend
-  lands in that tree and a child past the tree's cap is refused `exhausted`.
-  Until prism-harness G-261, Charlotte offers `charlotte_page` itself through
-  the harness's `SubagentRunner` with that context; the child resolves only
-  the `charlotte` mode's nine tools.
+  sub-agent run on the host's capped `RunContext`: each child's spend lands in
+  it, and a child is refused `exhausted` once it no longer fits. A child
+  resolves only the `charlotte` mode's nine tools.
 - Tool handlers pass every argument to the closed dispatch, so an undeclared
   one (`tenant`, `page`) is reported as `$.arguments.<field>: no such field`
   instead of failing inside the PHP call with a generic error.

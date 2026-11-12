@@ -14,7 +14,6 @@ use Closure;
 use Prism\Harness\Modes\ModeRegistry;
 use Prism\Harness\PrismHarness;
 use Prism\Harness\Sessions\Session;
-use Prism\Harness\Subagents\RunBudget;
 use Prism\Harness\Subagents\RunContext;
 use Prism\Harness\Subagents\Subagent;
 use Prism\Harness\Subagents\SubagentRunner;
@@ -43,35 +42,13 @@ final class PageSubagents
     /**
      * @param  (Closure(): SubagentRunner)|null  $runner
      * @param  (Closure(): ModeRegistry)|null  $modes
-     * @param  (Closure(): array<string, mixed>)|null  $config  prism-harness.agent
      */
     public function __construct(
         private readonly PrismHarness $harness,
         private readonly SessionStore $sessions,
         private readonly ?Closure $runner = null,
         private readonly ?Closure $modes = null,
-        private readonly ?Closure $config = null,
     ) {}
-
-    /**
-     * The root a site turn runs on when the host gives none: the budget
-     * prism-harness would have built for the run itself (the mode's ceiling,
-     * the harness's own cost, time and output caps), so passing it changes
-     * nothing but who holds the reference. The stream and every page
-     * sub-agent then share its ledger.
-     */
-    public function defaultTree(SessionRecord $session, int $maxSteps): RunContext
-    {
-        $config = $this->config === null ? [] : ($this->config)();
-        $number = fn (string $key): ?float => is_numeric($config[$key] ?? null) ? (float) $config[$key] : null;
-
-        return RunContext::root('charlotte-'.$session->id.'-'.bin2hex(random_bytes(6)), new RunBudget(
-            maxSteps: $maxSteps,
-            maxCostUsd: $number('max_cost_usd'),
-            maxSeconds: ($s = $number('max_seconds')) === null ? null : (int) $s,
-            maxOutputTokensPerCall: ($t = $number('max_output_tokens_per_call')) === null ? null : (int) $t,
-        ));
-    }
 
     /** A site turn starts: its harness session and the run tree its page sub-agents spend from. */
     public function begin(SessionRecord $session, Session $parent, RunContext $tree): void

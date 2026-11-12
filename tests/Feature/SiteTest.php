@@ -305,6 +305,7 @@ test('a site turn runs in the site builder mode and reaches the site tools throu
         ['text' => 'Done.'],
     ]]);
     charlotteApp(['charlotte.autonomy' => 'full', 'charlotte.site.reserved_routes' => FORTIFY_ROUTES], $provider);
+    cappedTree();
     $site = openSite();
 
     $site->send('Build the site.', 'user-7');

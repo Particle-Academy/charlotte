@@ -86,9 +86,10 @@ read config through the container.
   session as capability `charlotte {session, scope}` plus provider and model.
   `Charlotte::delegate()` does it for a host's own agent; `TurnRunner` does
   it for a site orchestrator's `::sub::page` child each turn, and `begin()`s
-  the turn with the ONE `RunContext` the stream also gets (the host's, else
-  `defaultTree()`, the harness's own default root), so `tool()` can offer
-  `charlotte_page` through the harness's
+  the turn with the ONE `RunContext` the stream also gets (the host's; a site
+  turn without a cost-capped one is refused `site_needs_capped_context` until
+  prism-harness G-261/G-262), so `tool()` can offer `charlotte_page` through
+  the harness's
   `SubagentRunner` (prism-harness 0.17's uncapped `stream()` drops declared
   sub-agents; when the harness offers its own tool of that name, it replaces
   ours). `site_page_create` / `site_page_select` retire the child's thread so
@@ -135,9 +136,11 @@ read config through the container.
   EVERY generation in the host: check the flags and the session key before
   resolving anything from the container (`TelemetryLazyTest`).
 - **Billing is optional.** Nothing may require a `TurnContextFactory`; with
-  none bound a page turn passes `context: null` and runs on harness config. A
-  site turn passes `PageSubagents::defaultTree()` instead, built from the same
-  harness config, so its sub-agents share the stream's tree.
+  none bound a page turn passes `context: null` and runs on harness config.
+  EXCEPTION until prism-harness G-261 and G-262 ship: a SITE turn refuses
+  (`site_needs_capped_context`) without a host context that has `maxCostUsd`,
+  because only a capped tree meters each page sub-agent call. Remove the guard
+  in `TurnRunner::run()` when both ship.
 - **Event types**: adding one means updating `Events\EventTypes::ALL`,
   `resources/schema/events.v1.json`, `tests/fixtures/events.v1.json` and
   `docs/events.md`; `EventContractTest` fails until all agree.

@@ -56,6 +56,19 @@ function openSession(array $options = []): CharlotteSession
     return $pending->open();
 }
 
+/**
+ * A cost-capped, priced host run context (what a site turn requires until
+ * prism-harness G-261 and G-262 ship), bound for every turn.
+ */
+function cappedTree(float $maxCostUsd = 5.0, int $maxSteps = 100): \Prism\Harness\Subagents\RunContext
+{
+    $tree = \Prism\Harness\Subagents\RunContext::root('host-tree', new \Prism\Harness\Subagents\RunBudget(maxSteps: $maxSteps, maxCostUsd: $maxCostUsd, maxOutputTokensPerCall: 1024),
+        pricing: ['scripted' => ['test-model' => ['inputPerMTok' => 3.0, 'outputPerMTok' => 15.0, 'toolOverheadTokens' => 400]]]);
+    Charlotte::contextUsing(fn () => $tree);
+
+    return $tree;
+}
+
 /** The reserved routes a Fortify host supplies (finding K13). */
 const FORTIFY_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password/*', '/two-factor-challenge'];
 

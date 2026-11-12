@@ -76,6 +76,7 @@ test('a site turn spawns one page sub-agent per page; the parent keeps page ids 
         childBuild('Pricing'),
     ]);
     charlotteApp(['charlotte.autonomy' => 'full'], $provider);
+    cappedTree();
     $site = Charlotte::for(User::create(['name' => 'Ada']))->tenant('acme')->site('acme-site')->brief(Brief::fromArray(briefArray()))->open();
 
     $site->send('Build the site.', 'user-7');
@@ -95,10 +96,9 @@ test('a site turn spawns one page sub-agent per page; the parent keeps page ids 
         ->and($first['content'])->not->toContain('nodes')
         // The parent stream never offered a whole-document tool.
         ->and(toolNames($provider->requests[0]->tools()))->toBe(BuilderMode::SITE_TOOLS)
-        // Each child ran in the page mode on the session's provider and model, on 40 steps.
+        // Each child ran in the page mode on the session's provider and model.
         ->and(count($provider->textRequests))->toBe(2)
         ->and($provider->textRequests[0]->model())->toBe('test-model')
-        ->and($provider->textRequests[0]->maxSteps())->toBe(40)
         ->and(toolNames($provider->textRequests[0]->tools()))->toBe(BuilderMode::TOOLS)
         // A fresh conversation per page: the second child saw only its own task.
         ->and(count($provider->textRequests[1]->messages()))->toBe(1)
@@ -118,51 +118,88 @@ function spawnTurn(int $times): array
     return [...$steps, ['text' => 'Done.']];
 }
 
-test('BLOCKER: the page sub-agent runs on the PARENT\'s RunContext: its spend lands in the parent\'s account', function (): void {
+test('GUARD: a site turn with no host context is refused before any provider call, naming the harness fixes', function (): void {
+    $provider = new ScriptedProvider([spawnTurn(1), childBuild()]);
+    charlotteApp(['charlotte.autonomy' => 'full'], $provider);
+    $site = openSite();
+
+    $site->send('Build.', 'user-7');
+
+    expect(eventsOf($site, 'run.failed')[0]['data']['code'])->toBe('site_needs_capped_context')
+        ->and($provider->requests)->toBe([])
+        ->and($site->record()->status)->toBe('failed')
+        ->and(\Charlotte\Policy\Refused::MESSAGES['site_needs_capped_context'])->toContain('G-261')
+        ->and(\Charlotte\Policy\Refused::MESSAGES['site_needs_capped_context'])->toContain('G-262');
+});
+
+test('GUARD: a host context without a cost cap is refused too; a page session is not affected', function (): void {
+    // The site turn is refused before any provider call, so the page turn's script comes first.
+    $provider = new ScriptedProvider([[['text' => 'Page built.']]]);
+    charlotteApp(['charlotte.autonomy' => 'full'], $provider);
+    $uncapped = \Prism\Harness\Subagents\RunContext::root('host-tree', new \Prism\Harness\Subagents\RunBudget(maxSteps: 100));
+    Charlotte::contextUsing(fn (\Charlotte\Runtime\Turn $turn) => $turn->session->isSite() ? $uncapped : null);
+    $site = openSite();
+    $page = openSession();
+
+    $site->send('Build.', 'user-7');
+    $page->send('Build.', 'user-7');
+
+    expect(eventsOf($site, 'run.failed')[0]['data']['code'])->toBe('site_needs_capped_context')
+        ->and(eventsOf($page, 'run.failed'))->toBe([])
+        ->and($page->record()->status)->toBe('idle');
+});
+
+test('GUARD: a site turn on a cost-capped host context runs, and each child\'s spend lands in that tree', function (): void {
     $provider = new ScriptedProvider([spawnTurn(2), childBuild('One'), childBuild('Two')]);
     charlotteApp(['charlotte.autonomy' => 'full'], $provider);
-    $tree = \Prism\Harness\Subagents\RunContext::root('host-tree', new \Prism\Harness\Subagents\RunBudget(maxSteps: 100));
-    Charlotte::contextUsing(fn () => $tree);
+    $tree = cappedTree(5.0);
     $site = openSite();
 
     $site->send('Build.', 'user-7');
 
-    // Each child ran 4 steps; the host's own ledger object holds all 8.
-    expect($provider->result(BuilderMode::SITE_SUBAGENT, 0)['outcome'])->toBe('completed')
-        ->and($provider->result(BuilderMode::SITE_SUBAGENT, 1)['outcome'])->toBe('completed')
-        ->and($tree->ledger->steps())->toBe(8)
-        ->and($provider->result(BuilderMode::SITE_SUBAGENT, 1)['usage']['steps'])->toBe(8)
-        // The child's step ceiling is nested inside the tree's, never a fresh 40.
-        ->and($provider->textRequests[1]->maxSteps())->toBeLessThanOrEqual(100);
+    $first = $provider->result(BuilderMode::SITE_SUBAGENT, 0);
+    $second = $provider->result(BuilderMode::SITE_SUBAGENT, 1);
+    expect($site->record()->status)->toBe('idle')
+        ->and($first['outcome'])->toBe('completed')
+        ->and($second['outcome'])->toBe('completed')
+        // The children's spend is charged to the host's own ledger object, cumulatively.
+        ->and($first['usage']['cost_usd'])->toBeGreaterThan(0.0)
+        ->and($second['usage']['cost_usd'])->toBeGreaterThan($first['usage']['cost_usd'])
+        ->and($tree->ledger->costUsd())->toBeGreaterThanOrEqual($second['usage']['cost_usd'])
+        ->and($tree->ledger->costUsd())->toBeLessThanOrEqual(5.0);
 });
 
-test('BLOCKER: a child stops when the parent tree\'s cap is reached', function (): void {
+test('CAPPED: a child admitted near the cap stops at the tree\'s cost cap; the tree never overshoots it', function (): void {
+    // Probe on a roomy tree: the harness's own worst-case reservation for the
+    // orchestrator's call and for a child's call (CallBudget, the instrument
+    // that admits every capped call).
+    $probe = new ScriptedProvider([spawnTurn(1), childBuild('One')]);
+    charlotteApp(['charlotte.autonomy' => 'full'], $probe);
+    $roomy = cappedTree(5.0);
+    openSite()->send('Build.', 'user-7');
+    $calls = \Prism\Harness\Subagents\CallBudget::forRun($roomy, 'scripted', 'test-model', []);
+    $parentReserve = $calls->worstCase($probe->requests[0]);
+    $childReserve = $calls->worstCase($probe->textRequests[0]);
+
+    // The cap fits the orchestrator's held reservation plus ONE child call.
+    // After child 1 settles its (non-zero) spend, the tree is not exhausted,
+    // so child 2 is ADMITTED, but its first call no longer fits.
+    $cap = $parentReserve + $childReserve + 0.000001;
     $provider = new ScriptedProvider([spawnTurn(3), childBuild('One'), childBuild('Two'), childBuild('Three')]);
     charlotteApp(['charlotte.autonomy' => 'full'], $provider);
-    $tree = \Prism\Harness\Subagents\RunContext::root('host-tree', new \Prism\Harness\Subagents\RunBudget(maxSteps: 6));
-    Charlotte::contextUsing(fn () => $tree);
+    $tree = cappedTree($cap);
     $site = openSite();
 
     $site->send('Build.', 'user-7');
 
-    // Child 1 spends 4 of 6; child 2 is admitted with a nested ceiling of 6
-    // and spends 4 more; child 3 finds the tree exhausted and never runs.
-    expect($provider->result(BuilderMode::SITE_SUBAGENT, 0)['outcome'])->toBe('completed')
-        ->and($provider->textRequests[0]->maxSteps())->toBe(6)
-        ->and($provider->textRequests[1]->maxSteps())->toBe(6)
-        ->and($provider->result(BuilderMode::SITE_SUBAGENT, 2)['outcome'])->toBe('exhausted')
-        ->and($provider->textRequests)->toHaveCount(2);
-});
-
-test('BLOCKER: with no host context the stream and the sub-agent share ONE tree on the orchestrator\'s ceiling', function (): void {
-    $provider = new ScriptedProvider([spawnTurn(3), childBuild('One'), childBuild('Two'), childBuild('Three')]);
-    charlotteApp(['charlotte.autonomy' => 'full', 'charlotte.site.max_steps' => 6], $provider);
-    $site = openSite();
-
-    $site->send('Build.', 'user-7');
-
-    expect($provider->result(BuilderMode::SITE_SUBAGENT, 2)['outcome'])->toBe('exhausted')
-        ->and($provider->textRequests)->toHaveCount(2);
+    $outcomes = array_map(fn (int $i) => $provider->result(BuilderMode::SITE_SUBAGENT, $i)['outcome'], [0, 1, 2]);
+    expect($roomy->ledger->costUsd())->toBeGreaterThan(0.0)
+        ->and($outcomes[0])->toBe('completed')
+        ->and($outcomes[1])->toBe('exhausted')       // admitted near the cap, stopped before spending
+        ->and($outcomes[2])->toBe('exhausted')
+        ->and($provider->textRequests)->toHaveCount(1) // child 2 never reached the provider
+        ->and($tree->ledger->costUsd())->toBeLessThanOrEqual($cap)
+        ->and($site->record()->status)->toBe('idle');
 });
 
 test('BLOCKER: a child resolves ONLY the charlotte mode\'s tools and cannot call a parent-only tool', function (string $parentTool, array $args): void {
@@ -171,6 +208,7 @@ test('BLOCKER: a child resolves ONLY the charlotte mode\'s tools and cannot call
         [['tools' => [['name' => $parentTool, 'args' => $args]]], ['text' => 'Tried.']],
     ]);
     charlotteApp(['charlotte.autonomy' => 'full'], $provider);
+    cappedTree();
     $site = openSite();
 
     $site->send('Build.', 'user-7');

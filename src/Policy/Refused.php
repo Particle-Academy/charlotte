@@ -35,6 +35,7 @@ final class Refused extends RuntimeException
         'site_not_found_exists' => 'This site already has its not_found (404) page.',
         'site_full' => 'This site already has the most pages the host allows.',
         'not_a_site' => 'This session edits one page, not a site.',
+        'site_needs_capped_context' => 'A site turn runs page sub-agents, and until prism-harness ships G-261 (an uncapped stream() drops declared sub-agents) and G-262 (an uncapped run does not count the parent\'s steps) it needs a cost-capped host RunContext: return one with RunBudget maxCostUsd set from Charlotte::contextUsing(). Page sessions and delegated pages do not need one.',
     ];
 
     /** @param array<string, scalar|null> $details */
