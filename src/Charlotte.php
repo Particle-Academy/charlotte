@@ -234,7 +234,7 @@ final class Charlotte
      */
     public function dataContext(array $results): array
     {
-        return Bindings::context($results);
+        return Bindings::context($results, $this->container->make(DataCatalogue::class));
     }
 
     /** A session by id, or null. Pass the tenant the request resolved to; a session from another tenant is not found. */

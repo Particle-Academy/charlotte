@@ -134,6 +134,6 @@ test('a page can be rendered from the catalogue: queries for the viewer, then th
 
     $queries = Charlotte::dataQueries($doc, ['people' => ['u_1'], 'period' => ['from' => '2026-01-01', 'to' => '2026-03-31']]);
 
-    expect($queries)->toBe([['key' => 'metrics', 'stream' => 'metrics', 'params' => ['groupBy' => 'owner'],
+    expect($queries)->toBe([['key' => 'metrics', 'stream' => 'metrics', 'params' => ['groupBy' => 'owner'], 'fields' => ['group', 'revenue'],
         'scope' => ['people' => ['u_1'], 'period' => ['from' => '2026-01-01', 'to' => '2026-03-31']]]]);
 });

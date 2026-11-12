@@ -23,9 +23,9 @@ interface DataCatalogue
     /**
      * @return array<string, array{
      *     description: string,
-     *     fields: array<string, string>,
+     *     fields: array<string, string>,          // "number", or "number?" when nullable
      *     totals: array<string, string>|null,
-     *     params: array<string, list<string>>,
+     *     params: array<string, list<string>|array{selects: 'fields', always: list<string>}>,
      *     scope: list<string>,
      * }> stream name => declaration
      */

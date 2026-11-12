@@ -15,8 +15,6 @@ use Prism\Harness\AgentRuntime;
 use Prism\Harness\Contracts\HasErrorCode;
 use Prism\Harness\Modes\ModeRegistry;
 use Prism\Harness\PrismHarness;
-use Prism\Harness\Subagents\RunBudget;
-use Prism\Harness\Subagents\RunContext;
 use Prism\Prism\Streaming\Events\StreamStartEvent;
 use Throwable;
 
@@ -100,11 +98,13 @@ final class TurnRunner
             // host refusing admission fails the turn with its code, before
             // any provider call.
             $context = $this->contexts->forTurn(new Turn($session, $harness, $text));
-            if ($session->isSite()) {
-                // The tree the page sub-agents spend from: the host's context
-                // when it gave one, else a root on the orchestrator's ceiling.
-                // Only the sub-agent tool reads it; the stream still gets $context.
-                $this->subagents?->begin($session, $harness, $context ?? RunContext::root('charlotte-'.$session->id, new RunBudget(maxSteps: $mode->maxSteps)));
+            if ($session->isSite() && $this->subagents !== null) {
+                // ONE tree for the orchestrator and its page sub-agents: the
+                // host's context when it gave one, else the same root the
+                // harness would have built, held here so the sub-agent tool
+                // and the stream share it (prism-harness#G-261 interim).
+                $context ??= $this->subagents->defaultTree($session, $mode->maxSteps);
+                $this->subagents->begin($session, $harness, $context);
             }
 
             // One turn may span several runs: a response cut off at the output

@@ -27,7 +27,12 @@ use InvalidArgumentException;
  *         ],
  *     ]));
  *
- * Field types: string, number, integer, boolean, date. Scope kinds: `set`
+ * Field types: string, number, integer, boolean, date; `number?` (or
+ * `['type' => 'number', 'nullable' => true]`) when a value may be null. A
+ * param is either a list of allowed values or, at most one per stream,
+ * `['selects' => 'fields', 'always' => ['group']]`: its value is a subset of
+ * the stream's field names, and bindings may use only those plus `always`.
+ * Scope kinds: `set`
  * (a list of ids), `tree` (ids, optionally with their children) and `period`
  * (an inclusive from/to date range). Each kind narrows mechanically; see
  * {@see Scope}.
@@ -90,8 +95,27 @@ final class ArrayDataCatalogue implements DataCatalogue
                 }
             }
             $params = [];
+            $selecting = null;
             foreach ((array) ($stream['params'] ?? []) as $param => $values) {
-                if (! is_string($param) || preg_match(self::NAME, $param) !== 1 || ! is_array($values) || $values === []
+                if (! is_string($param) || preg_match(self::NAME, $param) !== 1) {
+                    throw new InvalidArgumentException("Stream [{$name}] has a param whose name is not letters, digits, _ or -.");
+                }
+                if (is_array($values) && ! array_is_list($values)) {
+                    // A FIELD-SELECTING param: its value is a subset of the stream's field names.
+                    $always = $values['always'] ?? [];
+                    if (($values['selects'] ?? null) !== 'fields' || array_diff(array_keys($values), ['selects', 'always']) !== []
+                        || ! is_array($always) || ! array_is_list($always) || array_diff($always, array_keys($fields)) !== []) {
+                        throw new InvalidArgumentException("Stream [{$name}] param [{$param}] must be a list of allowed values, or ['selects' => 'fields', 'always' => [field, ...]] naming its own fields.");
+                    }
+                    if ($selecting !== null) {
+                        throw new InvalidArgumentException("Stream [{$name}] declares two field-selecting params ([{$selecting}], [{$param}]); one selects its fields.");
+                    }
+                    $selecting = $param;
+                    $params[$param] = ['selects' => 'fields', 'always' => array_values(array_unique($always))];
+
+                    continue;
+                }
+                if (! is_array($values) || $values === []
                     || count(array_filter($values, fn ($v) => is_string($v) && $v !== '' && strlen($v) <= 64)) !== count($values)) {
                     throw new InvalidArgumentException("Stream [{$name}] param [{$param}] needs a non-empty list of allowed string values.");
                 }
@@ -145,7 +169,11 @@ final class ArrayDataCatalogue implements DataCatalogue
         .'set = a list of ids, tree = {"ids": [...], "children": true|false}, period = {"from": "YYYY-MM-DD", "to": "YYYY-MM-DD"}, or {"$input": "<page input id>"} for any of them). '
         .'Scope only narrows what the viewer may already see; the host resolves it, so you cannot widen it. '
         .'Every binding of one query shares its $params and $scope; to bind one stream twice with different ones, alias it: "metrics#byStage.rows". '
-        .'Inside a node that repeats over "<stream>.rows" with as:"row", bind "row.<field>".';
+        .'Inside a node that repeats over "<stream>.rows" with as:"row", bind "row.<field>". '
+        .'A param declared {"selects": "fields"} picks which fields the rows carry: pass it a list of that stream\'s field names, '
+        .'then bind only those fields and its "always" fields. Without it, every field is returned. '
+        .'A type ending in "?" (number?) may be null. Null means no value, never 0: a table cell or chart point renders empty, '
+        .'a leaderboard skips the row, and a kpi shows its empty state, so give data nodes an emptyText such as an em dash.';
 
     /** @return array<string, string> */
     private static function fields(mixed $fields, string $stream, string $what): array
@@ -155,13 +183,34 @@ final class ArrayDataCatalogue implements DataCatalogue
         }
         $out = [];
         foreach ($fields as $field => $type) {
-            if (! is_string($field) || preg_match(self::NAME, $field) !== 1 || ! in_array($type, self::FIELD_TYPES, true)) {
-                throw new InvalidArgumentException("Stream [{$stream}] {$what} needs field names of letters, digits, _ or - and types from: ".implode(', ', self::FIELD_TYPES).'.');
+            $normal = self::type($type);
+            if (! is_string($field) || preg_match(self::NAME, $field) !== 1 || $normal === null) {
+                throw new InvalidArgumentException("Stream [{$stream}] {$what} needs field names of letters, digits, _ or - and types from: "
+                    .implode(', ', self::FIELD_TYPES).', each optionally nullable ("number?" or [\'type\' => \'number\', \'nullable\' => true]).');
             }
-            $out[$field] = $type;
+            $out[$field] = $normal;
         }
 
         return $out;
+    }
+
+    /** A field type, normalised: "number", or "number?" when the value may be null. Null when malformed. */
+    private static function type(mixed $type): ?string
+    {
+        if (is_array($type)) {
+            $nullable = $type['nullable'] ?? false;
+            if (array_diff(array_keys($type), ['type', 'nullable']) !== [] || ! is_bool($nullable) || ! in_array($type['type'] ?? null, self::FIELD_TYPES, true)) {
+                return null;
+            }
+
+            return $type['type'].($nullable ? '?' : '');
+        }
+        if (! is_string($type)) {
+            return null;
+        }
+        $base = str_ends_with($type, '?') ? substr($type, 0, -1) : $type;
+
+        return in_array($base, self::FIELD_TYPES, true) ? $type : null;
     }
 
     private static function description(mixed $entry): string

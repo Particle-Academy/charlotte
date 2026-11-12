@@ -120,6 +120,7 @@ final class CharlotteServiceProvider extends ServiceProvider
         $this->app->singleton(PageSubagents::class, fn (Application $app) => new PageSubagents(
             $app->make(PrismHarness::class), $app->make(SessionStore::class),
             fn (): SubagentRunner => $app->make(SubagentRunner::class), fn (): ModeRegistry => $app->make(ModeRegistry::class),
+            fn (): array => (array) $app['config']->get('prism-harness.agent', []),
         ));
         $this->app->singleton(Charlotte::class, fn (Application $app) => new Charlotte($app));
         $this->app->singletonIf(Authorizer::class, fn () => new DenyAll);

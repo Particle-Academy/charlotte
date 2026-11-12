@@ -131,9 +131,18 @@ Charlotte::dataCatalogue(ArrayDataCatalogue::fromArray([
     'streams' => [
         'metrics' => [
             'description' => 'Pipeline metrics grouped by owner, stage or deal type.',
-            'fields' => ['group' => 'string', 'deals' => 'integer', 'revenue' => 'number', 'winRate' => 'number'],
-            'totals' => ['deals' => 'integer', 'revenue' => 'number'],    // omit when the stream returns plain rows
-            'params' => ['groupBy' => ['owner', 'stage', 'dealType']],
+            'fields' => [                                   // the FULL field set; "?" = may be null
+                'group' => 'string',
+                'deals_won' => 'integer', 'closed_revenue' => 'number', 'deals_lost' => 'integer',
+                'win_rate' => 'number?', 'avg_deal_size' => 'number?',
+                'deals_added' => 'integer', 'pipeline_added' => 'number',
+                'deals_open' => 'integer', 'open_pipeline' => 'number', 'spr' => 'number?',
+            ],
+            'totals' => ['deals_won' => 'integer', 'closed_revenue' => 'number', 'win_rate' => 'number?'],   // omit for plain rows
+            'params' => [
+                'groupBy' => ['owner', 'stage', 'dealType'],                  // a list of allowed values
+                'metrics' => ['selects' => 'fields', 'always' => ['group']],  // picks which fields the rows carry
+            ],
             'scope'  => ['people', 'dealTypes', 'period', 'organizations'],
         ],
         'revenueByRep'  => ['fields' => ['rep' => 'string', 'revenue' => 'number'], 'scope' => ['people', 'period', 'organizations']],
@@ -143,8 +152,24 @@ Charlotte::dataCatalogue(ArrayDataCatalogue::fromArray([
 ]));
 ```
 
-Field types: `string`, `number`, `integer`, `boolean`, `date`. A malformed
-declaration throws when you build it, not mid-run.
+Field types: `string`, `number`, `integer`, `boolean`, `date`. Add `?` (or
+write `['type' => 'number', 'nullable' => true]`) when a value may be null. A
+malformed declaration throws when you build it, not mid-run.
+
+**Field-selecting params.** At most one param per stream may be declared as
+`['selects' => 'fields', 'always' => [...]]`. Its value is a list of the
+stream's field names, and the rows then carry that subset plus the `always`
+fields. A binding to a column, a total or a repeat field outside the
+selection is refused with `binding_invalid`, naming the selection. So is
+selecting an unknown field. With no selection, every field is returned. The
+value must be a literal list, not a page input, because every binding is
+checked against it.
+
+**Null is no value.** Keep nulls in your rows; never send 0 in their place.
+fancy-cms renders null as no value: an empty table cell or chart point, a
+skipped leaderboard row, or a KPI's empty state (its `emptyText`, for example
+an em dash). Charlotte's data context keeps every row, and fills a field a row
+lacks with null.
 
 ### 2. What the agent writes
 
@@ -153,10 +178,15 @@ optional `$params` and `$scope`:
 
 ```json
 {"label": "Revenue", "format": "currency",
- "value": {"$bind": "metrics.totals.revenue",
-           "$params": {"groupBy": "owner"},
+ "value": {"$bind": "metrics.totals.closed_revenue",
+           "$params": {"groupBy": "owner", "metrics": ["closed_revenue", "win_rate"]},
            "$scope": {"period": {"$input": "period"}, "organizations": {"ids": ["org-7"], "children": true}}}}
 ```
+
+A table in the same query binds `metrics.rows`, and a chart binds
+`metrics.columns.group` and `metrics.columns.win_rate`. A binding to
+`metrics.columns.deals_lost` would be refused, because the selection does not
+include it.
 
 The paths are:
 
@@ -190,8 +220,10 @@ $queries = Charlotte::dataQueries($doc, viewer: [
 ], inputs: $request->query(), descendants: fn (string $org) => $orgs->descendantIds($org));
 
 $results = [];
-foreach ($queries as $q) {                      // ['key' => 'metrics', 'stream' => 'metrics', 'params' => [...], 'scope' => [...narrowed]]
-    $results[$q['key']] = $streams->fetch($q['stream'], $q['params'], $q['scope']);   // ['rows' => [...], 'totals' => [...]]
+foreach ($queries as $q) {
+    // ['key' => 'metrics', 'stream' => 'metrics', 'params' => ['groupBy' => 'owner', 'metrics' => ['closed_revenue', 'win_rate']],
+    //  'fields' => ['group', 'closed_revenue', 'win_rate'], 'scope' => [...narrowed]]
+    $results[$q['key']] = $streams->fetch($q['stream'], $q['params'], $q['fields'], $q['scope']);   // ['rows' => [...], 'totals' => [...]], nulls kept
 }
 $rendered = \FancyCms\Render\PageRenderer::render($doc, Charlotte::dataContext($results));   // fancy-cms's $data argument
 ```

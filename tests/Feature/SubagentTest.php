@@ -107,6 +107,91 @@ test('a site turn spawns one page sub-agent per page; the parent keeps page ids 
         ->and($childThreads)->toHaveCount(2);
 });
 
+/** A parent script that creates one page and then spawns the page sub-agent $times times. */
+function spawnTurn(int $times): array
+{
+    $steps = [['tools' => [['name' => 'site_page_create', 'args' => ['page' => 'home', 'title' => 'Acme Ledger', 'kind' => 'page', 'route' => '/']]]]];
+    for ($i = 0; $i < $times; $i++) {
+        $steps[] = ['tools' => [['name' => BuilderMode::SITE_SUBAGENT, 'args' => ['task' => 'Build pass '.$i.'.']]]];
+    }
+
+    return [...$steps, ['text' => 'Done.']];
+}
+
+test('BLOCKER: the page sub-agent runs on the PARENT\'s RunContext: its spend lands in the parent\'s account', function (): void {
+    $provider = new ScriptedProvider([spawnTurn(2), childBuild('One'), childBuild('Two')]);
+    charlotteApp(['charlotte.autonomy' => 'full'], $provider);
+    $tree = \Prism\Harness\Subagents\RunContext::root('host-tree', new \Prism\Harness\Subagents\RunBudget(maxSteps: 100));
+    Charlotte::contextUsing(fn () => $tree);
+    $site = openSite();
+
+    $site->send('Build.', 'user-7');
+
+    // Each child ran 4 steps; the host's own ledger object holds all 8.
+    expect($provider->result(BuilderMode::SITE_SUBAGENT, 0)['outcome'])->toBe('completed')
+        ->and($provider->result(BuilderMode::SITE_SUBAGENT, 1)['outcome'])->toBe('completed')
+        ->and($tree->ledger->steps())->toBe(8)
+        ->and($provider->result(BuilderMode::SITE_SUBAGENT, 1)['usage']['steps'])->toBe(8)
+        // The child's step ceiling is nested inside the tree's, never a fresh 40.
+        ->and($provider->textRequests[1]->maxSteps())->toBeLessThanOrEqual(100);
+});
+
+test('BLOCKER: a child stops when the parent tree\'s cap is reached', function (): void {
+    $provider = new ScriptedProvider([spawnTurn(3), childBuild('One'), childBuild('Two'), childBuild('Three')]);
+    charlotteApp(['charlotte.autonomy' => 'full'], $provider);
+    $tree = \Prism\Harness\Subagents\RunContext::root('host-tree', new \Prism\Harness\Subagents\RunBudget(maxSteps: 6));
+    Charlotte::contextUsing(fn () => $tree);
+    $site = openSite();
+
+    $site->send('Build.', 'user-7');
+
+    // Child 1 spends 4 of 6; child 2 is admitted with a nested ceiling of 6
+    // and spends 4 more; child 3 finds the tree exhausted and never runs.
+    expect($provider->result(BuilderMode::SITE_SUBAGENT, 0)['outcome'])->toBe('completed')
+        ->and($provider->textRequests[0]->maxSteps())->toBe(6)
+        ->and($provider->textRequests[1]->maxSteps())->toBe(6)
+        ->and($provider->result(BuilderMode::SITE_SUBAGENT, 2)['outcome'])->toBe('exhausted')
+        ->and($provider->textRequests)->toHaveCount(2);
+});
+
+test('BLOCKER: with no host context the stream and the sub-agent share ONE tree on the orchestrator\'s ceiling', function (): void {
+    $provider = new ScriptedProvider([spawnTurn(3), childBuild('One'), childBuild('Two'), childBuild('Three')]);
+    charlotteApp(['charlotte.autonomy' => 'full', 'charlotte.site.max_steps' => 6], $provider);
+    $site = openSite();
+
+    $site->send('Build.', 'user-7');
+
+    expect($provider->result(BuilderMode::SITE_SUBAGENT, 2)['outcome'])->toBe('exhausted')
+        ->and($provider->textRequests)->toHaveCount(2);
+});
+
+test('BLOCKER: a child resolves ONLY the charlotte mode\'s tools and cannot call a parent-only tool', function (string $parentTool, array $args): void {
+    $provider = new ScriptedProvider([
+        spawnTurn(1),
+        [['tools' => [['name' => $parentTool, 'args' => $args]]], ['text' => 'Tried.']],
+    ]);
+    charlotteApp(['charlotte.autonomy' => 'full'], $provider);
+    $site = openSite();
+
+    $site->send('Build.', 'user-7');
+
+    $offered = toolNames($provider->textRequests[0]->tools());
+    // The child's attempt: that tool with the child's own arguments (the parent's calls differ).
+    $attempts = array_values(array_filter($provider->calls, fn (array $c) => $c['name'] === $parentTool && $c['args'] === $args));
+    expect($offered)->toBe(BuilderMode::TOOLS)
+        ->and(array_intersect($offered, array_diff(BuilderMode::SITE_TOOLS, BuilderMode::TOOLS)))->toBe([])
+        ->and($attempts)->toHaveCount(1)
+        ->and($attempts[0]['result'])->toContain('was not offered')
+        ->and($provider->textRequests)->toHaveCount(1) // the child could not spawn a grandchild
+        ->and(array_column(eventsOf($site, 'site.changed'), 'data'))->each->not->toMatchArray(['page' => '@header', 'change' => 'page_selected'])
+        ->and($site->site()['pages'])->toHaveCount(1);
+})->with([
+    'site_page_select' => ['site_page_select', ['page' => '@header']],
+    'site_page_create' => ['site_page_create', ['page' => 'evil', 'title' => 'Evil', 'kind' => 'page', 'route' => '/evil']],
+    'site_nav_set' => ['site_nav_set', ['items' => [], 'basedOn' => 'x']],
+    'the sub-agent tool itself' => [BuilderMode::SITE_SUBAGENT, ['task' => 'Spawn yourself.']],
+]);
+
 test('the child\'s cms_finish marks the page ready and returns its reference, without marking the whole site ready', function (): void {
     charlotteApp(['charlotte.autonomy' => 'full']);
     $site = openSite();

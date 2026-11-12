@@ -107,6 +107,19 @@ instead of resolving it from the container need to change.
   helpers: `Charlotte::dataQueries($doc, $viewer, $inputs, $descendants)` (one
   narrowed query per bound stream) and `Charlotte::dataContext($results)`
   (the `$data` context for fancy-cms's renderer, with `columns` derived).
+- **Field-selecting params.** A stream param declared
+  `['selects' => 'fields', 'always' => ['group']]` (at most one per stream)
+  takes a literal list of the stream's field names; bindings to columns,
+  totals or repeat fields outside the selection plus `always` are refused
+  `binding_invalid` naming the selection, as is selecting an unknown field.
+  `dataQueries` passes the selection in `params` and adds `fields`, what each
+  query's rows must carry (every declared field without a selection).
+- **Nullable field types**: `'number?'` or `['type' => 'number', 'nullable' => true]`,
+  normalised to `number?`. Null is no value, never 0: `dataContext` (now given
+  the catalogue) keeps every row and fills a missing declared field with null
+  in its column; fancy-cms renders null as an empty cell or chart point, a
+  skipped leaderboard row or a kpi's empty state. `cms_describe` tells the
+  agent so, and to set `emptyText`.
 - **Fact checks treat bindings as evidence**: a bound figure is never an
   `unsupported_claim`, nor are dates inside its `$scope`; a literal figure is.
 - **Charlotte as a prism-harness sub-agent.** Mode `charlotte` (the page
@@ -119,6 +132,13 @@ instead of resolving it from the container need to change.
   `{"draft": {"page", "revision"}}`. Its run is its own harness run, linked
   beneath the parent's thread. A child capability copied to another address
   or participant binds no tools.
+- **One run tree per site turn.** The orchestrator's stream and every page
+  sub-agent share one `RunContext`: the host's, or (with no host context) the
+  same root the harness would have built, held by Charlotte. A child's spend
+  lands in that tree and a child past the tree's cap is refused `exhausted`.
+  Until prism-harness G-261, Charlotte offers `charlotte_page` itself through
+  the harness's `SubagentRunner` with that context; the child resolves only
+  the `charlotte` mode's nine tools.
 - Tool handlers pass every argument to the closed dispatch, so an undeclared
   one (`tenant`, `page`) is reported as `$.arguments.<field>: no such field`
   instead of failing inside the PHP call with a generic error.

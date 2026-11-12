@@ -75,14 +75,20 @@ read config through the container.
   (`<query>.rows|columns.<f>|totals.<f>`, `<as>.<f>`, `<stream>#<alias>`),
   `$params` and `$scope`, and builds render queries. `Data\Scope::narrow()` is
   the only place scope is resolved: intersection with the viewer's stated
-  scope, fail-closed on a missing parameter. `FactChecks` skips binding objects
-  and checks literal numbers under `FIGURE_KEYS`.
+  scope, fail-closed on a missing parameter. A param declared
+  `{selects: fields, always}` limits a query's columns, totals and repeat
+  fields to its literal selection (`Bindings::selection`); a query's params are
+  its first binding's (`queryParams`). Field types may end in `?`; `context()`
+  keeps nulls and never coerces to 0. `FactChecks` skips binding objects and
+  checks literal numbers under `FIGURE_KEYS`.
 - **Sub-agents** (`Runtime\PageSubagents`, a singleton): host code binds a
   child harness address (`<parent scope>::sub::<suffix>`) to a Charlotte
   session as capability `charlotte {session, scope}` plus provider and model.
   `Charlotte::delegate()` does it for a host's own agent; `TurnRunner` does
   it for a site orchestrator's `::sub::page` child each turn, and `begin()`s
-  the turn so `tool()` can offer `charlotte_page` through the harness's
+  the turn with the ONE `RunContext` the stream also gets (the host's, else
+  `defaultTree()`, the harness's own default root), so `tool()` can offer
+  `charlotte_page` through the harness's
   `SubagentRunner` (prism-harness 0.17's uncapped `stream()` drops declared
   sub-agents; when the harness offers its own tool of that name, it replaces
   ours). `site_page_create` / `site_page_select` retire the child's thread so
@@ -129,7 +135,9 @@ read config through the container.
   EVERY generation in the host: check the flags and the session key before
   resolving anything from the container (`TelemetryLazyTest`).
 - **Billing is optional.** Nothing may require a `TurnContextFactory`; with
-  none bound a turn passes `context: null` and runs on harness config.
+  none bound a page turn passes `context: null` and runs on harness config. A
+  site turn passes `PageSubagents::defaultTree()` instead, built from the same
+  harness config, so its sub-agents share the stream's tree.
 - **Event types**: adding one means updating `Events\EventTypes::ALL`,
   `resources/schema/events.v1.json`, `tests/fixtures/events.v1.json` and
   `docs/events.md`; `EventContractTest` fails until all agree.

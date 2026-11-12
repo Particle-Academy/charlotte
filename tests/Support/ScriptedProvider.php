@@ -134,8 +134,10 @@ final class ScriptedProvider extends Provider
             foreach ($step['tools'] ?? [] as $k => $call) {
                 $args = $call['args'] instanceof \Closure ? ($call['args'])($this->calls) : $call['args'];
                 $id = 'tcall_'.count($this->requests).'_'.$i.'_'.$k;
-                $tool = $tools[$call['name']] ?? throw new RuntimeException('Script called an unoffered tool: '.$call['name']);
-                $output = $tool->handle(...$args);
+                // A model may name a tool it was not offered; it gets an error
+                // back and nothing runs, as from a real provider.
+                $tool = $tools[$call['name']] ?? null;
+                $output = $tool === null ? 'Error: tool ['.$call['name'].'] was not offered.' : $tool->handle(...$args);
                 $result = is_string($output) ? $output : (string) json_encode($output);
                 $this->calls[] = ['name' => $call['name'], 'args' => $args, 'result' => $result];
                 $calls[] = new ToolCall($id, $call['name'], $args);

@@ -162,6 +162,14 @@ test('a literal number beside a bound one is caught, and the bound one is not', 
         ->and(array_column($claims, 'node'))->toEqualCanonicalizing(['t0', 'kpi']);
 });
 
+test('null is no value: a literal null is never a figure, and the numbers beside it still are', function (): void {
+    $page = dashboardPage(['value' => null, 'delta' => null, 'rows' => [['rep' => 'Ada', 'win_rate' => null, 'deals' => 7]]]);
+
+    $claims = defectsBy(FactChecks::check($page, factBrief(), 2026), 'unsupported_claim');
+
+    expect(array_column($claims, 'claim'))->toBe(['7']);
+});
+
 test('a literal figure the brief supports passes', function (): void {
     $brief = Brief::fromArray(['summary' => 'Dashboard.', 'facts' => [['id' => 'deals', 'kind' => 'stat', 'value' => '1,250 deals closed']]]);
 
