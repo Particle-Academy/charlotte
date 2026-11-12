@@ -10,6 +10,7 @@ use Charlotte\Brief\InvalidBrief;
 use Charlotte\Charlotte;
 use Charlotte\CharlotteSession;
 use Charlotte\Policy\Refused;
+use Charlotte\Site\Site;
 use Closure;
 use FancyCms\Document\PageJson;
 use FancyCms\Exceptions\PageSessionException;
@@ -31,22 +32,29 @@ final class Api
 {
     public function __construct(private readonly Charlotte $charlotte, private readonly Authorizer $authorizer) {}
 
-    /** POST /sessions {page, brief, autonomy?} -> 201 {session, cursor} */
+    /** POST /sessions {page | site, brief, autonomy?} -> 201 {session, cursor} */
     public function open(mixed $principal, ?string $tenant, ?array $body): ApiResponse
     {
         if (($refused = $this->gate($principal, $tenant)) !== null) {
             return $refused;
         }
-        if (! $this->closed($body, ['page', 'brief'], ['autonomy']) || ! is_string($body['page']) || ! is_array($body['brief'])
+        $target = is_array($body) && array_key_exists('site', $body) ? 'site' : 'page';
+        if (! $this->closed($body, [$target, 'brief'], ['autonomy']) || ! is_string($body[$target]) || ! is_array($body['brief'])
             || (isset($body['autonomy']) && ! is_string($body['autonomy']))) {
             return self::error(422, 'invalid_request');
         }
-        if (! $this->authorizer->allows($principal, 'open', ['tenant' => $tenant, 'page' => $body['page'], 'session' => null])) {
+        if ($target === 'site' && preg_match(Site::KEY, $body['site']) !== 1) {
+            return self::error(422, 'invalid_request');
+        }
+        $subject = ['tenant' => $tenant, 'page' => $target === 'page' ? $body['page'] : null, 'session' => null]
+            + ($target === 'site' ? ['site' => $body['site']] : []);
+        if (! $this->authorizer->allows($principal, 'open', $subject)) {
             return self::error(403, 'forbidden');
         }
 
-        return $this->guard(function () use ($principal, $tenant, $body): ApiResponse {
-            $pending = $this->charlotte->for($principal)->tenant($tenant)->page($body['page'])->brief(Brief::fromArray($body['brief']));
+        return $this->guard(function () use ($principal, $tenant, $body, $target): ApiResponse {
+            $pending = $this->charlotte->for($principal)->tenant($tenant)->brief(Brief::fromArray($body['brief']));
+            $target === 'site' ? $pending->site($body['site']) : $pending->page($body['page']);
             if (isset($body['autonomy'])) {
                 $pending->autonomy($body['autonomy']);
             }
@@ -145,7 +153,8 @@ final class Api
             return self::error(404, 'not_found');
         }
         $record = $session->record();
-        if (! $this->authorizer->allows($principal, $ability, ['tenant' => $record->tenant, 'page' => $record->page, 'session' => $record->id])) {
+        if (! $this->authorizer->allows($principal, $ability, ['tenant' => $record->tenant, 'page' => $record->page, 'session' => $record->id]
+            + ($record->isSite() ? ['site' => $record->site] : []))) {
             return self::error(403, 'forbidden');
         }
 

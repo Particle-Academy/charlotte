@@ -24,7 +24,7 @@ final class SessionStore
             'brief_json' => json_encode($record->brief->toArray(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'guide_hash' => $record->guideHash,
             'guide_json' => json_encode($record->guide, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
-            'status' => $record->status, 'stop_requested_at' => null, 'ready_revision' => null,
+            'status' => $record->status, 'stop_requested_at' => null, 'ready_revision' => null, 'site_key' => $record->site,
             'created_at' => $now, 'updated_at' => $now,
         ]);
     }
@@ -49,6 +49,7 @@ final class SessionStore
             status: (string) $row->status,
             stopRequestedAt: $row->stop_requested_at === null ? null : (string) $row->stop_requested_at,
             readyRevision: $row->ready_revision === null ? null : (string) $row->ready_revision,
+            site: ($row->site_key ?? null) === null ? null : (string) $row->site_key,
         );
     }
 

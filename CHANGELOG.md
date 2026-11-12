@@ -12,6 +12,66 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+Whole sites, kit islands and rendered contrast (lab plan
+`lab-full-kit-site-benchmark.md`, phase P2; findings K13, S10, S12).
+
+**Upgrading:** run the new migration (`2026_11_11_000000_add_charlotte_sites`:
+a `charlotte_sites` table, nullable `charlotte_sessions.site_key` and
+`charlotte_proposals.page_key`). **The guide text changed** (new sections),
+so the guide hash changes: a session opened before the upgrade refuses its
+next turn with `guide_mode_stale`, as on any guide change. Open a new session.
+Page sessions otherwise behave as before: same nine tools, same events, same
+proposals. **`Workspace`'s constructor gained two parameters** (island
+catalogue, rendered-report source); only hosts that construct it by hand
+instead of resolving it from the container need to change.
+
+### Added
+- **Whole-site sessions.** `Charlotte::for($user)->tenant($t)->site($key)->brief($b)->open()`
+  (or `POST /sessions {site, brief}`) opens a session that builds several
+  pages. It runs in a new harness mode, `charlotte_site_builder`, with five
+  more tools: `site_get`, `site_page_create`, `site_page_select`,
+  `site_page_route` and `site_nav_set`. Each page has its own document and a
+  real route; `@header` and `@footer` are shared regions edited once for every
+  page; one page of kind `not_found` is the 404; `site_nav_set` writes the
+  header nav as links to the pages' routes. The `cms_*` tools act on the
+  selected document. `cms_finish` and `publish()` take the SITE revision and
+  cover every page and region. `CharlotteSession::site()` and `siteExport()`
+  return the structure and the site in the lab kit-site `site.json` shape.
+- **Reserved routes (K13).** `charlotte.site.reserved_routes`: routes the host
+  serves itself (Fortify's `/login`, `/register`, `/forgot-password` …), exact
+  or `/prefix/*`. A page there is refused with `route_reserved`, naming the
+  route and the entry it matched. Malformed routes are `route_invalid`.
+- **Site-wide checks** (`Checks\SiteChecks`), in `cms_check` and `cms_finish` on
+  a site: `site_link_broken`, `site_anchor_broken`, `site_orphan_page`,
+  `site_page_unrouted`, `site_missing_home`, `site_missing_404`,
+  `site_404_no_home_link`, `site_nav_missing`, `site_nav_incomplete`,
+  `site_nav_duplicate`, `site_nav_in_page`, `site_region_h1`,
+  `site_region_anchor`, `site_title_duplicate`; required facts are judged
+  across the whole site.
+- **Rendered contrast (S12).** `Charlotte::renderedUsing()` / a bound
+  `Checks\RenderedEvidenceSource` supplies `Checks\RenderedEvidence` (built
+  from axe-core results with `RenderedEvidence::fromAxe()`). When its revision
+  matches, contrast is judged on the rendered page, islands included, and
+  replaces the document's contrast verdicts. Every `checks.result` now
+  carries `contrast: {source: "rendered" | "document", ...}` saying which ran.
+  No browser and no dependency in Charlotte: the host or lab supplies it.
+- **Kit islands (S10).** `Islands\IslandCatalogue`, defaulting to
+  `CmsDescribeIslands::catalogue()`, which reads fancy-cms's `describe()`
+  island catalogue when the installed fancy-cms has one (none does yet) and
+  is empty otherwise. A host may bind `Islands\SchemaIslandCatalogue` now.
+  `cms_describe` returns `islands {source, types, place}`. Island nodes are
+  checked after every write, for every actor (`Islands\IslandPolicy`): catalogue
+  type iff `island: true`, props valid for the type's JSON Schema
+  (`island_invalid` with the field's path), no image URL in props, asset
+  handles from the host catalogue.
+- Copy inside island props counts for `missing_required_fact` and
+  `unsupported_claim`.
+- Event type `site.changed`; site sessions add `page` to `doc.changed` and
+  `proposal.*`. See `docs/events.md`.
+- Tool refusals may carry agent-facing details beside the fixed message (for
+  example `route` and `reserved` on `route_reserved`), and a refusal without
+  its own revision now reports the current one.
+
 ## [0.3.0] - 2026-10-30
 
 Fixes from Charlotte's first paid lab run (flabs runs 146-149, 2026-10-30,

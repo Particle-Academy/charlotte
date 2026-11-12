@@ -31,7 +31,12 @@ final class CharlotteSession
     /** Everything a client renders, plus the event cursor to poll from. */
     public function state(): array
     {
-        return $this->workspace()->state($this->record());
+        $record = $this->record();
+        $state = $this->workspace()->state($record);
+
+        // A site session's doc/revision/proposal are the SELECTED document's;
+        // `site` is the structure and the site revision publish() takes.
+        return $record->isSite() ? $state + ['site' => $this->sites()->describe($record)] : $state;
     }
 
     /**
@@ -47,7 +52,7 @@ final class CharlotteSession
     /** The builder's tools bound to this session (what the model calls). */
     public function tools(): PageTools
     {
-        return new PageTools($this->workspace(), $this->id);
+        return new PageTools($this->workspace(), $this->id, $this->sites());
     }
 
     /**
@@ -73,10 +78,31 @@ final class CharlotteSession
         return $this->workspace()->applyHuman($this->record(), $ops, $basedOn, $by);
     }
 
-    /** Run the code-derived checks on the current view. */
+    /** Run the code-derived checks on the current view (on a site: the selected document plus the site-wide checks). */
     public function check(): array
     {
-        return $this->workspace()->check($this->record());
+        $record = $this->record();
+        if ($record->isSite()) {
+            return $this->sites()->check($record, $this->workspace()->view($record)['revision']);
+        }
+
+        return $this->workspace()->check($record);
+    }
+
+    /** A site session's structure, regions, reserved routes and site revision (what `site_get` shows). */
+    public function site(): array
+    {
+        return $this->sites()->describe($this->record());
+    }
+
+    /**
+     * A site session as a host serves it, in the lab kit-site `site.json`
+     * shape: `{pages[{route, title, description, doc}], header, footer,
+     * notFound, islands}`. Drafts, or the published copies.
+     */
+    public function siteExport(bool $published = false): array
+    {
+        return $this->sites()->export($this->record(), $published);
     }
 
     /** approve_on_save: save the pending change set to the draft. */
@@ -93,15 +119,26 @@ final class CharlotteSession
 
     /**
      * Publish the draft at the revision the person reviewed. The ONLY way a
-     * page is published; Charlotte never calls it on its own.
+     * page is published; Charlotte never calls it on its own. On a site
+     * session `$basedOn` is the site revision, and every page and region is
+     * published together.
      */
     public function publish(string $basedOn, string $by): array
     {
-        return $this->workspace()->publish($this->record(), $basedOn, $by);
+        $record = $this->record();
+
+        return $record->isSite()
+            ? $this->sites()->publish($record, $basedOn, $by)
+            : $this->workspace()->publish($record, $basedOn, $by);
     }
 
     private function workspace(): Workspace
     {
         return $this->charlotte->container()->make(Workspace::class);
+    }
+
+    private function sites(): SiteWorkspace
+    {
+        return $this->charlotte->container()->make(SiteWorkspace::class);
     }
 }

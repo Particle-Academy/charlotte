@@ -31,12 +31,25 @@ final class PendingCharlotteSession
 
     private ?array $document = null;
 
+    private ?string $site = null;
+
     public function __construct(private readonly Charlotte $charlotte, private readonly Model $participant) {}
 
     /** The host's partition (team, site, account). Every read and write is scoped by it. */
     public function tenant(string $tenant): self
     {
         $this->tenant = $tenant;
+
+        return $this;
+    }
+
+    /**
+     * Build a whole SITE instead of one page: the agent creates and routes
+     * pages and edits the shared header and footer. Use instead of page().
+     */
+    public function site(string $site): self
+    {
+        $this->site = $site;
 
         return $this;
     }
@@ -89,6 +102,14 @@ final class PendingCharlotteSession
 
     public function open(): CharlotteSession
     {
+        if ($this->site !== null) {
+            if ($this->tenant === null || $this->brief === null || $this->page !== null || $this->document !== null) {
+                throw new LogicException('A site session needs a tenant and a brief, and takes no page() or initialDocument(): the agent creates its pages.');
+            }
+
+            return $this->charlotte->openSite($this->participant, $this->tenant, $this->site, $this->brief,
+                $this->autonomy, $this->provider, $this->model);
+        }
         if ($this->tenant === null || $this->page === null || $this->brief === null) {
             throw new LogicException('Charlotte needs a tenant, a page and a brief before open().');
         }

@@ -37,7 +37,7 @@ final class FactChecks
     public static function check(array $doc, Brief $brief, ?int $currentYear = null): array
     {
         $currentYear ??= (int) gmdate('Y');
-        $copy = PageChecks::copy($doc);
+        $copy = [...PageChecks::copy($doc), ...self::islandCopy($doc)];
         $visible = self::normalize(implode("\n", array_column($copy, 'text')));
         $evidence = self::evidence($brief);
         $defects = [];
@@ -91,6 +91,39 @@ final class FactChecks
         $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
 
         return trim($text);
+    }
+
+    /** Island prop keys that hold identifiers or targets, not visible copy. */
+    private const ISLAND_NON_COPY = ['href', 'asset', 'value', 'id', 'type', 'variant', 'as', 'charttype', 'language', 'form', 'src', 'name', 'key', 'icon', 'defaulttab', 'method', 'action'];
+
+    /**
+     * Visible copy inside island props: every string leaf except identifier
+     * and target keys. An island's tab body or chart caption is page copy,
+     * so a required fact there counts and an invented one there is caught.
+     *
+     * @return list<array{node: string, text: string}>
+     */
+    private static function islandCopy(array $doc): array
+    {
+        $out = [];
+        foreach ((array) ($doc['nodes'] ?? []) as $id => $node) {
+            $node = json_decode(json_encode($node) ?: '[]', true);
+            if (! is_array($node) || ($node['island'] ?? false) !== true) {
+                continue;
+            }
+            $walk = function (mixed $value, string|int $key) use (&$walk, &$out, $id): void {
+                if (is_array($value)) {
+                    foreach ($value as $k => $v) {
+                        $walk($v, is_int($k) ? $key : $k);
+                    }
+                } elseif (is_string($value) && trim($value) !== '' && ! in_array(strtolower((string) $key), self::ISLAND_NON_COPY, true)) {
+                    $out[] = ['node' => (string) $id, 'text' => trim($value)];
+                }
+            };
+            $walk($node['props'] ?? [], '');
+        }
+
+        return $out;
     }
 
     /** @return list<array{0: string, 1: string}> */

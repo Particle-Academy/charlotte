@@ -34,6 +34,21 @@ function defectsBy(array $defects, string $code): array
     return array_values(array_filter($defects, fn ($d) => $d['code'] === $code));
 }
 
+test('copy inside an island\'s props counts: a required fact there is present, an invented price there is caught', function (): void {
+    $page = pageWithCopy(['Acme Ledger keeps your books.', 'Write to hello@example.com']);
+    $page['nodes']['tabs'] = ['id' => 'tabs', 'type' => 'kit:Tabs', 'island' => true, 'parent' => 'root', 'order' => 'b0', 'style' => ['base' => []],
+        'props' => ['tabs' => [
+            ['value' => 'starter', 'label' => 'Starter', 'body' => ['Starter plan: $19/month']],
+            ['value' => 'pro', 'label' => 'Pro', 'body' => ['Pro plan: $49/month'], 'href' => '/pricing'],
+        ]]];
+
+    $defects = FactChecks::check($page, factBrief());
+
+    expect(defectsBy($defects, 'missing_required_fact'))->toBe([])
+        ->and(array_column(defectsBy($defects, 'unsupported_claim'), 'claim'))->toBe(['$49'])
+        ->and(defectsBy($defects, 'unsupported_claim')[0]['node'])->toBe('tabs');
+});
+
 test('a page carrying every required fact, and nothing else, passes', function (): void {
     $page = pageWithCopy(['Acme Ledger keeps your books.', 'Starter plan: $19/month', 'Write to hello@example.com', 'Saved me Sunday nights. R. Diaz']);
 

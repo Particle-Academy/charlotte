@@ -17,9 +17,16 @@ final class ProposalStore
 {
     public function __construct(private readonly ConnectionInterface $db) {}
 
-    public function openFor(string $session, bool $lock = false): ?object
+    /**
+     * The open change set for a session's page. A null page_key is a row
+     * from before 0.4, which always belonged to the session's one page.
+     */
+    public function openFor(string $session, ?string $page = null, bool $lock = false): ?object
     {
         $query = $this->db->table('charlotte_proposals')->where('session_id', $session)->where('state', 'open')->orderBy('created_at');
+        if ($page !== null) {
+            $query->where(fn ($q) => $q->where('page_key', $page)->orWhereNull('page_key'));
+        }
 
         return ($lock ? $query->lockForUpdate() : $query)->first();
     }
@@ -31,11 +38,11 @@ final class ProposalStore
         return ($lock ? $query->lockForUpdate() : $query)->first();
     }
 
-    public function create(string $id, string $session, string $baseRevision, string $workingJson, array $ops): void
+    public function create(string $id, string $session, string $baseRevision, string $workingJson, array $ops, ?string $page = null): void
     {
         $now = gmdate('Y-m-d H:i:s');
         $this->db->table('charlotte_proposals')->insert([
-            'id' => $id, 'session_id' => $session, 'state' => 'open', 'base_revision' => $baseRevision,
+            'id' => $id, 'session_id' => $session, 'page_key' => $page, 'state' => 'open', 'base_revision' => $baseRevision,
             'working_json' => $workingJson, 'ops_json' => self::encode($ops),
             'batches' => 1, 'op_count' => count($ops), 'created_at' => $now, 'updated_at' => $now,
         ]);

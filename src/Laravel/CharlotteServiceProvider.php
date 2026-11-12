@@ -34,6 +34,14 @@ use Charlotte\Transport\LongPoll;
 use Charlotte\Transport\Sleeper;
 use Charlotte\Transport\UsleepSleeper;
 use Charlotte\Workspace;
+use Charlotte\SiteWorkspace;
+use Charlotte\Checks\NoRenderedEvidence;
+use Charlotte\Checks\RenderedEvidenceSource;
+use Charlotte\Islands\CmsDescribeIslands;
+use Charlotte\Islands\IslandCatalogue;
+use Charlotte\Site\ReservedRoutes;
+use Charlotte\Site\SiteRepository;
+use Charlotte\Storage\DatabaseSiteRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\ServiceProvider;
@@ -54,7 +62,13 @@ final class CharlotteServiceProvider extends ServiceProvider
 
         $this->app->bindIf(ConnectionInterface::class, fn (Application $app) => $app['db']->connection());
         $this->app->singleton(EventLog::class, fn (Application $app) => new DatabaseEventLog($app['db']->connection()));
-        $this->app->singleton(PageRepository::class, fn (Application $app) => new DatabasePageRepository($app['db']->connection()));
+        $this->app->singleton(PageRepository::class, fn (Application $app) => new DatabasePageRepository($app['db']->connection(),
+            fn (): array => $app->make(IslandCatalogue::class)->types()));
+        $this->app->singletonIf(SiteRepository::class, fn (Application $app) => new DatabaseSiteRepository($app['db']->connection()));
+        // Bound, not singletons, like AssetCatalogue: a host may rebind them per tenant.
+        $this->app->bindIf(ReservedRoutes::class, fn (Application $app) => new ReservedRoutes((array) $app['config']->get('charlotte.site.reserved_routes', [])));
+        $this->app->bindIf(IslandCatalogue::class, fn () => CmsDescribeIslands::catalogue());
+        $this->app->bindIf(RenderedEvidenceSource::class, fn () => new NoRenderedEvidence);
         $this->app->singleton(SessionStore::class, fn (Application $app) => new SessionStore($app['db']->connection()));
         $this->app->singleton(ProposalStore::class, fn (Application $app) => new ProposalStore($app['db']->connection()));
         $this->app->singletonIf(AssetCatalogue::class, fn () => new EmptyAssetCatalogue);
@@ -72,6 +86,11 @@ final class CharlotteServiceProvider extends ServiceProvider
         $this->app->bind(Workspace::class, fn (Application $app) => new Workspace(
             $app['db']->connection(), $app->make(SessionStore::class), $app->make(PageRepository::class),
             $app->make(ProposalStore::class), $app->make(EventLog::class), $app->make(AssetCatalogue::class), $app->make(LinkPolicy::class),
+            $app->make(IslandCatalogue::class), $app->make(RenderedEvidenceSource::class),
+        ));
+        $this->app->bind(SiteWorkspace::class, fn (Application $app) => new SiteWorkspace(
+            $app['db']->connection(), $app->make(Workspace::class), $app->make(SessionStore::class), $app->make(SiteRepository::class),
+            $app->make(ReservedRoutes::class), max(1, (int) $app['config']->get('charlotte.site.max_pages', 12)),
         ));
         $this->app->singletonIf(TurnDispatcher::class, fn (Application $app) => new QueueTurnDispatcher(
             $app->make(BusDispatcher::class),
@@ -88,6 +107,7 @@ final class CharlotteServiceProvider extends ServiceProvider
             $app->make(Workspace::class), $app->make(Guides::class), $app->make(ModeRegistry::class),
             $app->make(PrismHarness::class), $app->make(AgentRuntime::class), $app->make(TurnContextFactory::class),
             max(0, (int) $app['config']->get('charlotte.max_continuations', 3)),
+            $app->make(SiteWorkspace::class),
         ));
         $this->app->singleton(Charlotte::class, fn (Application $app) => new Charlotte($app));
         $this->app->singletonIf(Authorizer::class, fn () => new DenyAll);
@@ -99,12 +119,16 @@ final class CharlotteServiceProvider extends ServiceProvider
         $this->app->extend(ModeRegistry::class, function (ModeRegistry $registry, Application $app): ModeRegistry {
             $agent = (array) $app['config']->get('prism-harness.agent', []);
             $modes = is_array($agent['modes'] ?? null) ? $agent['modes'] : [];
-            if (! isset($modes[BuilderMode::NAME])) {
-                $modes[BuilderMode::NAME] = BuilderMode::config(
-                    $app->make(Guides::class)->current(),
-                    (int) $app['config']->get('charlotte.max_steps', 40),
-                    (array) $app['config']->get('charlotte.provider_options', []),
-                );
+            foreach ([false, true] as $site) {
+                $name = BuilderMode::nameFor($site);
+                if (! isset($modes[$name])) {
+                    $modes[$name] = BuilderMode::config(
+                        $app->make(Guides::class)->current(),
+                        (int) $app['config']->get($site ? 'charlotte.site.max_steps' : 'charlotte.max_steps', $site ? 120 : 40),
+                        (array) $app['config']->get('charlotte.provider_options', []),
+                        $site,
+                    );
+                }
             }
             $agent['modes'] = $modes;
 
@@ -128,7 +152,7 @@ final class CharlotteServiceProvider extends ServiceProvider
         // page, the tenant or itself. Guarded on the mode so unrelated runs pay
         // nothing: ToolRegistry runs every provider on every resolve.
         $this->app->make(ToolRegistry::class)->registerProvider(function (Session $session): array {
-            if ($session->mode() !== BuilderMode::NAME) {
+            if (! in_array($session->mode(), [BuilderMode::NAME, BuilderMode::SITE_NAME], true)) {
                 return [];
             }
             $capability = $session->capability('charlotte');
@@ -137,7 +161,7 @@ final class CharlotteServiceProvider extends ServiceProvider
                 return [];
             }
 
-            return (new PageTools($this->app->make(Workspace::class), $id))->prismTools();
+            return (new PageTools($this->app->make(Workspace::class), $id, $this->app->make(SiteWorkspace::class)))->prismTools();
         });
 
         // Optional usage/cost observation. Listens only if the installed Prism

@@ -68,6 +68,37 @@ $cursor = $session->send('Build the landing page from the brief.', (string) $req
 
 Full setup: [docs/laravel-quickstart.md](docs/laravel-quickstart.md).
 
+## A whole site
+
+Open with `site()` instead of `page()` and the agent builds several pages:
+it creates and routes pages, edits a shared `@header` and `@footer` once for
+every page, sets the nav, and makes a 404 page. Routes your app serves itself
+are refused, so list them:
+
+```php
+// config/charlotte.php
+'site' => ['reserved_routes' => ['/login', '/register', '/forgot-password', '/reset-password/*', '/dashboard']],
+
+$session = Charlotte::for($request->user())->tenant((string) $team->getKey())->site('marketing')
+    ->brief(Brief::fromArray($validated['brief']))->open();
+
+$session->siteExport();                       // {pages[{route, title, description, doc}], header, footer, notFound, islands}
+$session->publish($session->site()['revision'], (string) $request->user()->getKey()); // every page and region at once
+```
+
+`cms_check` adds site-wide checks: broken internal links, orphan pages, a
+missing 404 or home page, and nav consistency.
+
+**Kit islands.** Bind an `Islands\IslandCatalogue` (or let Charlotte read
+fancy-cms's `cms_describe` catalogue once it ships one) and the agent can place
+`{type: "kit:Tabs", island: true, props}` nodes, each checked against that
+type's JSON Schema for every actor.
+
+**Rendered contrast.** `Charlotte::renderedUsing()` hands Charlotte a browser's
+measurements (`Checks\RenderedEvidence::fromAxe()` reads axe-core results), so
+contrast is judged on the rendered page, islands included. Without one it is
+judged on the document, and every check result says which ran.
+
 ## Host budgets (optional)
 
 Charlotte never requires billing: with nothing bound, every turn runs on

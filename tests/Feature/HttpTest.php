@@ -241,3 +241,31 @@ test('the long-poll wait is capped by configuration', function (): void {
     expect($response['body'])->toBe(['events' => [], 'cursor' => 999])
         ->and(microtime(true) - $started)->toBeLessThan(2.0);
 });
+
+test('POST /sessions opens a whole-site session with {site, brief}, and asks the hook with the site', function (): void {
+    $asked = [];
+    httpApp(function ($user, string $ability, array $subject) use (&$asked): bool {
+        $asked[] = [$ability, $subject['site'] ?? null];
+
+        return true;
+    });
+    $user = User::create(['name' => 'Ada']);
+
+    $opened = http('POST', '/sessions', ['site' => 'acme-site', 'brief' => briefArray()], $user);
+    $state = http('GET', '/sessions/'.$opened['body']['session'], null, $user);
+
+    expect($opened['status'])->toBe(201)
+        ->and($state['body']['session']['site'])->toBe('acme-site')
+        ->and($state['body']['site']['key'])->toBe('acme-site')
+        ->and($asked[0])->toBe(['open', 'acme-site'])
+        ->and($asked[1])->toBe(['view', 'acme-site']);
+});
+
+test('POST /sessions takes a page or a site, never both, and refuses a site key with a slash', function (): void {
+    httpApp(fn (): bool => true);
+    $user = User::create(['name' => 'Ada']);
+
+    expect(http('POST', '/sessions', ['page' => 'home', 'site' => 'acme-site', 'brief' => briefArray()], $user)['status'])->toBe(422)
+        ->and(http('POST', '/sessions', ['brief' => briefArray()], $user)['status'])->toBe(422)
+        ->and(http('POST', '/sessions', ['site' => 'acme-site/home', 'brief' => briefArray()], $user)['status'])->toBe(422);
+});

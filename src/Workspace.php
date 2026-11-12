@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace Charlotte;
 
 use Charlotte\Checks\Checks;
+use Charlotte\Checks\RenderedEvidence;
+use Charlotte\Checks\RenderedEvidenceSource;
 use Charlotte\Drafts\NodeTypes;
 use Charlotte\Drafts\PageRepository;
 use Charlotte\Events\Event;
 use Charlotte\Events\EventLog;
 use Charlotte\Events\EventTypes;
 use Charlotte\Events\Ulid;
+use Charlotte\Islands\IslandCatalogue;
+use Charlotte\Islands\IslandPolicy;
 use Charlotte\Policy\AssetCatalogue;
 use Charlotte\Policy\AssetPolicy;
 use Charlotte\Policy\LinkPolicy;
@@ -21,10 +25,15 @@ use Charlotte\Storage\SessionStore;
 use FancyCms\Exceptions\PageSessionException;
 use FancyCms\PageSession;
 use Illuminate\Database\ConnectionInterface;
+use Throwable;
 
 /**
- * The page a session edits: its draft, the agent's pending change set, and
- * the events every mutation records in the same transaction.
+ * The document a session edits: its draft, the agent's pending change set,
+ * and the events every mutation records in the same transaction.
+ *
+ * Every method acts on `$session->page`. A site session's tools address its
+ * other documents with {@see SessionRecord::onPage()}; the site-level
+ * operations live in {@see SiteWorkspace}.
  *
  * Every write here is host-attributed. The agent's writes always carry actor
  * `agent`; a person's carry `human` plus the id the host passed. Neither page,
@@ -49,6 +58,8 @@ final class Workspace
         private readonly EventLog $events,
         private readonly AssetCatalogue $assets,
         private readonly LinkPolicy $links,
+        private readonly IslandCatalogue $islands,
+        private readonly RenderedEvidenceSource $rendered,
     ) {}
 
     public function session(string $id): SessionRecord
@@ -61,18 +72,31 @@ final class Workspace
         return $this->assets;
     }
 
+    public function islands(): IslandCatalogue
+    {
+        return $this->islands;
+    }
+
+    public function links(): LinkPolicy
+    {
+        return $this->links;
+    }
+
+    public function pages(): PageRepository
+    {
+        return $this->pages;
+    }
+
     /**
      * What the agent sees: the draft, or under approve_on_save with a change
-     * set open, the change set's working copy.
+     * set open for this page, the change set's working copy.
      *
      * @return array{doc: array, revision: string, staged: bool}
      */
     public function view(SessionRecord $session): array
     {
-        $open = $session->autonomy === Autonomy::ApproveOnSave ? $this->proposals->openFor($session->id) : null;
-        $page = $open !== null
-            ? PageSession::fromJson((string) $open->working_json, NodeTypes::allowed())
-            : $this->pages->read($session->tenant, $session->page);
+        $open = $this->openFor($session);
+        $page = $open !== null ? $this->working($open) : $this->pages->read($session->tenant, $session->page);
 
         return [...$page->get(), 'staged' => $open !== null];
     }
@@ -81,7 +105,8 @@ final class Workspace
     public function applyAgent(SessionRecord $session, array $ops, string $basedOn): array
     {
         return $this->db->transaction(function () use ($session, $ops, $basedOn): array {
-            $session = $this->sessions->find($session->id, true) ?? throw new Refused('session_missing');
+            $page = $session->page;
+            $session = ($this->sessions->find($session->id, true) ?? throw new Refused('session_missing'))->onPage($page);
             if ($session->stopped()) {
                 throw new Refused('stopped');
             }
@@ -89,11 +114,11 @@ final class Workspace
 
             if ($session->autonomy === Autonomy::Full) {
                 return $this->pages->edit($session->tenant, $session->page, function (PageSession $draft) use ($session, $ops, $basedOn): array {
-                    $before = $draft->get()['revision'];
+                    $prior = $draft->get();
                     $result = $draft->apply($ops, 'agent', $basedOn);
-                    AssetPolicy::assert($result['doc'], $this->assets, $before);
-                    if ($result['revision'] !== $before) {
-                        $this->changed($session, self::AGENT, $before, $result['revision'], $ops);
+                    $this->guard($prior['doc'], $result['doc'], $prior['revision']);
+                    if ($result['revision'] !== $prior['revision']) {
+                        $this->changed($session, self::AGENT, $prior['revision'], $result['revision'], $ops);
                     }
 
                     return ['revision' => $result['revision'], 'applied' => count($ops)];
@@ -109,11 +134,11 @@ final class Workspace
     {
         return $this->db->transaction(fn (): array => $this->pages->edit($session->tenant, $session->page,
             function (PageSession $draft) use ($session, $ops, $basedOn, $by): array {
-                $before = $draft->get()['revision'];
+                $prior = $draft->get();
                 $result = $draft->apply($ops, 'human', $basedOn);
-                AssetPolicy::assert($result['doc'], $this->assets, $before);
-                if ($result['revision'] !== $before) {
-                    $this->changed($session, ['kind' => 'human', 'id' => $by], $before, $result['revision'], $ops);
+                $this->guard($prior['doc'], $result['doc'], $prior['revision']);
+                if ($result['revision'] !== $prior['revision']) {
+                    $this->changed($session, ['kind' => 'human', 'id' => $by], $prior['revision'], $result['revision'], $ops);
                 }
 
                 return $result;
@@ -122,10 +147,8 @@ final class Workspace
 
     public function changesSince(SessionRecord $session, string $since): array
     {
-        $open = $session->autonomy === Autonomy::ApproveOnSave ? $this->proposals->openFor($session->id) : null;
-        $page = $open !== null
-            ? PageSession::fromJson((string) $open->working_json, NodeTypes::allowed())
-            : $this->pages->read($session->tenant, $session->page);
+        $open = $this->openFor($session);
+        $page = $open !== null ? $this->working($open) : $this->pages->read($session->tenant, $session->page);
 
         return $page->changesSince($since);
     }
@@ -133,14 +156,29 @@ final class Workspace
     /** Run every code-derived check on what the agent sees and record the result. */
     public function check(SessionRecord $session, ?string $basedOn = null): array
     {
+        $result = $this->checkResult($session, $basedOn);
+        $this->events->append($session->id, EventTypes::CHECKS_RESULT, self::SYSTEM, $result);
+
+        return $result;
+    }
+
+    /**
+     * The checks on what the agent sees, without recording them. Asks the
+     * host for a rendered report first; contrast is judged on it when it
+     * names this revision (or one of $alsoAccept).
+     *
+     * @param  list<string>  $skip
+     * @param  list<string>  $alsoAccept
+     */
+    public function checkResult(SessionRecord $session, ?string $basedOn = null, array $skip = [], array $alsoAccept = []): array
+    {
         $view = $this->view($session);
         if ($basedOn !== null) {
             $this->assertCurrent($view['revision'], $basedOn);
         }
-        $result = Checks::run($view['doc'], $view['revision'], $session->brief, $this->links);
-        $this->events->append($session->id, EventTypes::CHECKS_RESULT, self::SYSTEM, $result);
+        [$rendered, $unavailable] = $this->rendered($session);
 
-        return $result;
+        return Checks::run($view['doc'], $view['revision'], $session->brief, $this->links, $rendered, $alsoAccept, $skip, $unavailable);
     }
 
     /** Mark the observed revision ready for a person's review. Never publishes, never freezes editing. */
@@ -158,22 +196,26 @@ final class Workspace
         });
     }
 
-    /** Save a pending change set to the draft. A set that no longer applies resolves `conflicted` and writes nothing. */
+    /**
+     * Save a pending change set to the draft of the page it was made on. A
+     * set that no longer applies resolves `conflicted` and writes nothing.
+     */
     public function approve(SessionRecord $session, string $proposalId, string $by): array
     {
         return $this->db->transaction(function () use ($session, $proposalId, $by): array {
             $proposal = $this->openProposal($session, $proposalId);
+            $session = $session->onPage($proposal->page_key === null ? $session->page : (string) $proposal->page_key);
             $ops = ProposalStore::ops($proposal);
             try {
                 $result = $this->pages->edit($session->tenant, $session->page, function (PageSession $draft) use ($session, $ops, $proposalId, $by): array {
-                    $before = $draft->get()['revision'];
-                    $result = $draft->get();
+                    $prior = $draft->get();
+                    $result = $prior;
                     foreach (array_chunk($ops, self::MAX_BATCH) as $chunk) {
                         $result = $draft->apply($chunk, 'agent');
                     }
-                    AssetPolicy::assert($result['doc'], $this->assets, $before);
-                    if ($result['revision'] !== $before) {
-                        $this->changed($session, self::AGENT, $before, $result['revision'], $ops, ['proposalId' => $proposalId, 'approvedBy' => $by]);
+                    $this->guard($prior['doc'], $result['doc'], $prior['revision']);
+                    if ($result['revision'] !== $prior['revision']) {
+                        $this->changed($session, self::AGENT, $prior['revision'], $result['revision'], $ops, ['proposalId' => $proposalId, 'approvedBy' => $by]);
                     }
 
                     return $result;
@@ -189,7 +231,7 @@ final class Workspace
             }
             $this->proposals->resolve($proposalId, $state, $by);
             $this->events->append($session->id, EventTypes::PROPOSAL_RESOLVED, ['kind' => 'human', 'id' => $by],
-                ['proposalId' => $proposalId, 'state' => $state, 'revision' => $revision]);
+                ['proposalId' => $proposalId, 'state' => $state, 'revision' => $revision] + $this->pageField($session));
 
             return ['state' => $state, 'revision' => $revision];
         });
@@ -198,11 +240,12 @@ final class Workspace
     public function reject(SessionRecord $session, string $proposalId, string $by): array
     {
         return $this->db->transaction(function () use ($session, $proposalId, $by): array {
-            $this->openProposal($session, $proposalId);
+            $proposal = $this->openProposal($session, $proposalId);
+            $session = $session->onPage($proposal->page_key === null ? $session->page : (string) $proposal->page_key);
             $revision = $this->pages->read($session->tenant, $session->page)->get()['revision'];
             $this->proposals->resolve($proposalId, 'rejected', $by);
             $this->events->append($session->id, EventTypes::PROPOSAL_RESOLVED, ['kind' => 'human', 'id' => $by],
-                ['proposalId' => $proposalId, 'state' => 'rejected', 'revision' => $revision]);
+                ['proposalId' => $proposalId, 'state' => 'rejected', 'revision' => $revision] + $this->pageField($session));
 
             return ['state' => 'rejected', 'revision' => $revision];
         });
@@ -210,17 +253,21 @@ final class Workspace
 
     /**
      * Copy the draft, at the revision the person saw, to the published slot.
-     * Host code only: no tool and no agent path reaches this.
+     * Host code only: no tool and no agent path reaches this. A site session
+     * publishes through {@see SiteWorkspace::publish()}, which calls this per
+     * document inside one transaction.
      */
-    public function publish(SessionRecord $session, string $basedOn, string $by): array
+    public function publish(SessionRecord $session, string $basedOn, string $by, bool $record = true): array
     {
-        return $this->db->transaction(function () use ($session, $basedOn, $by): array {
-            return $this->pages->edit($session->tenant, $session->page, function (PageSession $draft) use ($session, $basedOn, $by): array {
+        return $this->db->transaction(function () use ($session, $basedOn, $by, $record): array {
+            return $this->pages->edit($session->tenant, $session->page, function (PageSession $draft) use ($session, $basedOn, $by, $record): array {
                 $current = $draft->get();
                 $this->assertCurrent($current['revision'], $basedOn);
                 AssetPolicy::assert($current['doc'], $this->assets, $current['revision']);
                 $this->pages->publish($session->tenant, $session->page, $current['doc'], $current['revision'], $by);
-                $this->events->append($session->id, EventTypes::DRAFT_PUBLISHED, ['kind' => 'human', 'id' => $by], ['revision' => $current['revision']]);
+                if ($record) {
+                    $this->events->append($session->id, EventTypes::DRAFT_PUBLISHED, ['kind' => 'human', 'id' => $by], ['revision' => $current['revision']]);
+                }
 
                 return ['revision' => $current['revision'], 'published' => true];
             });
@@ -247,10 +294,10 @@ final class Workspace
     {
         $session = $this->session($session->id);
         $draft = $this->pages->read($session->tenant, $session->page)->get();
-        $open = $this->proposals->openFor($session->id);
+        $open = $this->openFor($session, applies: true);
         $proposal = null;
         if ($open !== null) {
-            $working = PageSession::fromJson((string) $open->working_json, NodeTypes::allowed())->get();
+            $working = $this->working($open)->get();
             $proposal = ['id' => (string) $open->id, 'baseRevision' => (string) $open->base_revision,
                 'revision' => $working['revision'], 'opCount' => (int) $open->op_count, 'batches' => (int) $open->batches,
                 'ops' => ProposalStore::ops($open), 'doc' => $working['doc']];
@@ -268,35 +315,73 @@ final class Workspace
         ];
     }
 
-    /** approve_on_save: apply to the working copy and record it in the open change set. */
+    /** approve_on_save: apply to the working copy and record it in this page's open change set. */
     private function stage(SessionRecord $session, array $ops, string $basedOn): array
     {
-        $open = $this->proposals->openFor($session->id, true);
-        $working = $open !== null
-            ? PageSession::fromJson((string) $open->working_json, NodeTypes::allowed())
-            : $this->pages->read($session->tenant, $session->page);
-        $before = $working->get()['revision'];
+        $open = $this->proposals->openFor($session->id, $this->proposalPage($session), true);
+        $working = $open !== null ? $this->working($open) : $this->pages->read($session->tenant, $session->page);
+        $prior = $working->get();
         $result = $working->apply($ops, 'agent', $basedOn);
-        AssetPolicy::assert($result['doc'], $this->assets, $before);
-        if ($result['revision'] === $before) {
-            return ['revision' => $before, 'applied' => 0, 'staged' => $open !== null] + ($open !== null ? ['proposalId' => (string) $open->id] : []);
+        $this->guard($prior['doc'], $result['doc'], $prior['revision']);
+        if ($result['revision'] === $prior['revision']) {
+            return ['revision' => $prior['revision'], 'applied' => 0, 'staged' => $open !== null] + ($open !== null ? ['proposalId' => (string) $open->id] : []);
         }
 
         $batch = $this->eventOps($ops);
         if ($open === null) {
             $id = Ulid::generate();
-            $this->proposals->create($id, $session->id, $before, $working->toJson(), $ops);
+            $this->proposals->create($id, $session->id, $prior['revision'], $working->toJson(), $ops, $session->isSite() ? $session->page : null);
             $this->events->append($session->id, EventTypes::PROPOSAL_CREATED, self::AGENT,
-                ['proposalId' => $id, 'baseRevision' => $before, 'revision' => $result['revision'], 'opCount' => count($ops), ...$batch]);
+                ['proposalId' => $id, 'baseRevision' => $prior['revision'], 'revision' => $result['revision'], 'opCount' => count($ops), ...$batch] + $this->pageField($session));
         } else {
             $id = (string) $open->id;
             $all = [...ProposalStore::ops($open), ...$ops];
             $this->proposals->append($id, $working->toJson(), $all, (int) $open->batches + 1);
             $this->events->append($session->id, EventTypes::PROPOSAL_UPDATED, self::AGENT,
-                ['proposalId' => $id, 'revision' => $result['revision'], 'opCount' => count($all), ...$batch]);
+                ['proposalId' => $id, 'revision' => $result['revision'], 'opCount' => count($all), ...$batch] + $this->pageField($session));
         }
 
         return ['revision' => $result['revision'], 'applied' => count($ops), 'staged' => true, 'proposalId' => $id];
+    }
+
+    /** The open change set this page's view reads, when the session stages. */
+    private function openFor(SessionRecord $session, bool $applies = false): ?object
+    {
+        if ($session->autonomy !== Autonomy::ApproveOnSave && ! $applies) {
+            return null;
+        }
+
+        return $this->proposals->openFor($session->id, $this->proposalPage($session));
+    }
+
+    /** Page sessions keep 0.3's one-set-per-session rows (page_key null); site sessions key by page. */
+    private function proposalPage(SessionRecord $session): ?string
+    {
+        return $session->isSite() ? $session->page : null;
+    }
+
+    private function working(object $open): PageSession
+    {
+        $json = (string) $open->working_json;
+
+        return PageSession::fromJson($json, NodeTypes::forStored($json, $this->islands->types()));
+    }
+
+    /** The policies every write passes, for every actor: assets, then islands. */
+    private function guard(array $before, array $after, ?string $revision): void
+    {
+        AssetPolicy::assert($after, $this->assets, $revision);
+        IslandPolicy::assert($before, $after, $this->islands, $this->assets, $revision);
+    }
+
+    /** @return array{0: ?RenderedEvidence, 1: ?string} the report, or why there is none */
+    private function rendered(SessionRecord $session): array
+    {
+        try {
+            return [$this->rendered->for($session, $session->page), null];
+        } catch (Throwable) {
+            return [null, 'rendered_report_failed'];
+        }
     }
 
     private function openProposal(SessionRecord $session, string $proposalId): object
@@ -315,7 +400,13 @@ final class Workspace
     private function changed(SessionRecord $session, array $actor, string $before, string $after, array $ops, array $extra = []): void
     {
         $this->events->append($session->id, EventTypes::DOC_CHANGED, $actor,
-            ['revision' => $after, 'previousRevision' => $before, 'opCount' => count($ops), ...$this->eventOps($ops), ...$extra]);
+            ['revision' => $after, 'previousRevision' => $before, 'opCount' => count($ops), ...$this->eventOps($ops), ...$extra] + $this->pageField($session));
+    }
+
+    /** Site sessions say which document an event is about; page sessions are unchanged. */
+    private function pageField(SessionRecord $session): array
+    {
+        return $session->isSite() ? ['page' => $session->page] : [];
     }
 
     /** The ops, when small enough to carry; otherwise nothing and clients refetch. */
@@ -326,11 +417,11 @@ final class Workspace
         return $json !== false && strlen($json) <= self::MAX_EVENT_OPS_BYTES ? ['ops' => $ops] : [];
     }
 
-    private function assertCurrent(string $current, string $basedOn): void
+    public function assertCurrent(string $current, string $basedOn, string $hint = 'Read the current page and attributed changes before retrying.'): void
     {
         if (! hash_equals($current, $basedOn)) {
             throw new PageSessionException('surface_changed_under_you', [['index' => null, 'path' => '$.basedOn', 'expected' => 'current revision',
-                'got' => 'refused', 'hint' => 'Read the current page and attributed changes before retrying.']], $current);
+                'got' => 'refused', 'hint' => $hint]], $current);
         }
     }
 

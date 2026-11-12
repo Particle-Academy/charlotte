@@ -24,6 +24,7 @@
         "checks.result",
         "draft.ready", "draft.published",
         "usage.observed",
+        "site.changed",
         "error"
       ]
     },

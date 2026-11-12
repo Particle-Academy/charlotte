@@ -37,6 +37,25 @@ return [
     // output tightly should also lower reasoning effort in provider_options.
     'max_continuations' => (int) env('CHARLOTTE_MAX_CONTINUATIONS', 3),
 
+    /*
+    | Whole-site sessions (Charlotte::for($user)->tenant($t)->site($key)).
+    |
+    | reserved_routes: routes YOUR app serves, where a site page would never
+    | be shown. Exact routes, or prefixes ending in /*. A Fortify app owns at
+    | least ['/login', '/register', '/forgot-password', '/reset-password/*',
+    | '/two-factor-challenge', '/user/*', '/email/*']; add every route your
+    | app registers outside the site (/dashboard, /settings/*, /api/*, ...).
+    | A site page on one of them is refused with route_reserved.
+    |
+    | max_pages: pages per site, the 404 included. max_steps: the site
+    | builder mode's step ceiling (a site takes several times a page's).
+    */
+    'site' => [
+        'reserved_routes' => [],
+        'max_pages' => (int) env('CHARLOTTE_SITE_MAX_PAGES', 12),
+        'max_steps' => (int) env('CHARLOTTE_SITE_MAX_STEPS', 120),
+    ],
+
     // External origins an AGENT may link to. Relative paths, anchors,
     // mailto: and tel: are always allowed. e.g. ['https://example.com']
     'links' => [

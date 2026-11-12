@@ -56,6 +56,64 @@ function openSession(array $options = []): CharlotteSession
     return $pending->open();
 }
 
+/** The reserved routes a Fortify host supplies (finding K13). */
+const FORTIFY_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password/*', '/two-factor-challenge'];
+
+/** Opens a SITE session on site "acme-site" of tenant "acme". */
+function openSite(array $options = []): CharlotteSession
+{
+    $user = $options['user'] ?? User::create(['name' => 'Ada']);
+    $pending = Charlotte::for($user)
+        ->tenant($options['tenant'] ?? 'acme')
+        ->site($options['site'] ?? 'acme-site')
+        ->brief(Brief::fromArray($options['brief'] ?? briefArray()));
+    if (isset($options['autonomy'])) {
+        $pending->autonomy($options['autonomy']);
+    }
+
+    return $pending->open();
+}
+
+/** A small kit island catalogue in the normalized shape. */
+function kitIslands(): array
+{
+    return [
+        ['type' => 'kit:Tabs', 'description' => 'Tabbed panels of text.', 'props' => [
+            'type' => 'object', 'required' => ['tabs'], 'additionalProperties' => false,
+            'properties' => [
+                'tabs' => ['type' => 'array', 'minItems' => 1, 'maxItems' => 8, 'items' => [
+                    'type' => 'object', 'required' => ['value', 'label'], 'additionalProperties' => false,
+                    'properties' => [
+                        'value' => ['type' => 'string', 'pattern' => '^[a-z0-9-]{1,32}$'],
+                        'label' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 60],
+                        'body' => ['type' => 'array', 'items' => ['type' => 'string', 'maxLength' => 2000]],
+                    ],
+                ]],
+                'defaultTab' => ['type' => 'string'],
+            ],
+        ]],
+        ['type' => 'kit:Gallery', 'description' => 'Images from the host catalogue.', 'props' => [
+            'type' => 'object', 'required' => ['items'],
+            'properties' => [
+                'items' => ['type' => 'array', 'items' => ['type' => 'object', 'required' => ['asset'],
+                    'properties' => ['asset' => ['type' => 'string'], 'caption' => ['type' => 'string']]]],
+                'href' => ['type' => 'string'],
+            ],
+        ]],
+    ];
+}
+
+/** An island insert op. */
+function islandOp(string $id, string $type, array $props, ?string $parent = null, string $order = 'a5', bool $island = true): array
+{
+    $node = ['id' => $id, 'type' => $type, 'parent' => $parent, 'order' => $order, 'props' => $props, 'style' => ['base' => []]];
+    if ($island) {
+        $node['island'] = true;
+    }
+
+    return ['t' => 'insert_node', 'node' => $node];
+}
+
 /** Calls a tool the way the model does and decodes the JSON result. */
 function tool(CharlotteSession $session, string $name, array $arguments = []): array
 {

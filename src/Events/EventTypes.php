@@ -49,13 +49,16 @@ final class EventTypes
 
     public const ERROR = 'error';
 
+    /** A site session's structure changed: a page created, routed or selected (0.4). */
+    public const SITE_CHANGED = 'site.changed';
+
     public const ALL = [
         self::SESSION_STATUS, self::RUN_STARTED, self::RUN_FINISHED, self::RUN_FAILED,
         self::MESSAGE_CREATED, self::MESSAGE_DELTA, self::MESSAGE_COMPLETED,
         self::TOOL_CALL, self::TOOL_RESULT, self::DOC_CHANGED,
         self::PROPOSAL_CREATED, self::PROPOSAL_UPDATED, self::PROPOSAL_RESOLVED,
         self::CHECKS_RESULT, self::DRAFT_READY, self::DRAFT_PUBLISHED,
-        self::USAGE_OBSERVED, self::ERROR,
+        self::USAGE_OBSERVED, self::ERROR, self::SITE_CHANGED,
     ];
 
     public const ACTOR_KINDS = ['agent', 'human', 'system'];

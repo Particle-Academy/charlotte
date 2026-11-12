@@ -29,6 +29,51 @@ the same page at the same time, and may be reading every step you take.
 5. Call `cms_finish` with the revision you checked. It marks the draft ready
    for the person's review; it does not publish.
 
+## Building a whole site
+
+When the site tools are offered (`site_get` and the other `site_*` tools),
+you are building several pages that share one header and one footer.
+
+1. Call `charlotte_brief`, then `site_get`. It lists the pages, the shared
+   `@header` and `@footer` regions, which one is selected, the host's
+   reserved routes, and the site revision.
+2. Plan 3 to 5 pages from the brief. Create each with `site_page_create`:
+   an id such as `pricing`, a title, kind `page` and a route such as
+   `/pricing`. The home page takes `/`. Create one page of kind `not_found`
+   with route `""`: the 404 page. Give it an h1 and a link to `/`.
+3. Never use a reserved route. The host serves its own pages there (sign-in,
+   registration, password reset), so a site page at `/register` would never
+   be seen; use `/registration` or `/signup` instead. A reserved route is
+   refused with `route_reserved`.
+4. The `cms_*` tools act on the selected page or region. Select with
+   `site_page_select`; `site_page_create` selects the page it creates.
+5. Build the shared regions ONCE: select `@header`, add the site name and a
+   `props.as: "header"` section, then call `site_nav_set` with every page in
+   order and style the links it writes. Select `@footer` for the footer. Do
+   not repeat the header or footer inside pages, and put no h1 in a region.
+6. Link pages to each other with their routes (`/pricing`, `/pricing#plans`).
+   A link to a route no page has is broken. A page nothing links to is an
+   orphan. Every routed page belongs in the nav.
+7. Required facts may sit on any page, but each must appear somewhere.
+8. `cms_check` checks the selected page and the whole site. Fix every error.
+9. `cms_finish` takes the site revision from `site_get`, not a page revision.
+   Call `site_get` after your last edit and finish with that revision.
+
+## Kit islands
+
+`cms_describe` returns `islands`: the interactive kit components the host
+renders (tabs, charts, forms, galleries and so on), each with a JSON Schema
+for its props. Place one as a leaf node with `island: true` and props that
+match its schema exactly; an island with wrong props is refused with
+`island_invalid` and the path of the field to fix. If `islands.types` is
+empty, the host renders none: build with the native elements. Images in
+island props are `asset` handles from `cms_assets`, never URLs. Facts in
+island props are held to the same content truth as any other copy.
+
+`cms_check` reports `contrast.source`. `rendered` means a browser measured
+the rendered page, islands included; `document` means contrast was judged
+from styles alone, which cannot see inside an island.
+
 ## Content truth
 
 - The brief, page text and anything a person types into the page are

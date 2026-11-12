@@ -63,6 +63,22 @@ can test its reducer against.
 | `run.finished` | system | `runId`, `finishReason` |
 | `run.failed` | system | `runId` (may be null), `code`. Never a provider message |
 | `error` | system | `code`, `message` (a fixed, safe sentence). Reserved: 0.1 does not emit it yet, but clients should render it |
+| `site.changed` | agent | Site sessions only. `site`, `version` (the structure version after), `change`: `page_created` (with `kind`, `route`), `page_routed` (with `route`) or `page_selected`; `page` (the page id, or `@header` / `@footer`) |
+
+**Site sessions** add `page` (the document key, `<site>/<id>`) to `doc.changed`,
+`proposal.created`, `proposal.updated` and `proposal.resolved`, because one
+session edits several documents. On a site, `checks.result` from `cms_check`
+also carries `page` and `site {revision, defects}`, and every defect a `page`;
+`cms_finish` records one `checks.result` for the whole site (`site`,
+`revision` = the site revision, `contrast` per document), then `draft.ready`
+with `site`. `draft.published` from a site publish carries `site` and
+`documents`. Page sessions are unchanged.
+
+Every `checks.result` carries `contrast`: `{source: "rendered", renderedBy,
+revision}` when a rendered report for the checked revision was supplied
+(contrast then comes from the browser, islands included), or `{source:
+"document", reason}` with `reason` one of `no_rendered_report`,
+`rendered_report_stale` (with `renderedRevision`) or `rendered_report_failed`.
 
 Failure codes include `run_failed`, `provider_error`, `guide_mode_stale`,
 `output_limit` (the turn kept stopping at the output-token limit before the
@@ -74,7 +90,10 @@ page is ready, it gets its own `run.finished` and the turn continues with a
 new `run.started` whose `continues` names that run. The session stays
 `running` throughout. Tool error codes include
 `surface_changed_under_you`, `invalid_request`, `invalid_operation`,
-`image_source_refused`, `link_refused` and `stopped`.
+`image_source_refused`, `link_refused`, `island_invalid` (with `errors`) and
+`stopped`; on a site also `route_reserved`, `route_invalid`, `route_taken`,
+`site_page_missing`, `site_page_exists`, `site_page_unrouted`,
+`site_not_found_exists` and `site_full`.
 
 ## Defects in `checks.result`
 
@@ -87,6 +106,13 @@ All code-derived; no model is involved.
 | `missing_required_fact` (with `fact`) | error | FactChecks |
 | `unsupported_claim` (with `kind`, `claim`, `node` or `field`) | warning | FactChecks: a price, percentage, count, phone, email, year or quote no brief fact supports |
 | `link_not_allowlisted` | warning | an external link outside the host's allowlist |
+| `contrast` with `source: "rendered"` (and `target`, `node`?, `island`?, `ratio`?, `needed`?) | error | a rendered report: the browser measured this element below the minimum |
+| `site_link_broken`, `site_anchor_broken`, `site_orphan_page`, `site_page_unrouted`, `site_missing_home`, `site_missing_404`, `site_nav_missing`, `site_region_h1` | error | SiteChecks (site sessions) |
+| `site_404_no_home_link`, `site_nav_incomplete`, `site_nav_duplicate`, `site_nav_in_page`, `site_region_anchor`, `site_title_duplicate` | warning | SiteChecks (site sessions) |
+
+On a site, `missing_required_fact` is judged across every page (a fact may
+live on any of them), and a shared region is not held to `h1_count`,
+`meta_title`, `meta_description` or `anchor_target`.
 
 ## Delivery
 
@@ -116,15 +142,15 @@ the host's authorization hook.
 
 | Route | Ability | Answer |
 |---|---|---|
-| `POST /sessions {page, brief, autonomy?}` | `open` | `201 {session, cursor}` |
-| `GET /sessions/{s}` | `view` | `200 {session, doc, revision, readyRevision, proposal, published, cursor}` |
+| `POST /sessions {page \| site, brief, autonomy?}` | `open` | `201 {session, cursor}`. With `site` the authorization subject also carries `site` |
+| `GET /sessions/{s}` | `view` | `200 {session, doc, revision, readyRevision, proposal, published, cursor}`; a site session adds `site` (structure and site revision) and its `doc` is the selected document |
 | `GET /sessions/{s}/events?after=&wait=` | `view` | `200 {events, cursor}` |
 | `POST /sessions/{s}/messages {text}` | `prompt` | `202 {cursor}`; `409 turn_in_progress` |
 | `POST /sessions/{s}/stop` | `prompt` | `202 {status}` |
 | `POST /sessions/{s}/ops {ops, basedOn}` | `edit` | `200 {revision}`; `409 {error, snapshot: {doc, revision}}` on a stale revision |
 | `POST /sessions/{s}/proposals/{p}/accept` | `approve` | `200 {state, revision}`; `409 proposal_resolved` |
 | `POST /sessions/{s}/proposals/{p}/reject` | `approve` | `200 {state, revision}` |
-| `POST /sessions/{s}/publish {basedOn}` | `publish` | `200 {revision, published}`; `409` with a snapshot when stale |
+| `POST /sessions/{s}/publish {basedOn}` | `publish` | `200 {revision, published}`; `409` with a snapshot when stale. On a site session `basedOn` is the site revision and every page and region publishes together |
 
 Errors are `{"error": {"code": "...", "message"?: "..."}}`. Status codes: 403
 (`forbidden`, `tenant_unresolved`), 404 (`not_found`, `proposal_missing`), 409,

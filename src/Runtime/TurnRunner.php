@@ -9,6 +9,7 @@ use Charlotte\Guide\BuilderMode;
 use Charlotte\Guide\Guides;
 use Charlotte\Policy\Refused;
 use Charlotte\Sessions\SessionRecord;
+use Charlotte\SiteWorkspace;
 use Charlotte\Workspace;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -41,12 +42,16 @@ final class TurnRunner
         private readonly AgentRuntime $runtime,
         private readonly TurnContextFactory $contexts = new HarnessDefaults,
         private readonly int $maxContinuations = 3,
+        private readonly ?SiteWorkspace $sites = null,
     ) {}
 
-    /** The page was marked ready at the revision it is at now. */
+    /** The page (or, for a site session, the whole site) was marked ready at the revision it is at now. */
     private function ready(string $sessionId): bool
     {
         $session = $this->workspace->session($sessionId);
+        if ($session->isSite() && $this->sites !== null) {
+            return $this->sites->ready($session);
+        }
 
         return $session->readyRevision !== null
             && hash_equals($session->readyRevision, (string) $this->workspace->view($session)['revision']);
@@ -68,14 +73,16 @@ final class TurnRunner
         $runId = null;
         try {
             $guide = $this->guides->current();
-            $mode = $this->modes->resolve(BuilderMode::NAME);
+            $modeName = BuilderMode::nameFor($session->isSite());
+            $tools = BuilderMode::toolsFor($session->isSite());
+            $mode = $this->modes->resolve($modeName);
             if (! hash_equals($session->guideHash, $guide->guideHash)) {
                 throw new Refused('guide_mode_stale');
             }
             BuilderMode::assertEmbeds($mode, $guide);
 
             $harness = $this->harness->session($this->participant($session), $session->scope())
-                ->usingMode(BuilderMode::NAME)
+                ->usingMode($modeName)
                 ->usingProvider($session->provider)
                 ->usingModel($session->model)
                 ->usingCapability('charlotte', ['session' => $session->id]);
@@ -97,11 +104,11 @@ final class TurnRunner
             $continuations = 0;
             while (true) {
                 $runId = null;
-                foreach ($this->runtime->stream($harness, $prompt, BuilderMode::TOOLS, context: $context) as $event) {
+                foreach ($this->runtime->stream($harness, $prompt, $tools, context: $context) as $event) {
                     if ($event instanceof StreamStartEvent && $runId === null) {
                         $runId = (string) ($harness->run()['id'] ?? '');
                         $this->workspace->record($session->id, EventTypes::RUN_STARTED, Workspace::SYSTEM,
-                            ['runId' => $runId, 'mode' => BuilderMode::NAME, 'provider' => $session->provider, 'model' => $session->model]
+                            ['runId' => $runId, 'mode' => $modeName, 'provider' => $session->provider, 'model' => $session->model]
                             + ($continues === null ? [] : ['continues' => $continues]));
                     }
                     $recorder->record($event);

@@ -18,11 +18,18 @@ use Illuminate\Database\ConnectionInterface;
  */
 final class DatabasePageRepository implements PageRepository
 {
-    public function __construct(private readonly ConnectionInterface $db) {}
+    /** @param (Closure(): list<string>)|null $islandTypes the host's island types, read at each load */
+    public function __construct(private readonly ConnectionInterface $db, private readonly ?Closure $islandTypes = null) {}
+
+    /** @return list<string> */
+    private function islands(): array
+    {
+        return $this->islandTypes === null ? [] : ($this->islandTypes)();
+    }
 
     public function ensure(string $tenant, string $page, array $document): void
     {
-        $session = new PageSession($document, NodeTypes::allowed());
+        $session = new PageSession($document, NodeTypes::allowed($this->islands()));
         $now = gmdate('Y-m-d H:i:s');
         $this->db->table('charlotte_pages')->insertOrIgnore([
             'tenant_key' => $tenant, 'page_key' => $page,
@@ -34,14 +41,16 @@ final class DatabasePageRepository implements PageRepository
 
     public function read(string $tenant, string $page): PageSession
     {
-        return PageSession::fromJson((string) $this->row($tenant, $page, false)->draft_json, NodeTypes::allowed());
+        $json = (string) $this->row($tenant, $page, false)->draft_json;
+
+        return PageSession::fromJson($json, NodeTypes::forStored($json, $this->islands()));
     }
 
     public function edit(string $tenant, string $page, Closure $edit): mixed
     {
         return $this->db->transaction(function () use ($tenant, $page, $edit): mixed {
             $row = $this->row($tenant, $page, true);
-            $session = PageSession::fromJson((string) $row->draft_json, NodeTypes::allowed());
+            $session = PageSession::fromJson((string) $row->draft_json, NodeTypes::forStored((string) $row->draft_json, $this->islands()));
             $result = $edit($session);
             $this->db->table('charlotte_pages')->where('id', $row->id)->update([
                 'draft_json' => $session->toJson(),

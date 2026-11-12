@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Charlotte;
 
 use Charlotte\Brief\Brief;
+use Charlotte\Checks\CallbackRenderedEvidenceSource;
+use Charlotte\Checks\RenderedEvidenceSource;
+use Charlotte\Site\Site;
 use Charlotte\Drafts\NodeTypes;
 use Charlotte\Drafts\PageRepository;
 use Charlotte\Events\EventTypes;
@@ -84,6 +87,72 @@ final class Charlotte
         });
 
         return new CharlotteSession($this, $record->id);
+    }
+
+    /**
+     * Open a WHOLE-SITE session: the agent creates pages, routes them, edits
+     * the shared `@header` / `@footer` once, and sets the nav. The site and
+     * its two regions are created if they do not exist; an existing site is
+     * reopened as it is. Documents live in the PageRepository under
+     * `<site>/<page id>`, so keep plain page keys from looking like that.
+     */
+    public function openSite(
+        Model $participant,
+        string $tenant,
+        string $site,
+        Brief $brief,
+        ?Autonomy $autonomy = null,
+        ?string $provider = null,
+        ?string $model = null,
+    ): CharlotteSession {
+        if (preg_match(self::KEY, $tenant) !== 1 || preg_match(Site::KEY, $site) !== 1) {
+            throw new InvalidArgumentException('Tenant keys are 1-191 printable ASCII characters; site keys 1-128, with no slash.');
+        }
+        if ($participant->getKey() === null) {
+            throw new InvalidArgumentException('The participant must be a saved model.');
+        }
+        $config = $this->container->make('config');
+        $autonomy ??= Autonomy::from((string) $config->get('charlotte.autonomy', Autonomy::ApproveOnSave->value));
+        $provider ??= $config->get('charlotte.provider') ?? $config->get('prism-harness.agent.provider');
+        $model ??= $config->get('charlotte.model') ?? $config->get('prism-harness.agent.model');
+        if (! is_string($provider) || $provider === '' || ! is_string($model) || $model === '') {
+            throw new InvalidArgumentException('Set charlotte.provider and charlotte.model (any Prism provider).');
+        }
+        $guide = $this->guides()->current();
+        $id = Ulid::generate();
+
+        return $this->container->make(ConnectionInterface::class)->transaction(function () use ($participant, $tenant, $site, $brief, $autonomy, $provider, $model, $guide, $id): CharlotteSession {
+            $structure = $this->container->make(SiteWorkspace::class)->ensure($tenant, $site);
+            $first = $structure->pages[0]['id'] ?? '@header';
+            $record = new SessionRecord(
+                id: $id, tenant: $tenant, page: $structure->documentKey($first),
+                participantType: $participant->getMorphClass(), participantId: (string) $participant->getKey(),
+                autonomy: $autonomy, provider: $provider, model: $model, brief: $brief,
+                guideHash: $guide->guideHash, guide: $guide->toArray(), status: 'idle',
+                stopRequestedAt: null, readyRevision: null, site: $site,
+            );
+            $this->container->make(SessionStore::class)->create($record);
+            $this->container->make(Workspace::class)->record($record->id, EventTypes::SESSION_STATUS, Workspace::SYSTEM, ['status' => 'idle']);
+
+            return new CharlotteSession($this, $record->id);
+        });
+    }
+
+    /**
+     * OPTIONAL: where rendered reports come from (finding S12). With one,
+     * `cms_check` judges contrast on the rendered page, islands included,
+     * whenever the report names the revision being checked; otherwise on the
+     * document. Return null when you have none. Same as binding a
+     * {@see RenderedEvidenceSource}.
+     *
+     *     Charlotte::renderedUsing(fn (SessionRecord $s, string $page): ?RenderedEvidence =>
+     *         RenderedEvidence::fromAxe($inspection['contrast']['violations'], $inspection['revision'], 'axe-core 4.14.0'));
+     *
+     * @param  Closure(SessionRecord, string): ?RenderedEvidence  $source
+     */
+    public function renderedUsing(Closure $source): void
+    {
+        $this->container->instance(RenderedEvidenceSource::class, new CallbackRenderedEvidenceSource($source));
     }
 
     /** A session by id, or null. Pass the tenant the request resolved to; a session from another tenant is not found. */

@@ -28,6 +28,15 @@ test('Charlotte\'s guide carries the webmaster lessons the lab learned', functio
     }
 });
 
+test('Charlotte\'s guide covers whole sites, islands and the rendered contrast check', function (): void {
+    $text = strtolower(PublishedGuide::charlotteGuide());
+
+    foreach (['site_get', 'site_page_create', 'site_page_select', 'site_nav_set', '@header', 'not_found', 'reserved',
+        'orphan', 'site revision', 'island', 'cms_describe', 'contrast.source'] as $lesson) {
+        expect(str_contains($text, strtolower($lesson)))->toBeTrue("Missing lesson: {$lesson}");
+    }
+});
+
 test('the version records exactly which packages supplied the guide', function (): void {
     $guide = (new PublishedGuide)->current();
 
