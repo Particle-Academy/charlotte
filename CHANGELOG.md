@@ -12,6 +12,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-12
+
 Whole sites, kit islands and rendered contrast (lab plan
 `lab-full-kit-site-benchmark.md`, phase P2; findings K13, S10, S12), then
 report dashboards and Charlotte as a prism-harness sub-agent (plan
@@ -158,9 +160,7 @@ instead of resolving it from the container need to change.
   input options) and `periods` (a period preset as dates). Narrowing takes a
   person/select value as one id and an empty multiselect as no narrowing. A
   parity test runs against fancy-cms's own `tests/fixtures/data-queries.json`.
-  **Needs the fancy-cms release after 0.8.1** (fancy-cms `a987bfe`, page
-  inputs and data queries); raise the `particle-academy/fancy-cms`
-  requirement to it when it is tagged.
+  Needs fancy-cms 0.9.0 (page inputs and data queries); see Changed.
 - **BREAKING (site sessions only, unreleased until now): a site turn needs a
   cost-capped host `RunContext`.** Until prism-harness ships G-261 (an
   uncapped `stream()` drops declared sub-agents) and G-262 (an uncapped run
@@ -180,6 +180,16 @@ instead of resolving it from the container need to change.
   one (`tenant`, `page`) is reported as `$.arguments.<field>: no such field`
   instead of failing inside the PHP call with a generic error.
 - `draft.ready` from one page of a site carries `page`.
+
+### Changed
+
+- **Requires `particle-academy/fancy-cms` `>=0.9.0 <2.0`** (was `>=0.8.1 <2.0`).
+  Charlotte now reads fancy-cms 0.9.0's island catalogue, `input` nodes and
+  `DataRequests::queries()`, which 0.8.1 does not have. **Consumer action:**
+  `composer update particle-academy/fancy-cms particle-academy/charlotte`. Read
+  fancy-cms 0.9.0's own BREAKING note first: it matters only if your documents
+  already use a node type named `chart`, `kpi`, `table`, `leaderboard` or
+  `input` for something of your own.
 
 ## [0.3.0] - 2026-10-30
 
