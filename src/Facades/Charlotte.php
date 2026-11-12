@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static void contextUsing(\Closure $factory)
  * @method static void routes(array $options = [])
  * @method static void dataCatalogue(\Charlotte\Data\DataCatalogue $catalogue)
- * @method static array dataQueries(array $doc, array $viewer, array $inputs = [], ?\Closure $descendants = null)
+ * @method static array dataQueries(array $doc, array $viewer, array $inputs = [], ?\Closure $descendants = null, array $data = [], ?\Closure $periods = null)
  * @method static array dataContext(array $results)
  * @method static \Charlotte\CharlotteSession delegate(\Illuminate\Database\Eloquent\Model $participant, string $parentScope, string $tenant, string $page, \Charlotte\Brief\Brief $brief, string $scopeSuffix = 'charlotte', ?\Charlotte\Autonomy $autonomy = null, ?string $provider = null, ?string $model = null, ?array $document = null)
  *

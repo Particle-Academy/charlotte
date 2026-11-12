@@ -98,6 +98,7 @@ test('bindings to catalogue streams and their fields are accepted', function ():
         'categories' => ['$bind' => 'metrics.columns.group'],
         'series' => ['$bind' => 'revenueByRep#closed.columns.revenue', '$scope' => ['organizations' => ['ids' => ['org-a'], 'children' => true]]],
     ]);
+    $doc['nodes']['in1'] = ['id' => 'in1', 'type' => 'input', 'parent' => null, 'order' => 'a9', 'props' => ['name' => 'period', 'kind' => 'period'], 'style' => ['base' => []]];
 
     expect(bindingErrors($doc))->toBe([]);
 });
@@ -189,12 +190,16 @@ test('HOSTILE: a binding that asks for more than the viewer may see is narrowed,
 
 test('HOSTILE: a page input cannot widen the scope either, and a malformed one falls back to the viewer', function (): void {
     $viewer = ['people' => ['u_1'], 'dealTypes' => ['new'], 'period' => ['from' => '2026-01-01', 'to' => '2026-03-31'], 'organizations' => ['org-a']];
-    $requested = ['period' => ['$input' => 'period'], 'people' => ['$input' => 'who']];
+    $requested = ['period' => ['$input' => 'period'], 'people' => ['$input' => 'who'], 'dealTypes' => ['$input' => 'kind']];
 
-    $scope = Scope::narrow(crmCatalogue(), 'metrics', $viewer, $requested, ['period' => ['from' => '1990-01-01', 'to' => '2026-02-01'], 'who' => 'everyone']);
+    // "everyone" is one id (a person input's value): outside the viewer's
+    // people, it narrows to nothing. A malformed value narrows nothing.
+    $scope = Scope::narrow(crmCatalogue(), 'metrics', $viewer, $requested,
+        ['period' => ['from' => '1990-01-01', 'to' => '2026-02-01'], 'who' => 'everyone', 'kind' => ['not' => 'ids']]);
 
     expect($scope['period'])->toBe(['from' => '2026-01-01', 'to' => '2026-02-01'])
-        ->and($scope['people'])->toBe(['u_1']);
+        ->and($scope['people'])->toBe([])
+        ->and($scope['dealTypes'])->toBe(['new']);
 });
 
 test('HOSTILE: a viewer scope that does not state a parameter fails closed', function (): void {

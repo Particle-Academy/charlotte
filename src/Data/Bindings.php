@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Charlotte\Data;
 
 use Closure;
+use FancyCms\Data\DataRequests;
+use FancyCms\Data\PageInputs;
 use stdClass;
 
 /**
@@ -77,13 +79,13 @@ final class Bindings
         $repeats = self::repeats($nodes, $streams);
         $all = self::find($doc);
         $queryParams = self::queryParams($all, $nodes, $repeats);
-        $errors = [];
+        [$inputs, $errors] = self::inputs($nodes, $only);
         $queries = [];
         foreach ($all as $found) {
             if ($only !== null && ! in_array($found['node'], $only, true)) {
                 continue;
             }
-            $error = self::problem($found, $nodes, $repeats, $streams, $catalogue, $queryParams);
+            $error = self::problem($found, $nodes, $repeats, $streams, $catalogue, $queryParams, $inputs);
             if ($error !== null) {
                 $errors[] = $error;
 
@@ -114,69 +116,115 @@ final class Bindings
     }
 
     /**
-     * What the host must fetch to render this document for one viewer: one
-     * entry per bound query, its params, and its scope NARROWED to the viewer
-     * by {@see Scope::narrow()}. Invalid bindings are skipped.
+     * What the host must fetch to render this document for one viewer.
+     *
+     * DELEGATES to fancy-cms's {@see DataRequests::queries()}, so the two can
+     * never drift: the same requests, in the same order, one per distinct
+     * (stream, alias, params, scope), with every `{"$input": name}` filled
+     * from the page's input values (fancy-cms's PageInputs, which checks each
+     * value against its input's options and falls back to the default).
+     * Each request is kept verbatim under `request`. Charlotte adds, per
+     * request:
+     *
+     * - `params`: only declared params with an allowed value (a field
+     *   selection deduplicated), since an input's value is checked against
+     *   the input's options, not the stream's;
+     * - `fields`: what the rows must carry (the selection plus `always`, else
+     *   every declared field, in declaration order);
+     * - `scope`: the request's scope NARROWED to the viewer by {@see Scope::narrow()}.
+     *
+     * A request for a stream the catalogue does not declare is left out;
+     * Charlotte never writes one.
      *
      * @param  array<string, mixed>  $viewer  the viewer's whole visible scope
-     * @param  array<string, mixed>  $inputs  page input values by id
+     * @param  array<string, mixed>  $inputs  raw page input values by name (a query string)
      * @param  (Closure(string): list<string>)|null  $descendants
-     * `fields` is what each query's rows must carry: the selection plus its
-     * `always` fields when the stream has a field-selecting param, else every
-     * declared field, in declaration order.
-     *
-     * @return list<array{key: string, stream: string, params: array<string, string|list<string>>, fields: list<string>, scope: array<string, mixed>}>
+     * @param  array<string, mixed>  $data  the context bound input options resolve against
+     * @param  (Closure(string): ?array{from: string, to: string})|null  $periods  a period preset (`30d`) as dates
+     * @return list<array{key: string, stream: string, alias: ?string, params: array, fields: list<string>, scope: array<string, mixed>, inputs: list<string>, bindings: list<array>, request: array}>
      */
-    public static function queries(array $doc, DataCatalogue $catalogue, array $viewer, array $inputs = [], ?Closure $descendants = null): array
+    public static function queries(array $doc, DataCatalogue $catalogue, array $viewer, array $inputs = [], ?Closure $descendants = null,
+        array $data = [], ?Closure $periods = null): array
     {
         $streams = $catalogue->streams();
-        $nodes = self::nodes($doc);
-        $repeats = self::repeats($nodes, $streams);
-        $all = self::find($doc);
-        $queryParams = self::queryParams($all, $nodes, $repeats);
-        $seen = [];
-        foreach ($all as $found) {
-            if (self::problem($found, $nodes, $repeats, $streams, $catalogue, $queryParams) !== null) {
-                continue;
-            }
-            $key = self::queryKey($found, $nodes, $repeats);
-            if ($key === null) {
-                continue;
-            }
-            $binding = $found['binding'];
-            if (! isset($seen[$key])) {
-                $seen[$key] = ['key' => $key, 'stream' => explode('#', $key, 2)[0], 'params' => null, 'scope' => null];
-            }
-            if ($seen[$key]['params'] === null && $seen[$key]['scope'] === null && (isset($binding['$params']) || isset($binding['$scope']))) {
-                $seen[$key]['params'] = (array) ($binding['$params'] ?? []);
-                $seen[$key]['scope'] = (array) ($binding['$scope'] ?? []);
-            }
-        }
         $out = [];
-        foreach ($seen as $key => $query) {
-            $stream = $streams[$query['stream']];
+        foreach (DataRequests::queries($doc, $inputs, $data) as $request) {
+            $stream = $streams[$request['stream']] ?? null;
+            if ($stream === null) {
+                continue;
+            }
             $declared = $stream['params'];
             $params = [];
-            foreach ((array) $query['params'] as $param => $value) {
+            foreach ((array) $request['params'] as $param => $value) {
                 if (self::isSelect($declared[$param] ?? null)) {
-                    $params[$param] = array_values(array_unique($value)); // validated: a subset of the fields
-
-                    continue;
-                }
-                $input = Scope::input($value);
-                $value = $input !== null ? ($inputs[$input] ?? null) : $value;
-                if (isset($declared[$param]) && in_array($value, $declared[$param], true)) {
+                    if (is_array($value) && array_is_list($value) && array_diff($value, array_keys($stream['fields'])) === []) {
+                        $params[$param] = array_values(array_unique($value));
+                    }
+                } elseif (isset($declared[$param]) && in_array($value, $declared[$param], true)) {
                     $params[$param] = $value;
                 }
             }
             $selection = self::selection($stream, $params);
             $fields = array_keys($stream['fields']);
-            $out[] = ['key' => $key, 'stream' => $query['stream'], 'params' => $params,
+            $scope = json_decode((string) json_encode($request['scope']), true);
+            $out[] = ['key' => $request['key'], 'stream' => $request['stream'], 'alias' => $request['alias'], 'params' => $params,
                 'fields' => $selection === null ? $fields : array_values(array_filter($fields, fn (string $f) => in_array($f, $selection['allowed'], true))),
-                'scope' => Scope::narrow($catalogue, $query['stream'], $viewer, (array) $query['scope'], $inputs, $descendants)];
+                'scope' => Scope::narrow($catalogue, $request['stream'], $viewer, is_array($scope) ? $scope : [], [], $descendants, $periods),
+                'inputs' => $request['inputs'], 'bindings' => $request['bindings'], 'request' => $request];
         }
 
         return $out;
+    }
+
+    /** Kinds of page input that may feed each kind of parameter. */
+    private const INPUT_FITS = [
+        'set' => ['person', 'select', 'multiselect'],
+        'tree' => ['person', 'select', 'multiselect'],
+        'period' => ['period', 'daterange'],
+        'param' => ['select'],
+    ];
+
+    /**
+     * The page's inputs (fancy-cms `input` nodes) by name => kind, and an
+     * error for every name used twice.
+     *
+     * @return array{0: array<string, string>, 1: list<array{path: string, expected: string, got: string}>}
+     */
+    private static function inputs(array $nodes, ?array $only): array
+    {
+        $inputs = [];
+        $errors = [];
+        foreach ($nodes as $id => $node) {
+            $name = ($node['type'] ?? null) === 'input' ? ($node['props']['name'] ?? null) : null;
+            if (! is_string($name) || preg_match(PageInputs::NAME_PATTERN, $name) !== 1) {
+                continue;
+            }
+            if (isset($inputs[$name])) {
+                if ($only === null || in_array($id, $only, true)) {
+                    $errors[] = ['path' => '$.nodes.'.$id.'.props.name', 'expected' => 'a name no other input on this page has', 'got' => $name];
+                }
+
+                continue;
+            }
+            $inputs[$name] = is_string($node['props']['kind'] ?? null) ? $node['props']['kind'] : 'select';
+        }
+
+        return [$inputs, $errors];
+    }
+
+    /** The refusal for an `{"$input": name}` that names no input on the page, or one of the wrong kind; null when it fits. */
+    private static function inputProblem(string $name, string $fit, array $inputs, string $at): ?array
+    {
+        if (! isset($inputs[$name])) {
+            return ['path' => $at, 'expected' => $inputs === [] ? 'an input node on this page; there are no input nodes, so add one first'
+                : 'the name of an input on this page: '.implode(', ', array_keys($inputs)), 'got' => $name];
+        }
+        if (! in_array($inputs[$name], self::INPUT_FITS[$fit], true)) {
+            return ['path' => $at, 'expected' => 'an input of kind '.implode(' or ', self::INPUT_FITS[$fit]).($fit === 'param' ? ' for a param' : " for a {$fit} scope"),
+                'got' => $name.' is a '.$inputs[$name].' input'];
+        }
+
+        return null;
     }
 
     /**
@@ -284,7 +332,7 @@ final class Bindings
     }
 
     /** @return array{path: string, expected: string, got: string}|null */
-    private static function problem(array $found, array $nodes, array $repeats, array $streams, DataCatalogue $catalogue, array $queryParams = []): ?array
+    private static function problem(array $found, array $nodes, array $repeats, array $streams, DataCatalogue $catalogue, array $queryParams = [], array $inputs = []): ?array
     {
         $binding = $found['binding'];
         $at = $found['path'];
@@ -305,6 +353,10 @@ final class Bindings
 
         // A repeat variable from an enclosing node: <as>.<field> of that stream's rows.
         $vars = self::visible($found, $nodes, $repeats);
+        if (isset($vars[$first]) && $vars[$first]['stream'] === null) {
+            // A repeater's `index`: a number, with nothing below it.
+            return count($segments) === 1 ? null : ['path' => $at.'.$bind', 'expected' => "{$first} alone (the row's position)", 'got' => $path];
+        }
         if (isset($vars[$first])) {
             ['stream' => $stream, 'key' => $key] = $vars[$first];
             $fields = $streams[$stream]['fields'];
@@ -361,7 +413,16 @@ final class Bindings
 
                     continue;
                 }
-                if (Scope::input($value) === null && ! in_array($value, $allowed, true)) {
+                $input = Scope::input($value);
+                if ($input !== null) {
+                    $problem = self::inputProblem($input, 'param', $inputs, $at.'.$params.'.$param);
+                    if ($problem !== null) {
+                        return $problem;
+                    }
+
+                    continue;
+                }
+                if (! in_array($value, $allowed, true)) {
                     return ['path' => $at.'.$params.'.$param, 'expected' => 'one of '.implode(', ', $allowed).', or {"$input": "<id>"}', 'got' => is_string($value) ? $value : get_debug_type($value)];
                 }
             }
@@ -376,6 +437,15 @@ final class Bindings
             foreach ($scope as $param => $value) {
                 if (! in_array($param, $declared['scope'], true)) {
                     return ['path' => $at.'.$scope.'.$param, 'expected' => $declared['scope'] === [] ? "no scope: {$stream} accepts none" : 'a scope parameter '.$stream.' accepts: '.implode(', ', $declared['scope']), 'got' => 'not accepted'];
+                }
+                $input = Scope::input($value);
+                if ($input !== null) {
+                    $problem = self::inputProblem($input, $kinds[$param]['kind'], $inputs, $at.'.$scope.'.$param);
+                    if ($problem !== null) {
+                        return $problem;
+                    }
+
+                    continue;
                 }
                 $problem = Scope::problem($kinds[$param]['kind'], $value);
                 if ($problem !== null) {
@@ -415,8 +485,12 @@ final class Bindings
         $id = $found['repeat'] ? ($nodes[$found['node']]['parent'] ?? null) : $found['node'];
         $guard = 0;
         while (is_string($id) && isset($nodes[$id]) && $guard++ < 256) {
-            if (isset($repeats[$id])) {
+            // A `repeat` reaches the node's own props; a repeater only its descendants.
+            if (isset($repeats[$id]) && ! ($repeats[$id]['repeater'] && $id === $found['node'])) {
                 $vars += [$repeats[$id]['as'] => ['stream' => $repeats[$id]['stream'], 'key' => $repeats[$id]['key']]];
+                if ($repeats[$id]['repeater']) {
+                    $vars += ['index' => ['stream' => null, 'key' => $repeats[$id]['key']]];
+                }
             }
             $id = $nodes[$id]['parent'] ?? null;
         }
@@ -424,12 +498,14 @@ final class Bindings
         return $vars;
     }
 
-    /** @return array<string, array{as: string, stream: string, key: string}> node id => its repeat over a stream's rows */
+    /** @return array<string, array{as: string, stream: string, key: string, repeater: bool}> node id => its repeat over a stream's rows */
     private static function repeats(array $nodes, array $streams): array
     {
         $out = [];
         foreach ($nodes as $id => $node) {
-            $repeat = $node['repeat'] ?? null;
+            // A node's `repeat {each, as}`, or a fancy-cms `repeater` whose `items` its children read as `item` / `index`.
+            $repeater = ($node['type'] ?? null) === 'repeater';
+            $repeat = $repeater ? ['each' => $node['props']['items'] ?? null, 'as' => 'item'] : ($node['repeat'] ?? null);
             $path = is_array($repeat) && is_array($repeat['each'] ?? null) ? ($repeat['each']['$bind'] ?? null) : null;
             if (! is_string($path) || ! is_string($repeat['as'] ?? null) || $repeat['as'] === '') {
                 continue;
@@ -437,7 +513,7 @@ final class Bindings
             $segments = explode('.', $path);
             $stream = explode('#', $segments[0], 2)[0];
             if (count($segments) === 2 && $segments[1] === 'rows' && isset($streams[$stream])) {
-                $out[$id] = ['as' => $repeat['as'], 'stream' => $stream, 'key' => $segments[0]];
+                $out[$id] = ['as' => $repeat['as'], 'stream' => $stream, 'key' => $segments[0], 'repeater' => $repeater];
             }
         }
 

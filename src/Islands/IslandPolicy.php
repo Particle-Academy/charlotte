@@ -13,8 +13,10 @@ use FancyCms\Exceptions\PageSessionException;
  * Island nodes against the host's catalogue, after every write and for every
  * actor, like {@see AssetPolicy}:
  *
- * - a catalogue type must carry `island: true`, and `island: true` belongs
- *   only on a catalogue type;
+ * - a host island (`namespace:Name`) must be in the catalogue and carry
+ *   `island: true`; a fancy-cms built-in (`kpi`, `input` …) may carry it or
+ *   not (it is implied); `island: true` on any other type is refused, and an
+ *   unknown type is refused by fancy-cms's own node-type check;
  * - its props must satisfy the type's schema;
  * - its props may hold no image URL (`src`, `srcSet`, `poster`, `image`,
  *   `url` …): images are host asset handles (`asset`), checked against the
@@ -45,21 +47,23 @@ final class IslandPolicy
                 continue;
             }
             $type = (string) ($node['type'] ?? '');
-            $isIslandType = preg_match(SchemaIslandCatalogue::TYPE, $type) === 1;
+            $hostType = preg_match(SchemaIslandCatalogue::TYPE, $type) === 1;
+            // A fancy-cms built-in (kpi, chart, input …): a bare name the catalogue lists; island:true is implied.
+            $builtin = ! $hostType && isset($known[$type]) && $catalogue->builtin($type);
             $flag = ($node['island'] ?? false) === true;
             $base = '$.nodes.'.$id;
 
-            if (! $isIslandType && ! $flag) {
-                continue;
+            if (! $hostType && ! $builtin && ! $flag) {
+                continue; // a native node
             }
-            if ($isIslandType && ! $flag) {
-                self::refuse([['path' => $base.'.island', 'expected' => 'true on every catalogue island type', 'got' => 'missing or false']], $revision);
+            if (! $hostType && ! $builtin) {
+                self::refuse([['path' => $base.'.island', 'expected' => 'island:true only on an island type from cms_describe islands', 'got' => "true on {$type}"]], $revision);
             }
-            if (! $isIslandType) {
-                self::refuse([['path' => $base.'.island', 'expected' => 'island:true only on a catalogue island type (namespace:Name)', 'got' => "true on {$type}"]], $revision);
-            }
-            if (! isset($known[$type])) {
+            if ($hostType && ! isset($known[$type])) {
                 self::refuse([['path' => $base.'.type', 'expected' => 'an island type from cms_describe islands', 'got' => 'unknown island type']], $revision);
+            }
+            if ($hostType && ! $flag) {
+                self::refuse([['path' => $base.'.island', 'expected' => 'true on every host island type (namespace:Name)', 'got' => 'missing or false']], $revision);
             }
             $props = $node['props'] ?? [];
             self::images($props, $assets, $revision);

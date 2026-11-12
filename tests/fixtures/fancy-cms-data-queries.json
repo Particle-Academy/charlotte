@@ -1,0 +1,888 @@
+{
+  "about": "Shared PHP/React parity spec for $params, $scope, <stream>#<alias> and {\"$input\"} references: DataRequests::queries() and dataQueries() must return exactly these queries. Byte-identical in fancy-cms and fancy-cms-ui.",
+  "nodes": [
+    {
+      "id": "in1",
+      "type": "input",
+      "parent": null,
+      "order": "in1",
+      "props": {
+        "name": "period",
+        "kind": "daterange",
+        "label": "Period",
+        "default": {
+          "from": "2026-01-01",
+          "to": "2026-03-31"
+        }
+      },
+      "style": {
+        "base": {}
+      }
+    },
+    {
+      "id": "in2",
+      "type": "input",
+      "parent": null,
+      "order": "in2",
+      "props": {
+        "name": "owners",
+        "kind": "multiselect",
+        "label": "Owners",
+        "options": {
+          "$bind": "lists.people"
+        },
+        "default": []
+      },
+      "style": {
+        "base": {}
+      }
+    },
+    {
+      "id": "k1",
+      "type": "kpi",
+      "parent": null,
+      "order": "k1",
+      "props": {
+        "label": "Revenue",
+        "value": {
+          "$bind": "metrics.totals.revenue",
+          "$params": {
+            "groupBy": "owner"
+          },
+          "$scope": {
+            "period": {
+              "$input": "period"
+            },
+            "organizations": {
+              "ids": [
+                "org-7"
+              ],
+              "children": true
+            }
+          }
+        }
+      },
+      "style": {
+        "base": {}
+      }
+    },
+    {
+      "id": "k2",
+      "type": "kpi",
+      "parent": null,
+      "order": "k2",
+      "props": {
+        "label": "Deals",
+        "value": {
+          "$bind": "metrics.totals.deals"
+        }
+      },
+      "style": {
+        "base": {}
+      }
+    },
+    {
+      "id": "c1",
+      "type": "chart",
+      "parent": null,
+      "order": "c1",
+      "props": {
+        "kind": "column",
+        "categories": {
+          "$bind": "metrics#byStage.columns.stage",
+          "$params": {
+            "groupBy": "stage"
+          },
+          "$scope": {
+            "period": {
+              "$input": "period"
+            }
+          }
+        },
+        "series": {
+          "$bind": "metrics#byStage.columns.value",
+          "$params": {
+            "groupBy": "stage"
+          },
+          "$scope": {
+            "period": {
+              "$input": "period"
+            }
+          }
+        }
+      },
+      "style": {
+        "base": {}
+      }
+    },
+    {
+      "id": "l1",
+      "type": "leaderboard",
+      "parent": null,
+      "order": "l1",
+      "props": {
+        "rows": {
+          "$bind": "deals.rows",
+          "$scope": {
+            "people": {
+              "$input": "owners"
+            },
+            "dealTypes": [
+              "renewal"
+            ]
+          }
+        },
+        "labelKey": "owner"
+      },
+      "style": {
+        "base": {}
+      }
+    },
+    {
+      "id": "t1",
+      "type": "table",
+      "parent": null,
+      "order": "t1",
+      "props": {
+        "columns": [
+          {
+            "key": "deal"
+          }
+        ],
+        "rows": {
+          "$bind": "deals.rows",
+          "$scope": {
+            "people": {
+              "$input": "owners"
+            },
+            "dealTypes": [
+              "new"
+            ]
+          }
+        }
+      },
+      "style": {
+        "base": {}
+      }
+    },
+    {
+      "id": "m1",
+      "type": "text",
+      "parent": null,
+      "order": "m1",
+      "props": {
+        "content": {
+          "$bind": "member.name"
+        }
+      },
+      "style": {
+        "base": {}
+      },
+      "repeat": {
+        "each": {
+          "$bind": "team.rows"
+        },
+        "as": "member"
+      }
+    },
+    {
+      "id": "rp",
+      "type": "repeater",
+      "parent": null,
+      "order": "rp",
+      "props": {
+        "items": {
+          "$bind": "leads.rows"
+        }
+      },
+      "style": {
+        "base": {}
+      }
+    },
+    {
+      "id": "rpt",
+      "type": "text",
+      "parent": "rp",
+      "order": "rpt",
+      "props": {
+        "content": {
+          "$bind": "item.name"
+        }
+      },
+      "style": {
+        "base": {}
+      }
+    },
+    {
+      "id": "x1",
+      "type": "kpi",
+      "parent": null,
+      "order": "x1",
+      "props": {
+        "label": "Margin",
+        "value": {
+          "$bind": "metrics.totals.margin",
+          "$params": {
+            "groupBy": "owner"
+          },
+          "$scope": {
+            "organizations": {
+              "children": true,
+              "ids": [
+                "org-7"
+              ]
+            },
+            "period": {
+              "$input": "period"
+            }
+          }
+        }
+      },
+      "style": {
+        "base": {}
+      }
+    },
+    {
+      "id": "x2",
+      "type": "kpi",
+      "parent": null,
+      "order": "x2",
+      "props": {
+        "label": "Pipeline",
+        "value": {
+          "$bind": "pipeline.totals.value",
+          "$params": {
+            "window": {
+              "$input": "missing"
+            }
+          },
+          "$scope": {
+            "period": {
+              "$input": "period",
+              "note": "not a reference"
+            }
+          }
+        }
+      },
+      "style": {
+        "base": {}
+      }
+    }
+  ],
+  "data": {
+    "lists": {
+      "people": [
+        {
+          "value": "ana",
+          "label": "Ana Ruiz"
+        },
+        {
+          "value": "ben",
+          "label": "Ben Okoro"
+        }
+      ]
+    }
+  },
+  "request": {
+    "node": "k1",
+    "prop": "value",
+    "path": "metrics.totals.revenue",
+    "params": {
+      "groupBy": "owner"
+    },
+    "scope": {
+      "period": {
+        "$input": "period"
+      },
+      "organizations": {
+        "ids": [
+          "org-7"
+        ],
+        "children": true
+      }
+    },
+    "expects": {
+      "type": "number"
+    }
+  },
+  "cases": [
+    {
+      "name": "the inputs' defaults",
+      "inputs": {},
+      "queries": [
+        {
+          "key": "metrics#byStage",
+          "stream": "metrics",
+          "alias": "byStage",
+          "params": {
+            "groupBy": "stage"
+          },
+          "scope": {
+            "period": {
+              "from": "2026-01-01",
+              "to": "2026-03-31"
+            }
+          },
+          "inputs": [
+            "period"
+          ],
+          "bindings": [
+            {
+              "node": "c1",
+              "prop": "categories",
+              "path": "metrics#byStage.columns.stage"
+            },
+            {
+              "node": "c1",
+              "prop": "series",
+              "path": "metrics#byStage.columns.value"
+            }
+          ]
+        },
+        {
+          "key": "lists",
+          "stream": "lists",
+          "alias": null,
+          "params": {},
+          "scope": {},
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "in2",
+              "prop": "options",
+              "path": "lists.people"
+            }
+          ]
+        },
+        {
+          "key": "metrics",
+          "stream": "metrics",
+          "alias": null,
+          "params": {
+            "groupBy": "owner"
+          },
+          "scope": {
+            "period": {
+              "from": "2026-01-01",
+              "to": "2026-03-31"
+            },
+            "organizations": {
+              "ids": [
+                "org-7"
+              ],
+              "children": true
+            }
+          },
+          "inputs": [
+            "period"
+          ],
+          "bindings": [
+            {
+              "node": "k1",
+              "prop": "value",
+              "path": "metrics.totals.revenue"
+            },
+            {
+              "node": "k2",
+              "prop": "value",
+              "path": "metrics.totals.deals"
+            },
+            {
+              "node": "x1",
+              "prop": "value",
+              "path": "metrics.totals.margin"
+            }
+          ]
+        },
+        {
+          "key": "deals",
+          "stream": "deals",
+          "alias": null,
+          "params": {},
+          "scope": {
+            "people": [],
+            "dealTypes": [
+              "renewal"
+            ]
+          },
+          "inputs": [
+            "owners"
+          ],
+          "bindings": [
+            {
+              "node": "l1",
+              "prop": "rows",
+              "path": "deals.rows"
+            }
+          ]
+        },
+        {
+          "key": "team",
+          "stream": "team",
+          "alias": null,
+          "params": {},
+          "scope": {},
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "m1",
+              "prop": "repeat.each",
+              "path": "team.rows"
+            }
+          ]
+        },
+        {
+          "key": "leads",
+          "stream": "leads",
+          "alias": null,
+          "params": {},
+          "scope": {},
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "rp",
+              "prop": "items",
+              "path": "leads.rows"
+            }
+          ]
+        },
+        {
+          "key": "deals",
+          "stream": "deals",
+          "alias": null,
+          "params": {},
+          "scope": {
+            "people": [],
+            "dealTypes": [
+              "new"
+            ]
+          },
+          "inputs": [
+            "owners"
+          ],
+          "bindings": [
+            {
+              "node": "t1",
+              "prop": "rows",
+              "path": "deals.rows"
+            }
+          ]
+        },
+        {
+          "key": "pipeline",
+          "stream": "pipeline",
+          "alias": null,
+          "params": {
+            "window": null
+          },
+          "scope": {
+            "period": {
+              "$input": "period",
+              "note": "not a reference"
+            }
+          },
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "x2",
+              "prop": "value",
+              "path": "pipeline.totals.value"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "the inputs a visitor chose",
+      "inputs": {
+        "period": {
+          "from": "2026-04-01",
+          "to": "2026-06-30"
+        },
+        "owners": [
+          "ben"
+        ]
+      },
+      "queries": [
+        {
+          "key": "metrics#byStage",
+          "stream": "metrics",
+          "alias": "byStage",
+          "params": {
+            "groupBy": "stage"
+          },
+          "scope": {
+            "period": {
+              "from": "2026-04-01",
+              "to": "2026-06-30"
+            }
+          },
+          "inputs": [
+            "period"
+          ],
+          "bindings": [
+            {
+              "node": "c1",
+              "prop": "categories",
+              "path": "metrics#byStage.columns.stage"
+            },
+            {
+              "node": "c1",
+              "prop": "series",
+              "path": "metrics#byStage.columns.value"
+            }
+          ]
+        },
+        {
+          "key": "lists",
+          "stream": "lists",
+          "alias": null,
+          "params": {},
+          "scope": {},
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "in2",
+              "prop": "options",
+              "path": "lists.people"
+            }
+          ]
+        },
+        {
+          "key": "metrics",
+          "stream": "metrics",
+          "alias": null,
+          "params": {
+            "groupBy": "owner"
+          },
+          "scope": {
+            "period": {
+              "from": "2026-04-01",
+              "to": "2026-06-30"
+            },
+            "organizations": {
+              "ids": [
+                "org-7"
+              ],
+              "children": true
+            }
+          },
+          "inputs": [
+            "period"
+          ],
+          "bindings": [
+            {
+              "node": "k1",
+              "prop": "value",
+              "path": "metrics.totals.revenue"
+            },
+            {
+              "node": "k2",
+              "prop": "value",
+              "path": "metrics.totals.deals"
+            },
+            {
+              "node": "x1",
+              "prop": "value",
+              "path": "metrics.totals.margin"
+            }
+          ]
+        },
+        {
+          "key": "deals",
+          "stream": "deals",
+          "alias": null,
+          "params": {},
+          "scope": {
+            "people": [
+              "ben"
+            ],
+            "dealTypes": [
+              "renewal"
+            ]
+          },
+          "inputs": [
+            "owners"
+          ],
+          "bindings": [
+            {
+              "node": "l1",
+              "prop": "rows",
+              "path": "deals.rows"
+            }
+          ]
+        },
+        {
+          "key": "team",
+          "stream": "team",
+          "alias": null,
+          "params": {},
+          "scope": {},
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "m1",
+              "prop": "repeat.each",
+              "path": "team.rows"
+            }
+          ]
+        },
+        {
+          "key": "leads",
+          "stream": "leads",
+          "alias": null,
+          "params": {},
+          "scope": {},
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "rp",
+              "prop": "items",
+              "path": "leads.rows"
+            }
+          ]
+        },
+        {
+          "key": "deals",
+          "stream": "deals",
+          "alias": null,
+          "params": {},
+          "scope": {
+            "people": [
+              "ben"
+            ],
+            "dealTypes": [
+              "new"
+            ]
+          },
+          "inputs": [
+            "owners"
+          ],
+          "bindings": [
+            {
+              "node": "t1",
+              "prop": "rows",
+              "path": "deals.rows"
+            }
+          ]
+        },
+        {
+          "key": "pipeline",
+          "stream": "pipeline",
+          "alias": null,
+          "params": {
+            "window": null
+          },
+          "scope": {
+            "period": {
+              "$input": "period",
+              "note": "not a reference"
+            }
+          },
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "x2",
+              "prop": "value",
+              "path": "pipeline.totals.value"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "a value outside an input's options is its default, never passed through",
+      "inputs": {
+        "period": {
+          "from": "2026-06-30",
+          "to": "2026-04-01"
+        },
+        "owners": [
+          "zed"
+        ]
+      },
+      "queries": [
+        {
+          "key": "metrics#byStage",
+          "stream": "metrics",
+          "alias": "byStage",
+          "params": {
+            "groupBy": "stage"
+          },
+          "scope": {
+            "period": {
+              "from": "2026-01-01",
+              "to": "2026-03-31"
+            }
+          },
+          "inputs": [
+            "period"
+          ],
+          "bindings": [
+            {
+              "node": "c1",
+              "prop": "categories",
+              "path": "metrics#byStage.columns.stage"
+            },
+            {
+              "node": "c1",
+              "prop": "series",
+              "path": "metrics#byStage.columns.value"
+            }
+          ]
+        },
+        {
+          "key": "lists",
+          "stream": "lists",
+          "alias": null,
+          "params": {},
+          "scope": {},
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "in2",
+              "prop": "options",
+              "path": "lists.people"
+            }
+          ]
+        },
+        {
+          "key": "metrics",
+          "stream": "metrics",
+          "alias": null,
+          "params": {
+            "groupBy": "owner"
+          },
+          "scope": {
+            "period": {
+              "from": "2026-01-01",
+              "to": "2026-03-31"
+            },
+            "organizations": {
+              "ids": [
+                "org-7"
+              ],
+              "children": true
+            }
+          },
+          "inputs": [
+            "period"
+          ],
+          "bindings": [
+            {
+              "node": "k1",
+              "prop": "value",
+              "path": "metrics.totals.revenue"
+            },
+            {
+              "node": "k2",
+              "prop": "value",
+              "path": "metrics.totals.deals"
+            },
+            {
+              "node": "x1",
+              "prop": "value",
+              "path": "metrics.totals.margin"
+            }
+          ]
+        },
+        {
+          "key": "deals",
+          "stream": "deals",
+          "alias": null,
+          "params": {},
+          "scope": {
+            "people": [],
+            "dealTypes": [
+              "renewal"
+            ]
+          },
+          "inputs": [
+            "owners"
+          ],
+          "bindings": [
+            {
+              "node": "l1",
+              "prop": "rows",
+              "path": "deals.rows"
+            }
+          ]
+        },
+        {
+          "key": "team",
+          "stream": "team",
+          "alias": null,
+          "params": {},
+          "scope": {},
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "m1",
+              "prop": "repeat.each",
+              "path": "team.rows"
+            }
+          ]
+        },
+        {
+          "key": "leads",
+          "stream": "leads",
+          "alias": null,
+          "params": {},
+          "scope": {},
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "rp",
+              "prop": "items",
+              "path": "leads.rows"
+            }
+          ]
+        },
+        {
+          "key": "deals",
+          "stream": "deals",
+          "alias": null,
+          "params": {},
+          "scope": {
+            "people": [],
+            "dealTypes": [
+              "new"
+            ]
+          },
+          "inputs": [
+            "owners"
+          ],
+          "bindings": [
+            {
+              "node": "t1",
+              "prop": "rows",
+              "path": "deals.rows"
+            }
+          ]
+        },
+        {
+          "key": "pipeline",
+          "stream": "pipeline",
+          "alias": null,
+          "params": {
+            "window": null
+          },
+          "scope": {
+            "period": {
+              "$input": "period",
+              "note": "not a reference"
+            }
+          },
+          "inputs": [],
+          "bindings": [
+            {
+              "node": "x2",
+              "prop": "value",
+              "path": "pipeline.totals.value"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

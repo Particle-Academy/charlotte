@@ -89,10 +89,20 @@ $session->publish($session->site()['revision'], (string) $request->user()->getKe
 `cms_check` adds site-wide checks: broken internal links, orphan pages, a
 missing 404 or home page, and nav consistency.
 
-**Kit islands.** Bind an `Islands\IslandCatalogue` (or let Charlotte read
-fancy-cms's `cms_describe` catalogue once it ships one) and the agent can place
-`{type: "kit:Tabs", island: true, props}` nodes, each checked against that
-type's JSON Schema for every actor.
+**Component nodes and islands.** By default Charlotte reads fancy-cms's own
+island catalogue (`{$schema, $defs, types}`). That gives the agent the
+built-in nodes `chart`, `kpi`, `table`, `leaderboard` and `input`, placed
+under those bare names; `island: true` is implied. To add your own islands
+beside them, use `namespace:Name` types, which are placed with `island: true`:
+
+```php
+app()->instance(\Charlotte\Islands\IslandCatalogue::class,
+    \Charlotte\Islands\CmsDescribeIslands::withHost([['type' => 'kit:Tabs', 'description' => 'Tabbed panels', 'props' => $schema]]));
+```
+
+Every node of a catalogue type is checked against its JSON Schema, with the
+catalogue's `$defs`, for every actor. An unknown type, `richtext`, and
+`island: true` on a native element are refused.
 
 **Rendered contrast.** `Charlotte::renderedUsing()` hands Charlotte a browser's
 measurements (`Checks\RenderedEvidence::fromAxe()` reads axe-core results), so
@@ -205,9 +215,24 @@ The paths are:
 - `<stream>.columns.<field>`: one field's values across the rows, for chart categories and series.
 - `<stream>.totals.<field>`: one total, for streams that declare totals.
 - `<as>.<field>`: inside a node repeating over `<stream>.rows`.
+- `item.<field>` and `index`: inside a `repeater` whose `items` binds `<stream>.rows`.
 
 To bind one stream twice with different params, give it an alias:
 `metrics#byStage.rows`.
+
+**Page inputs.** An `input` node (`{"name": "period", "kind": "period"}`;
+the kinds are period, daterange, person, select and multiselect) is a control
+the visitor sets. A binding reads it with `{"$input": "period"}` as a `$scope`
+or `$params` value. The name must belong to an input on the same page, and
+the input's kind must fit what it feeds:
+
+- a period or daterange input feeds a `period` scope;
+- a person, select or multiselect input feeds a `set` or `tree` scope;
+- only a select input feeds a param.
+
+Two inputs can't share a name. An input's option list binds like any other
+data: `"options": {"$bind": "people.rows"}`, where `people` is a stream with
+`value` and `label` fields.
 
 A write that binds an unknown stream, field, param or scope parameter is
 refused `binding_invalid`, naming the field and what exists. That applies to
@@ -228,7 +253,10 @@ $queries = Charlotte::dataQueries($doc, viewer: [
     'people' => $visiblePeopleIds, 'dealTypes' => $visibleDealTypes,
     'period' => ['from' => '2026-01-01', 'to' => '2026-12-31'],
     'organizations' => $visibleOrgIdsIncludingChildren,
-], inputs: $request->query(), descendants: fn (string $org) => $orgs->descendantIds($org));
+], inputs: $request->query(),                       // raw input values; fancy-cms checks them against each input
+   descendants: fn (string $org) => $orgs->descendantIds($org),
+   data: ['people' => ['rows' => $peopleOptions]],    // what bound input options resolve against
+   periods: fn (string $preset) => $calendar->range($preset));   // '30d' => ['from' => ..., 'to' => ...]
 
 $results = [];
 foreach ($queries as $q) {
@@ -240,7 +268,17 @@ $rendered = \FancyCms\Render\PageRenderer::render($doc, Charlotte::dataContext($
 ```
 
 A `set` or `tree` that narrows to `[]`, or a `period` that narrows to `null`,
-means the viewer sees nothing for that parameter. Return no rows.
+means the viewer sees nothing for that parameter. Return no rows. An empty
+multiselect, or a period preset your `periods` callback doesn't know, narrows
+nothing.
+
+**The requests are fancy-cms's own.** `dataQueries` calls fancy-cms's
+`DataRequests::queries()` and keeps each request verbatim under `request`.
+You get the same queries, in the same order, keyed `<stream>` or
+`<stream>#<alias>`, with every `{"$input"}` filled from the page's inputs.
+Charlotte adds three things to each request: the checked `params`, the
+`fields` to return, and the narrowed `scope`. A parity test holds this
+against fancy-cms's shared fixture.
 
 ### 4. Hand a brief off from your own agent
 

@@ -133,15 +133,17 @@ test('richtext can never be smuggled in as an island type', function (): void {
     SchemaIslandCatalogue::fromArray([['type' => 'richtext', 'props' => ['type' => 'object']]]);
 })->throws(InvalidArgumentException::class);
 
-test('the seam: a fancy-cms describe() that carries an island catalogue is read in either shape', function (): void {
+test('the seam: fancy-cms\'s real {$schema, $defs, types} shape is read; the shapes guessed before it shipped are not', function (): void {
+    $real = CmsDescribeIslands::fromDescribe(['islands' => ['$defs' => [], 'types' => ['gauge' => ['description' => 'G', 'props' => ['type' => 'object', 'properties' => ['v' => ['type' => 'number']]]]]]]);
     $map = CmsDescribeIslands::fromDescribe(['islands' => ['kit:Tabs' => ['description' => 'Tabs', 'schema' => kitIslands()[0]['props']]]]);
     $list = CmsDescribeIslands::fromDescribe(['islands' => [['type' => 'kit:Tabs', 'props' => kitIslands()[0]['props']]]]);
     $none = CmsDescribeIslands::fromDescribe(['ops' => []]);
 
-    expect($map->types())->toBe(['kit:Tabs'])
-        ->and($list->types())->toBe(['kit:Tabs'])
+    expect($real->types())->toBe(['gauge'])
+        ->and($real->validate('gauge', ['v' => 'x'])[0]['path'])->toBe('$.v')
+        ->and($map)->toBeNull()
+        ->and($list)->toBeNull()
         ->and($none)->toBeNull();
-    expect($map->validate('kit:Tabs', ['tabs' => 'x'])[0]['path'])->toBe('$.tabs');
 });
 
 test('with no island catalogue anywhere, cms_describe says so and no island can be placed', function (): void {

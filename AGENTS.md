@@ -64,9 +64,13 @@ read config through the container.
   contrast verdicts; the result's `contrast` says `rendered` or `document`
   with a reason. A throwing source is `rendered_report_failed`, never a failure.
 - **Islands**: `Islands\IslandCatalogue` (default `CmsDescribeIslands::catalogue()`,
-  which reads `FancyCms\Agent::describe()['islands']` when fancy-cms carries
-  it; that file is the only seam to change when fancy-cms ships its shape).
-  `Islands\PropsSchema` is our own JSON Schema subset (no dependency).
+  which reads fancy-cms's `{$schema, $defs, types}` catalogue from
+  `Agent::describe()['islands']`). Its types are fancy-cms BUILT-INS: bare
+  names (`chart`, `kpi`, `table`, `leaderboard`, `input`, which are also
+  native node types in fancy-cms), `island: true` implied, never one of
+  `SchemaIslandCatalogue::NEVER_ISLANDS`. Host islands are `namespace:Name`
+  (`withHost()`, `fromArray()`). `Islands\PropsSchema` is our own JSON Schema
+  subset (no dependency), with `$ref` into the catalogue's `$defs`.
   `NodeTypes::forStored()` adds island types already in a stored history, so
   a narrowed catalogue never makes a draft unreadable.
 - **Data (report dashboards)**: `Data\DataCatalogue` (default empty
@@ -78,7 +82,12 @@ read config through the container.
   scope, fail-closed on a missing parameter. A param declared
   `{selects: fields, always}` limits a query's columns, totals and repeat
   fields to its literal selection (`Bindings::selection`); a query's params are
-  its first binding's (`queryParams`). Field types may end in `?`; `context()`
+  its first binding's (`queryParams`). `$input` references must name a page
+  `input` node of a fitting kind (`INPUT_FITS`); a `repeater` gives its
+  children `item`/`index`. `Bindings::queries()` DELEGATES to fancy-cms
+  `DataRequests::queries()` (parity test: `tests/fixtures/fancy-cms-data-queries.json`,
+  a byte copy of fancy-cms's fixture; refresh it when fancy-cms changes it).
+  Field types may end in `?`; `context()`
   keeps nulls and never coerces to 0. `FactChecks` skips binding objects and
   checks literal numbers under `FIGURE_KEYS`.
 - **Sub-agents** (`Runtime\PageSubagents`, a singleton): host code binds a
@@ -106,13 +115,17 @@ read config through the container.
 - **Node types exclude `richtext` for every actor** (`Drafts\NodeTypes`).
   Every PageSession here must be built with `NodeTypes::allowed($islandTypes)`
   (new documents) or `NodeTypes::forStored($json, $islandTypes)` (stored
-  ones). Island types always contain a colon, so they cannot re-admit richtext.
+  ones). Host island types always contain a colon, and a bare built-in may
+  never be `richtext` or a native element (`NEVER_ISLANDS`), so neither can
+  re-admit richtext.
 - **`AssetPolicy::assert` runs after every write** (agent, human, approval
   replay, publish). It refuses authored image URLs, dimensions and any CSS
   fetch, escape or comment. **`IslandPolicy::assert` runs after every write
   too** (not publish: nothing changes), on the nodes that write created or
-  changed: catalogue type iff `island: true`, props valid for the schema, no
-  image URL in props, every `asset` handle in the AssetCatalogue.
+  changed: a host island needs `island: true` and a catalogue entry, a
+  built-in may omit the flag, `island: true` elsewhere is refused; props valid
+  for the schema, no image URL in props, every `asset` handle in the
+  AssetCatalogue.
 - **A tool argument never names a site or tenant**; `page` is a page id
   (regex, no slash) or a region, resolved inside the session's bound site.
 - **`LinkPolicy::assertOps` runs on agent ops only**, before the write.

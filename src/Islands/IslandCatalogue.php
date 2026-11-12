@@ -5,27 +5,31 @@ declare(strict_types=1);
 namespace Charlotte\Islands;
 
 /**
- * The island types a host renders and the props each takes: what Charlotte
- * may place as `{type, island: true, props}` nodes.
+ * The component node types Charlotte may place and the props each takes.
  *
- * THE SEAM. fancy-cms is gaining an island catalogue exposed through
- * `cms_describe` (one JSON Schema per island type). Until that release
- * exists, Charlotte codes against this interface:
- * - {@see CmsDescribeIslands::catalogue()} (the default binding) reads
- *   `FancyCms\Agent::describe()['islands']` when the installed fancy-cms
- *   carries it, and is empty otherwise;
- * - a host can bind a {@see SchemaIslandCatalogue} built from its own list
- *   (the lab's `KitReferenceSites::ISLANDS` plus schemas) today.
- * When fancy-cms ships its catalogue, only `CmsDescribeIslands::fromDescribe`
- * may need to learn its exact shape; nothing else changes.
+ * Two kinds of type:
+ * - fancy-cms's BUILT-INS (`chart`, `kpi`, `table`, `leaderboard`, `input`):
+ *   bare names, read from fancy-cms's own catalogue (`{$schema, $defs,
+ *   types}`, via {@see CmsDescribeIslands}); `island: true` is implied.
+ * - the HOST's islands: `namespace:Name` (`kit:Tabs`), placed with
+ *   `island: true`.
+ *
+ * The default binding is {@see CmsDescribeIslands::catalogue()}, fancy-cms's
+ * built-ins; {@see CmsDescribeIslands::withHost()} adds a host's own.
  */
 interface IslandCatalogue
 {
-    /** @return list<string> island node types, e.g. `kit:Tabs` */
+    /** @return list<string> component node types, e.g. `kpi` or `kit:Tabs` */
     public function types(): array;
 
-    /** @return list<array{type: string, description: string, props: array}> what the agent reads */
+    /** @return list<array{type: string, description: string, props: array, hydrate?: string, example?: mixed}> what the agent reads */
     public function describe(): array;
+
+    /** @return array<string, array> the `$defs` the props schemas `$ref`, for the agent and for validation */
+    public function defs(): array;
+
+    /** Whether a type is a fancy-cms built-in (bare name, `island: true` implied). */
+    public function builtin(string $type): bool;
 
     /** @return list<array{path: string, expected: string, got: string}> empty when the props are valid; paths start at `$` */
     public function validate(string $type, mixed $props): array;

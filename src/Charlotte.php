@@ -217,14 +217,20 @@ final class Charlotte
      * viewer may see (a binding or page input can never widen it). Fetch each,
      * then pass {@see dataContext()} of the results to fancy-cms's renderer.
      *
+     * The requests are fancy-cms's own (`DataRequests::queries()`, kept
+     * verbatim under `request`), so Charlotte and fancy-cms can never ask the
+     * host for different things.
+     *
      * @param  array<string, mixed>  $viewer  the viewer's whole visible scope, every parameter stated
-     * @param  array<string, mixed>  $inputs  page input values by id
+     * @param  array<string, mixed>  $inputs  raw page input values by name (e.g. the request's query)
      * @param  (Closure(string): list<string>)|null  $descendants  a tree id's descendants, for children:true
-     * @return list<array{key: string, stream: string, params: array<string, string>, scope: array<string, mixed>}>
+     * @param  array<string, mixed>  $data  the context bound input options (people, teams) resolve against
+     * @param  (Closure(string): ?array{from: string, to: string})|null  $periods  a period input's preset (`30d`) as dates
+     * @return list<array{key: string, stream: string, alias: ?string, params: array, fields: list<string>, scope: array<string, mixed>, inputs: list<string>, bindings: list<array>, request: array}>
      */
-    public function dataQueries(array $doc, array $viewer, array $inputs = [], ?Closure $descendants = null): array
+    public function dataQueries(array $doc, array $viewer, array $inputs = [], ?Closure $descendants = null, array $data = [], ?Closure $periods = null): array
     {
-        return Bindings::queries($doc, $this->container->make(DataCatalogue::class), $viewer, $inputs, $descendants);
+        return Bindings::queries($doc, $this->container->make(DataCatalogue::class), $viewer, $inputs, $descendants, $data, $periods);
     }
 
     /**

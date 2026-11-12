@@ -132,6 +132,35 @@ instead of resolving it from the container need to change.
   `{"draft": {"page", "revision"}}`. Its run is its own harness run, linked
   beneath the parent's thread. A child capability copied to another address
   or participant binds no tools.
+- **fancy-cms's real island catalogue and nodes.** Charlotte reads the
+  `{$schema, $defs, types}` catalogue (`resources/islands/catalogue.json`,
+  `Agent::describe()['islands']`): the built-ins `chart`, `kpi`, `table`,
+  `leaderboard` and `input` are bare names with `island: true` implied, and
+  their props are validated with the catalogue's `$defs` (`PropsSchema` now
+  resolves `$ref`). It is the default `IslandCatalogue`;
+  `CmsDescribeIslands::withHost([...])` adds host islands, which stay
+  `namespace:Name` with `island: true`. The pre-release guess at the shape
+  (a map or list of `namespace:Name` entries) is gone. Unknown types,
+  `richtext` and `island: true` on a native element are still refused.
+  `IslandCatalogue` gained `defs()` and `builtin()`; `cms_describe` islands
+  carry `defs`.
+- **Page inputs.** `input` nodes are placed and configured like any built-in.
+  A binding's `{"$input": name}` must name an input on the page whose kind
+  fits (period/daterange for a period scope; person/select/multiselect for a
+  set or tree scope; select for a param), and input names are unique, all as
+  `binding_invalid`. A `repeater`'s children may bind `item.<field>` and
+  `index`.
+- **`dataQueries` delegates to fancy-cms's `DataRequests::queries()`**, so the
+  two cannot drift: one request per distinct (stream, alias, params, scope),
+  keyed `<stream>` or `<stream>#<alias>`, `{"$input"}` filled from the page's
+  inputs, each kept verbatim under `request`, plus Charlotte's checked
+  `params`, `fields` and narrowed `scope`. New arguments: `data` (for bound
+  input options) and `periods` (a period preset as dates). Narrowing takes a
+  person/select value as one id and an empty multiselect as no narrowing. A
+  parity test runs against fancy-cms's own `tests/fixtures/data-queries.json`.
+  **Needs the fancy-cms release after 0.8.1** (fancy-cms `a987bfe`, page
+  inputs and data queries); raise the `particle-academy/fancy-cms`
+  requirement to it when it is tagged.
 - **BREAKING (site sessions only, unreleased until now): a site turn needs a
   cost-capped host `RunContext`.** Until prism-harness ships G-261 (an
   uncapped `stream()` drops declared sub-agents) and G-262 (an uncapped run

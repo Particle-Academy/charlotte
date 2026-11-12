@@ -68,7 +68,8 @@ test('a node bound to a catalogue stream is saved', function (): void {
     $session = openSession();
     $revision = tool($session, 'cms_get')['revision'];
 
-    $result = tool($session, 'cms_apply', ['ops' => kpiOps(['$bind' => 'metrics.totals.revenue', '$scope' => ['period' => ['$input' => 'period']]]), 'basedOn' => $revision]);
+    $input = ['t' => 'insert_node', 'node' => ['id' => 'in1', 'type' => 'input', 'parent' => 'hero', 'order' => 'a9', 'props' => ['name' => 'period', 'kind' => 'period'], 'style' => ['base' => []]]];
+    $result = tool($session, 'cms_apply', ['ops' => [...kpiOps(['$bind' => 'metrics.totals.revenue', '$scope' => ['period' => ['$input' => 'period']]]), $input], 'basedOn' => $revision]);
 
     expect($result['isError'] ?? false)->toBeFalse()
         ->and($session->state()['doc']['nodes'])->toHaveKey('kpi');
@@ -134,6 +135,8 @@ test('a page can be rendered from the catalogue: queries for the viewer, then th
 
     $queries = Charlotte::dataQueries($doc, ['people' => ['u_1'], 'period' => ['from' => '2026-01-01', 'to' => '2026-03-31']]);
 
-    expect($queries)->toBe([['key' => 'metrics', 'stream' => 'metrics', 'params' => ['groupBy' => 'owner'], 'fields' => ['group', 'revenue'],
-        'scope' => ['people' => ['u_1'], 'period' => ['from' => '2026-01-01', 'to' => '2026-03-31']]]]);
+    expect($queries)->toHaveCount(1)
+        ->and($queries[0])->toMatchArray(['key' => 'metrics', 'stream' => 'metrics', 'alias' => null, 'params' => ['groupBy' => 'owner'], 'fields' => ['group', 'revenue'],
+            'scope' => ['people' => ['u_1'], 'period' => ['from' => '2026-01-01', 'to' => '2026-03-31']],
+            'bindings' => [['node' => 'kpi', 'prop' => 'value', 'path' => 'metrics.totals.revenue']]]);
 });

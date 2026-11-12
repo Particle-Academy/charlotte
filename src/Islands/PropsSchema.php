@@ -14,7 +14,8 @@ use stdClass;
  * Supported: `type` (string or list), `enum`, `const`, `properties`,
  * `required`, `additionalProperties` (boolean or schema), `items` (schema),
  * `minItems`, `maxItems`, `minLength`, `maxLength`, `minimum`, `maximum`,
- * `pattern`, `anyOf`, `oneOf` (treated as anyOf). Unknown keywords are
+ * `pattern`, `anyOf`, `oneOf` (treated as anyOf), and `$ref` to the
+ * catalogue's own `#/$defs/<name>`. Unknown keywords are
  * ignored, so a richer schema from fancy-cms validates at least this much.
  *
  * Errors are `{path, expected, got}`, the shape every Charlotte tool error
@@ -27,10 +28,22 @@ final class PropsSchema
     private const MAX_ERRORS = 20;
 
     /** @return list<array{path: string, expected: string, got: string}> */
-    public static function validate(array $schema, mixed $value, string $path = '$'): array
+    /** The `$defs` a `$ref` resolves against during one validate() call. */
+    private static array $defs = [];
+
+    /**
+     * @param  array<string, array>  $defs  a catalogue's `$defs`, for `{"$ref": "#/$defs/<name>"}`
+     */
+    public static function validate(array $schema, mixed $value, string $path = '$', array $defs = []): array
     {
         $errors = [];
-        self::walk($schema, self::plain($value), $path, $errors, 0);
+        $outer = self::$defs;
+        self::$defs = $defs;
+        try {
+            self::walk($schema, self::plain($value), $path, $errors, 0);
+        } finally {
+            self::$defs = $outer;
+        }
 
         return array_slice($errors, 0, self::MAX_ERRORS);
     }
@@ -52,6 +65,22 @@ final class PropsSchema
     {
         if ($depth > self::MAX_DEPTH) {
             $errors[] = self::error($path, 'at most '.self::MAX_DEPTH.' levels of nesting', 'deeper');
+
+            return;
+        }
+        // `$ref` into the catalogue's $defs (the only form fancy-cms uses); its
+        // siblings (a description, a default) apply alongside the target.
+        $ref = $schema['$ref'] ?? null;
+        if (is_string($ref)) {
+            $name = str_starts_with($ref, '#/$defs/') ? substr($ref, strlen('#/$defs/')) : null;
+            $target = $name === null ? null : (self::$defs[$name] ?? null);
+            if (! is_array($target)) {
+                $errors[] = self::error($path, 'a schema the catalogue defines ('.$ref.')', 'an unresolvable $ref');
+
+                return;
+            }
+            unset($schema['$ref']);
+            self::walk($target + $schema, $value, $path, $errors, $depth + 1);
 
             return;
         }

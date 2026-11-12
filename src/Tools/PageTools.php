@@ -351,7 +351,10 @@ final class PageTools
         return [
             'source' => $catalogue->source(),
             'types' => $catalogue->describe(),
+            'defs' => $catalogue->defs(),
             'place' => 'Insert an island as a leaf node: {"t":"insert_node","node":{"id":"…","type":"<island type>","island":true,"parent":"<container id>","order":"…","props":{…matching that type\'s props schema…},"style":{"base":{}}}}. '
+                .'fancy-cms\'s built-ins (chart, kpi, table, leaderboard, input) are bare names and island:true is optional; host islands are namespace:Name and need island:true. '
+                .'Schemas $ref the shapes in defs. An input node {"name", "kind"} is a page input: a binding\'s $params or $scope value {"$input": "<name>"} reads it, and the name must be an input on this page. '
                 .'Images in island props are asset handles from cms_assets ("asset"), never URLs. Links follow the same rules as any link.',
         ];
     }

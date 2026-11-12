@@ -16,8 +16,9 @@ use InvalidArgumentException;
  * may already see. The host states the viewer's whole visible scope; the
  * result is the intersection, per kind:
  *
- * - `set`: the requested ids that the viewer may see; nothing requested
- *   means the viewer's whole set. An empty list means nothing is visible.
+ * - `set`: the requested ids that the viewer may see; nothing requested (or
+ *   an empty request, such as a multiselect left empty) means the viewer's
+ *   whole set. An empty RESULT means nothing is visible.
  * - `tree`: requested ids, plus their descendants when `children` is true
  *   (the host's `$descendants` callback), then intersected with the viewer's
  *   ids, which the host passes already expanded.
@@ -70,7 +71,8 @@ final class Scope
      * @param  (Closure(string): list<string>)|null  $descendants  a tree id's descendants, for `children: true`
      * @return array<string, mixed>
      */
-    public static function narrow(DataCatalogue $catalogue, string $stream, array $viewer, array $requested, array $inputs = [], ?Closure $descendants = null): array
+    public static function narrow(DataCatalogue $catalogue, string $stream, array $viewer, array $requested, array $inputs = [], ?Closure $descendants = null,
+        ?Closure $periods = null): array
     {
         $declared = $catalogue->streams()[$stream] ?? throw new InvalidArgumentException("Unknown stream [{$stream}].");
         $kinds = $catalogue->scope();
@@ -85,6 +87,7 @@ final class Scope
             if ($input !== null) {
                 $value = $inputs[$input] ?? null;
             }
+            $value = self::fromInput($kind, $value, $periods);
             $out[$param] = match ($kind) {
                 'set' => self::narrowSet(self::ids($viewer[$param]) ?? self::viewerError($param, 'a list of ids'), self::ids($value)),
                 'tree' => self::narrowTree(self::ids($viewer[$param]) ?? self::viewerError($param, 'a list of ids, already expanded'), self::tree($value), $descendants),
@@ -95,10 +98,31 @@ final class Scope
         return $out;
     }
 
+    /**
+     * A page input's value in the shape its parameter kind takes. fancy-cms
+     * fills `{"$input"}` references with the input's value: a person or
+     * select is one id, a multiselect a list, a daterange `{from, to}`, and a
+     * period a PRESET (`30d`), which only the host can turn into dates
+     * (`$periods`; without one, or for a preset it does not know, the value
+     * narrows nothing). Anything else passes through to be checked as usual.
+     */
+    private static function fromInput(string $kind, mixed $value, ?Closure $periods): mixed
+    {
+        return match (true) {
+            $kind === 'set' && is_string($value) => [$value],
+            $kind === 'tree' && is_string($value) => ['ids' => [$value], 'children' => false],
+            $kind === 'tree' && is_array($value) && array_is_list($value) => ['ids' => $value, 'children' => false],
+            $kind === 'period' && is_string($value) => $periods === null ? null : ($periods)($value),
+            default => $value,
+        };
+    }
+
     /** @return list<string> */
     private static function narrowSet(array $viewer, ?array $requested): array
     {
-        if ($requested === null) {
+        // Nothing requested, or an empty selection (a multiselect left
+        // empty): not narrowed by this parameter, so the viewer's own set.
+        if ($requested === null || $requested === []) {
             return $viewer;
         }
 
