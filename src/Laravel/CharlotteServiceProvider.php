@@ -93,6 +93,7 @@ final class CharlotteServiceProvider extends ServiceProvider
             $app['db']->connection(), $app->make(SessionStore::class), $app->make(PageRepository::class),
             $app->make(ProposalStore::class), $app->make(EventLog::class), $app->make(AssetCatalogue::class), $app->make(LinkPolicy::class),
             $app->make(IslandCatalogue::class), $app->make(RenderedEvidenceSource::class), $app->make(DataCatalogue::class),
+            max(1, (int) $app['config']->get('charlotte.finish.max_not_ready', 3)),
         ));
         $this->app->bind(SiteWorkspace::class, fn (Application $app) => new SiteWorkspace(
             $app['db']->connection(), $app->make(Workspace::class), $app->make(SessionStore::class), $app->make(SiteRepository::class),

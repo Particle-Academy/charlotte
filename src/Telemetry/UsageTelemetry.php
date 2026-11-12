@@ -90,8 +90,13 @@ final class UsageTelemetry
                 $cost = (float) $usage->cost; // a cost the provider itself reported
             }
             $workspace = $this->workspace instanceof Closure ? ($this->workspace)() : $this->workspace;
+            // Null means the provider did not report it, never zero: prompt
+            // caching (prism#29) shows up here as cacheReadTokens > 0.
+            $cacheRead = $usage->cacheReadInputTokens ?? null;
+            $cacheWrite = $usage->cacheWriteInputTokens ?? null;
             $workspace->record($session, EventTypes::USAGE_OBSERVED, Workspace::SYSTEM, [
                 'provider' => $provider, 'model' => $model, 'inputTokens' => $input, 'outputTokens' => $output,
+                'cacheReadTokens' => is_int($cacheRead) ? $cacheRead : null, 'cacheWriteTokens' => is_int($cacheWrite) ? $cacheWrite : null,
                 'costUsd' => $cost, 'priced' => $cost !== null,
             ]);
         } catch (Throwable) {

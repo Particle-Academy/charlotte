@@ -138,7 +138,9 @@ final class TurnRunner
                 }
                 $finish = $recorder->finishReason ?? 'unknown';
                 $recorder->finishReason = null;
-                if ($finish === 'length' && ! $this->workspace->session($session->id)->stopped() && ! $this->ready($session->id)) {
+                // Not continued at the not_ready limit either: the agent was told to stop, not to retry.
+                if ($finish === 'length' && ! $this->workspace->session($session->id)->stopped() && ! $this->ready($session->id)
+                    && ! $this->workspace->limited($session->id)) {
                     if ($continuations >= $this->maxContinuations) {
                         $this->fail($session, $runId, 'output_limit');
 

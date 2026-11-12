@@ -261,6 +261,18 @@ final class QualityChecks
                 $candidates[] = $id;
             }
         }
+        // Where a page-wide fix goes: the container with the most items that
+        // could sit side by side, else the first content section.
+        $target = null;
+        $best = 1;
+        foreach ($candidates as $id) {
+            $items = count(array_filter($children[$id] ?? [], fn (string $c) => ! in_array($nodes[$c]['type'] ?? null, self::MINOR, true)));
+            if (in_array($nodes[$id]['type'] ?? null, self::CONTAINERS, true) && $items > $best) {
+                [$target, $best] = [$id, $items];
+            }
+        }
+        $target ??= $content[0] ?? null;
+
         foreach (self::PX as $bp => $px) {
             $multi = false;
             foreach ($candidates as $id) {
@@ -270,8 +282,11 @@ final class QualityChecks
                 }
             }
             if (! $multi) {
-                $op = json_encode(['t' => 'set_style', 'id' => '<grid id>', 'breakpoint' => $bp, 'patch' => ['columns' => $bp === 'md' ? 2 : 3]], JSON_UNESCAPED_SLASHES);
-                $defects[] = ['code' => 'responsive_layout', 'severity' => 'error', 'breakpoint' => $bp,
+                $grid = $target !== null && ($nodes[$target]['layout'] ?? null) === 'grid';
+                $op = json_encode($grid
+                    ? ['t' => 'set_style', 'id' => $target, 'breakpoint' => $bp, 'patch' => ['columns' => $bp === 'md' ? 2 : 3]]
+                    : ['t' => 'set_style', 'id' => '<a grid in '.($target ?? 'the page').'>', 'breakpoint' => $bp, 'patch' => ['columns' => $bp === 'md' ? 2 : 3]], JSON_UNESCAPED_SLASHES);
+                $defects[] = ['code' => 'responsive_layout', 'severity' => 'error', 'breakpoint' => $bp] + ($target === null ? [] : ['node' => $target]) + [
                     'message' => "At {$px} px and wider every section is still one column, so the page does not use a ".($bp === 'md' ? 'tablet' : 'desktop').' width. '
                         ."Put repeated items (cards, plans, products, steps) in a grid with layout \"grid\" and {$op}, "
                         .'or set a hero or split section to a two-column grid (or a stack with direction "row") at this breakpoint.'];

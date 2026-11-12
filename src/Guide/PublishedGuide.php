@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Charlotte\Guide;
 
+use Charlotte\Design\Starter;
 use Composer\InstalledVersions;
 use FancyCms\Agent;
 use RuntimeException;
@@ -29,7 +30,9 @@ final class PublishedGuide implements GuideSource
             ];
         }
 
-        return new GuideVersion(Agent::guide()."\n\n".self::charlotteGuide(), $components);
+        // The starter rides in the guide, so it is in every builder mode's
+        // prompt and in the guide hash: a starter change is a guide change.
+        return new GuideVersion(Agent::guide()."\n\n".self::charlotteGuide()."\n\n".Starter::promptSection(), $components);
     }
 
     public static function charlotteGuide(): string

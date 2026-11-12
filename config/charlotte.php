@@ -38,6 +38,14 @@ return [
     // output tightly should also lower reasoning effort in provider_options.
     'max_continuations' => (int) env('CHARLOTTE_MAX_CONTINUATIONS', 3),
 
+    // cms_finish refuses (not_ready) while a finish gate fails. After this
+    // many refusals in a row it returns not_ready_limit instead: the agent
+    // stops, and edits and finishes are refused until new work starts (a new
+    // message, a new page sub-agent, a page selected, a delegation). Min 1.
+    'finish' => [
+        'max_not_ready' => (int) env('CHARLOTTE_FINISH_MAX_NOT_READY', 3),
+    ],
+
     /*
     | Whole-site sessions (Charlotte::for($user)->tenant($t)->site($key)).
     |

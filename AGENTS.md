@@ -69,10 +69,22 @@ read config through the container.
   (`SiteWorkspace::skip()`, `skipFor()` for a page sub-agent's finish).
   Why: fancy-cms emits `display:flex`/`grid` ONLY from a node's `layout`; a
   stack or grid without it is a block (flabs runs 423-463).
-- `Design\Starter`: the responsive skeleton/type/spacing data `cms_describe`
-  returns as `starter`. Its nav id is `SiteWorkspace::NAV_ID` so `site_nav_set`
-  fills it. `FinishGateTest` proves the skeleton clears the gates once filled
-  and that fancy-cms's CssEmitter renders it as flex and grid.
+  `Checks::locate()` gives every gate defect a `node` (else `page:<doc id>`)
+  and `rule` (`Checks::RULES`).
+- **The not_ready limit**: `charlotte_sessions.finish_refusals` counts
+  consecutive refusals (`Workspace::refuseFinish()`, `limited()`). At
+  `charlotte.finish.max_not_ready` the code is `not_ready_limit`; `PageTools`
+  then refuses `cms_apply`/`site_nav_set`, and `TurnRunner` does not continue
+  a `length` stop. Reset on: successful finish, `Turns::send`, site page
+  create/select, `PageSubagents::bind()` and each `charlotte_page` spawn. Any
+  new "new work" entry point must reset it too, or an agent stays stopped.
+- `Design\Starter`: the responsive skeleton/type/spacing data, in the guide
+  as its closing section (`Starter::promptSection()`, appended by
+  `PublishedGuide`), so it is in every mode prompt and the guide hash, NOT in
+  a tool result (Prism maintainers: tool results are framed as data). Its nav
+  id is `SiteWorkspace::NAV_ID` so `site_nav_set` fills it. `FinishGateTest`
+  proves the skeleton clears the gates once filled and that fancy-cms's
+  CssEmitter renders it as flex and grid, and caps the section under 7000 bytes.
 - `Checks\SiteChecks`: broken links, anchors, orphans, unrouted pages, home,
   404, nav consistency, region h1/anchors, duplicate titles, and
   `missing_required_fact` across the whole site.
@@ -145,6 +157,10 @@ read config through the container.
   built-in may omit the flag, `island: true` elsewhere is refused; props valid
   for the schema, no image URL in props, every `asset` handle in the
   AssetCatalogue.
+- **`LayoutPolicy::assert` runs on AGENT writes** (`applyAgent`, both the
+  full and staged paths), on the nodes the write created or changed: a
+  `stack` or `grid` needs `layout` `stack|grid|free`, refused
+  `layout_required` with no default filled in. Human writes are not refused.
 - **A tool argument never names a site or tenant**; `page` is a page id
   (regex, no slash) or a region, resolved inside the session's bound site.
 - **`LinkPolicy::assertOps` runs on agent ops only**, before the write.

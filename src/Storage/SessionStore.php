@@ -53,6 +53,18 @@ final class SessionStore
         );
     }
 
+    /** Consecutive cms_finish refusals in the current piece of work. */
+    public function refusals(string $id): int
+    {
+        return (int) ($this->db->table('charlotte_sessions')->where('id', $id)->value('finish_refusals') ?? 0);
+    }
+
+    /** Start counting refusals again: new work began, or a finish succeeded. */
+    public function resetRefusals(string $id): void
+    {
+        $this->db->table('charlotte_sessions')->where('id', $id)->where('finish_refusals', '>', 0)->update(['finish_refusals' => 0]);
+    }
+
     /** @param array<string, mixed> $fields column => value */
     public function update(string $id, array $fields): void
     {

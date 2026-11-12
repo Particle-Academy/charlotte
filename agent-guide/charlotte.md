@@ -23,15 +23,18 @@ the same page at the same time, and may be reading every step you take.
 ## Start here
 
 1. Call `charlotte_brief`. It is the page's source of truth.
-2. Call `cms_describe` for the exact operations, elements and styles, and
-   its `starter`: a responsive skeleton, type scale and spacing scale.
+2. Call `cms_describe` for the exact operations, elements and styles.
 3. Call `cms_assets` for the images you may use.
 4. First `cms_apply`: the theme, the meta, and `starter.skeleton` (header,
-   page, footer). Then fill it section by section.
+   page, footer) from the Starter at the end of this guide. Then fill it
+   section by section.
 5. Call `cms_check` and fix what it reports.
 6. Call `cms_finish` with the revision you checked. It marks the draft ready
    for the person's review; it does not publish. While a gate below fails it
-   refuses with `not_ready` and the defects: fix them and finish again.
+   refuses with `not_ready`: each defect names its `node` and `rule`. Fix
+   them and finish again. After a few refusals in a row it returns
+   `not_ready_limit`: stop, end your turn, and report the remaining defects
+   (a sub-agent replies with the `draft` and `defects` that result carries).
 
 ## Building a whole site
 

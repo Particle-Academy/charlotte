@@ -39,6 +39,39 @@ final class Checks
      */
     public const FINISH_GATES = ['layout_missing', 'link_spacing', 'responsive_layout', 'required_image_missing', 'meta_description', 'unsupported_claim'];
 
+    /** The rule each gate holds a page to, as every gate defect states it. */
+    public const RULES = [
+        'layout_missing' => 'Every stack and grid has a layout ("stack", "grid" or "free"); fancy-cms renders a container without one as a plain block.',
+        'link_spacing' => 'Two or more links or buttons side by side sit in a stack or grid with a gap above 0 at base.',
+        'responsive_layout' => 'Every content section has md or lg styles, and the page shows two or more columns somewhere at md and at lg.',
+        'required_image_missing' => 'Every image the brief requires is placed as an image node (props.asset).',
+        'meta_description' => 'meta.seo.description is set, at most 155 characters.',
+        'unsupported_claim' => 'Every price, count, percentage, phone, email, date and year on the page appears in the brief.',
+    ];
+
+    /**
+     * Make every gate defect concrete and locatable: the `rule` it breaks and
+     * a `node`. A defect with no node of its own is the page's: fancy-cms's
+     * page handle `page:<doc id>` (with `field` for meta).
+     */
+    public static function locate(array $defects, string $docId): array
+    {
+        return array_map(function (array $d) use ($docId): array {
+            if (! isset(self::RULES[$d['code']])) {
+                return $d;
+            }
+            $d['rule'] = self::RULES[$d['code']];
+            if ($d['code'] === 'meta_description') {
+                $d['field'] ??= 'meta.seo.description';
+            }
+            if (! is_string($d['node'] ?? null) || $d['node'] === '') {
+                $d['node'] = 'page:'.$docId;
+            }
+
+            return $d;
+        }, $defects);
+    }
+
     /** The defects that hold cms_finish back. */
     public static function gates(array $defects): array
     {
@@ -89,6 +122,7 @@ final class Checks
         if ($skip !== []) {
             $defects = array_values(array_filter($defects, fn (array $d) => ! in_array($d['code'], $skip, true)));
         }
+        $defects = self::locate($defects, is_string($doc['id'] ?? null) ? $doc['id'] : 'page');
 
         return ['revision' => $revision, 'summary' => self::summary($defects), 'defects' => $defects, 'facts' => $facts, 'contrast' => $contrast];
     }

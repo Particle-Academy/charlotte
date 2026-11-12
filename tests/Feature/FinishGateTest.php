@@ -159,13 +159,24 @@ test('a site\'s required image may sit on any one of its pages', function (): vo
 
 // ── the starter the agent builds from ──────────────────────────────────────
 
-test('cms_describe carries the responsive starter: a skeleton, a type scale and a spacing scale, as data', function (): void {
-    $starter = tool(openSession(), 'cms_describe')['starter'];
+test('the starter lives in every builder mode\'s prompt, once, and no longer in the cms_describe result', function (): void {
+    $section = Starter::promptSection();
+    $modes = app(\Prism\Harness\Modes\ModeRegistry::class);
+    preg_match('/```json\n(.*)\n```/s', $section, $json);
+    $starter = json_decode($json[1], true, 64, JSON_THROW_ON_ERROR);
 
-    expect($starter)->toHaveKeys(['use', 'typeScale', 'spacing', 'skeleton'])
+    foreach ([\Charlotte\Guide\BuilderMode::NAME, \Charlotte\Guide\BuilderMode::SITE_NAME, \Charlotte\Guide\BuilderMode::PAGE_SUB_NAME] as $name) {
+        expect(substr_count($modes->resolve($name)->systemPrompt, $section))->toBe(1);
+    }
+    expect(tool(openSession(), 'cms_describe'))->not->toHaveKey('starter')
+        ->and($starter)->toHaveKeys(['typeScale', 'spacing', 'card', 'skeleton'])
         ->and($starter['skeleton'])->toHaveKeys(['header', 'page', 'footer'])
-        ->and($starter['typeScale'])->toHaveKeys(['display', 'h2', 'h3', 'body', 'small'])
-        ->and($starter['typeScale']['display'])->toHaveKeys(['base', 'md', 'lg']);
+        ->and($starter['typeScale']['display'])->toHaveKeys(['base', 'md', 'lg'])
+        ->and($starter['skeleton']['page'])->toBe(Starter::skeleton('page'));
+});
+
+test('the starter section stays small: it rides in every prompt', function (): void {
+    expect(strlen(Starter::promptSection()))->toBeLessThan(7000);
 });
 
 test('the starter skeleton applies cleanly, and with copy in it the page clears every gate', function (): void {

@@ -20,6 +20,7 @@ use Charlotte\Islands\IslandCatalogue;
 use Charlotte\Islands\IslandPolicy;
 use Charlotte\Policy\AssetCatalogue;
 use Charlotte\Policy\AssetPolicy;
+use Charlotte\Policy\LayoutPolicy;
 use Charlotte\Policy\LinkPolicy;
 use Charlotte\Policy\Refused;
 use Charlotte\Sessions\SessionRecord;
@@ -64,6 +65,7 @@ final class Workspace
         private readonly IslandCatalogue $islands,
         private readonly RenderedEvidenceSource $rendered,
         private readonly ?DataCatalogue $data = null,
+        private readonly int $maxNotReady = 3,
     ) {}
 
     /** The host's data streams; empty when the host binds none. */
@@ -127,6 +129,7 @@ final class Workspace
                     $prior = $draft->get();
                     $result = $draft->apply($ops, 'agent', $basedOn);
                     $this->guard($prior['doc'], $result['doc'], $prior['revision']);
+                    LayoutPolicy::assert($prior['doc'], $result['doc'], $prior['revision']);
                     if ($result['revision'] !== $prior['revision']) {
                         $this->changed($session, self::AGENT, $prior['revision'], $result['revision'], $ops);
                     }
@@ -196,7 +199,7 @@ final class Workspace
      * `$markSession` false (one page of a site, finished by its page sub-agent) records the page's
      * readiness without setting the session's ready revision, which on a site is the SITE revision.
      */
-    public function finish(SessionRecord $session, string $basedOn, bool $markSession = true, array $skip = []): array
+    public function finish(SessionRecord $session, string $basedOn, bool $markSession = true, array $skip = [], ?string $draftPage = null): array
     {
         $result = $this->db->transaction(function () use ($session, $basedOn, $markSession, $skip): array {
             $view = $this->view($session);
@@ -216,10 +219,47 @@ final class Workspace
             return ['revision' => $view['revision'], 'ready' => true, 'staged' => $view['staged'], 'checks' => $checks['summary']];
         });
         if (isset($result['refused'])) {
-            throw new Refused('not_ready', $result['revision'], ['defects' => $result['refused']]);
+            $this->refuseFinish($session->id, $result['revision'], $result['refused'], $draftPage);
         }
+        $this->sessions->resetRefusals($session->id);
 
         return $result;
+    }
+
+    /** The configured number of consecutive not_ready results after which the agent is stopped. */
+    public function maxNotReady(): int
+    {
+        return $this->maxNotReady;
+    }
+
+    /** Whether this session's agent has hit the not_ready limit and must stop rather than retry. */
+    public function limited(string $sessionId): bool
+    {
+        return $this->sessions->refusals($sessionId) >= $this->maxNotReady;
+    }
+
+    /** New work began (a turn, a page sub-agent): count refusals from zero. */
+    public function resetRefusals(string $sessionId): void
+    {
+        $this->sessions->resetRefusals($sessionId);
+    }
+
+    /**
+     * Count one more consecutive refusal and refuse: `not_ready` with the
+     * located defects, or at the limit `not_ready_limit`, which tells the
+     * agent to stop and hand the defects back (with its draft reference
+     * when it is a page sub-agent).
+     *
+     * @param  list<array>  $defects  the gate defects
+     */
+    public function refuseFinish(string $sessionId, string $revision, array $defects, ?string $draftPage = null): never
+    {
+        $count = $this->sessions->refusals($sessionId) + 1;
+        $this->sessions->update($sessionId, ['finish_refusals' => $count]);
+        $limit = $count >= $this->maxNotReady;
+
+        throw new Refused($limit ? 'not_ready_limit' : 'not_ready', $revision, ['defects' => $defects, 'refusals' => $count, 'limit' => $this->maxNotReady]
+            + ($limit && $draftPage !== null ? ['draft' => ['page' => $draftPage, 'revision' => $revision]] : []));
     }
 
     /**
@@ -349,6 +389,7 @@ final class Workspace
         $prior = $working->get();
         $result = $working->apply($ops, 'agent', $basedOn);
         $this->guard($prior['doc'], $result['doc'], $prior['revision']);
+        LayoutPolicy::assert($prior['doc'], $result['doc'], $prior['revision']);
         if ($result['revision'] === $prior['revision']) {
             return ['revision' => $prior['revision'], 'applied' => 0, 'staged' => $open !== null] + ($open !== null ? ['proposalId' => (string) $open->id] : []);
         }

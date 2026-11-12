@@ -35,8 +35,11 @@ UI you build reads it. A plain `fetch` loop is enough
   with the defects) a page whose stacks and grids have no `layout`, whose links
   run together, that never changes at tablet or desktop width, that lacks an
   image the brief requires or a meta description, or that states a figure or
-  date the brief does not give. `cms_describe` hands the agent a responsive
-  skeleton, type scale and spacing scale to start from, as fancy-cms data.
+  date the brief does not give. Each defect names its node and rule; after
+  `charlotte.finish.max_not_ready` refusals in a row (3) the agent stops and
+  hands the defects back. An agent cannot write a stack or grid without a
+  `layout`. The builder prompt carries a responsive skeleton, type scale and
+  spacing scale to start from, as fancy-cms data.
 - **A versioned, overridable guide.** fancy-cms's authoring guide plus
   Charlotte's own (drafts, autonomy, content truth, the webmaster lessons).
   Layer your house style on top; every session records the guide hash it ran.

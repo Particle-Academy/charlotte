@@ -89,9 +89,12 @@ final class PageSubagents
             ->as($subagent->name)
             ->for($subagent->description)
             ->withStringParameter('task', 'What the subagent should do, stated as a complete instruction. It does not see this conversation.')
-            ->using(fn (string $task): string => $runner
-                ->run($subagent, $turn['parent'], $turn['tree'], (string) ($turn['parent']->run()['id'] ?? $turn['tree']->rootRunId()), $task)
-                ->toToolResult());
+            ->using(function (string $task) use ($runner, $subagent, $turn, $session): string {
+                $this->sessions->resetRefusals($session->id); // each page sub-agent is new work
+                return $runner
+                    ->run($subagent, $turn['parent'], $turn['tree'], (string) ($turn['parent']->run()['id'] ?? $turn['tree']->rootRunId()), $task)
+                    ->toToolResult();
+            });
     }
 
     /** The address a site orchestrator's page sub-agent runs under. */
@@ -103,6 +106,7 @@ final class PageSubagents
     /** Bind the harness session at `$scope` (a sub-agent's address) to this Charlotte session. Host code only. */
     public function bind(SessionRecord $session, Model $participant, string $scope): void
     {
+        $this->sessions->resetRefusals($session->id); // a host delegating (again) is new work
         $this->harness->session($participant, $scope)
             ->usingProvider($session->provider)
             ->usingModel($session->model)

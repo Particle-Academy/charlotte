@@ -44,7 +44,22 @@ test('with Prism telemetry on, usage is observed even with no price, and nothing
 
     expect($session->record()->status)->toBe('idle')
         ->and($usage)->toHaveCount(1)
-        ->and($usage[0]['data'])->toBe(['provider' => 'scripted', 'model' => 'test-model', 'inputTokens' => 100, 'outputTokens' => 20, 'costUsd' => null, 'priced' => false]);
+        ->and($usage[0]['data'])->toBe(['provider' => 'scripted', 'model' => 'test-model', 'inputTokens' => 100, 'outputTokens' => 20,
+            'cacheReadTokens' => null, 'cacheWriteTokens' => null, 'costUsd' => null, 'priced' => false]);
+});
+
+test('cache-read and cache-write tokens are recorded when the provider reports them (prism#29: is the guide cached yet?)', function (): void {
+    charlotteApp(['prism.telemetry.enabled' => true, 'charlotte.telemetry.enabled' => true]);
+    $session = openSession();
+    $key = 'session:abc:1:charlotte:'.$session->id();
+
+    app('events')->dispatch(new \Prism\Prism\Events\Telemetry\GenerationCompleted(
+        new \Prism\Prism\Telemetry\TelemetryContext('trace-1', \Prism\Prism\Enums\TelemetryOperation::Text, 'scripted', 'test-model', microtime(true), sessionId: $key),
+        12.0,
+        usage: new \Prism\Prism\ValueObjects\Usage(1200, 300, cacheWriteInputTokens: 0, cacheReadInputTokens: 9800),
+    ));
+
+    expect(eventsOf($session, 'usage.observed')[0]['data'])->toMatchArray(['inputTokens' => 1200, 'cacheReadTokens' => 9800, 'cacheWriteTokens' => 0]);
 });
 
 test('a configured price turns observed usage into a cost', function (): void {

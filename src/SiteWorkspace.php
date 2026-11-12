@@ -98,7 +98,8 @@ final class SiteWorkspace
             $key = $site->documentKey($id);
             $this->workspace->pages()->ensure($session->tenant, $key,
                 NodeTypes::emptyDocument($key, $title, $route ?? ($kind === 'not_found' ? '/404' : '/')));
-            $this->sessions->update($session->id, ['page_key' => $key]);
+            // A new page is new work for the next page sub-agent: its refusal count starts again.
+            $this->sessions->update($session->id, ['page_key' => $key, 'finish_refusals' => 0]);
             $this->changed($session, $site, 'page_created', $id, ['kind' => $kind, 'route' => $route]);
 
             return ['page' => $id, 'selected' => $id, 'route' => $route, 'kind' => $kind,
@@ -126,7 +127,7 @@ final class SiteWorkspace
                 throw new Refused('site_page_missing', null, ['page' => $id]);
             }
             $key = $site->documentKey($id);
-            $this->sessions->update($session->id, ['page_key' => $key]);
+            $this->sessions->update($session->id, ['page_key' => $key, 'finish_refusals' => 0]);
             $this->changed($session, $site, 'page_selected', $id);
 
             return ['selected' => $id, 'revision' => $this->workspace->view($session->onPage($key))['revision']];
@@ -278,8 +279,9 @@ final class SiteWorkspace
             return ['revision' => $revision, 'ready' => true, 'staged' => $staged, 'checks' => $summary];
         });
         if (isset($result['refused'])) {
-            throw new Refused('not_ready', $result['revision'], ['defects' => $result['refused']]);
+            $this->workspace->refuseFinish($session->id, $result['revision'], $result['refused']);
         }
+        $this->workspace->resetRefusals($session->id);
 
         return $result;
     }
@@ -368,8 +370,14 @@ final class SiteWorkspace
     {
         $docs = $this->documents($session);
 
+        // A missing image belongs to no page yet: locate it on the home page (else the first page), where it most often goes.
+        $home = ($site->pageWithRoute('/') ?? $site->pages[0] ?? null)['id'] ?? '@header';
+        $homeDoc = json_decode(json_encode($docs[$home] ?? []), true);
+        $images = Checks::locate(QualityChecks::images(array_values($docs), $session->brief, $this->workspace->assets()->catalogue()),
+            is_string($homeDoc['id'] ?? null) ? $homeDoc['id'] : $home);
+
         return [...SiteChecks::check($site, $docs, $this->reserved), ...SiteChecks::facts($site, $docs, $session->brief),
-            ...QualityChecks::images(array_values($docs), $session->brief, $this->workspace->assets()->catalogue())];
+            ...array_map(fn (array $d) => ['page' => $home] + $d, $images)];
     }
 
     /**

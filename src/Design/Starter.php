@@ -61,26 +61,38 @@ final class Starter
     public const SPACING = [
         'scale' => [4, 8, 12, 16, 24, 32, 48, 64, 96],
         'section' => self::SECTION,
-        'container' => ['base' => self::CONTAINER],
         'textColumn' => ['base' => ['maxWidth' => ['value' => 680, 'unit' => 'px']]],
-        'stackGap' => 'inside a card 12, between a heading and its text 12-16, between blocks 24-32, between a section head and its grid 32-40',
     ];
 
-    /** What cms_describe returns under `starter`. */
+    /** The starter as data: what {@see self::promptSection()} carries as JSON. */
     public static function describe(): array
     {
         return [
-            'use' => 'Start from these. Apply skeleton.header, skeleton.page and skeleton.footer (on a site: skeleton.page on each page, header and footer once in @header and @footer), '
-                .'then insert your copy into them: the brand into "header-bar" and nav links into "site-nav" (on a site, site_nav_set fills it), the h1, lead and CTA buttons into "hero-copy", the image into "hero-media", '
-                .'a section heading into "features-head" and one card per item into "features-grid" (type card, layout stack, style card), the closing call to action into "cta-inner", '
-                .'footer links into "footer-nav". Rename, repeat or remove sections to fit the brief. Copy a typeScale entry as a text or heading node\'s style. '
-                .'Every stack and grid needs its layout; keep it when you add your own.',
-            'breakpoints' => self::BREAKPOINTS,
             'typeScale' => self::TYPE_SCALE,
             'spacing' => self::SPACING,
             'card' => self::CARD,
             'skeleton' => ['header' => self::skeleton('header'), 'page' => self::skeleton('page'), 'footer' => self::skeleton('footer')],
         ];
+    }
+
+    /**
+     * The starter as a guide section, appended to the guide so it lives in
+     * every builder mode's system prompt: the cacheable part, and read as
+     * instructions. A tool result is framed as data (Prism maintainers), so
+     * tool results keep only per-page facts.
+     */
+    public static function promptSection(): string
+    {
+        return "## Starter\n\n"
+            .'Build from this. Apply `starter.skeleton.header`, `.page` and `.footer` in your first `cms_apply` (on a site: `.page` on each page, '
+            .'`.header` in `@header`, `.footer` in `@footer`). Then insert copy: the brand into `header-bar`, nav links into `site-nav` '
+            .'(on a site, `site_nav_set` fills it), the h1, lead and buttons into `hero-copy`, the image into `hero-media`, a heading into '
+            .'`features-head`, one card per item into `features-grid` (type card, layout stack, style `starter.card`), the closing call to '
+            .'action into `cta-inner`, footer links into `footer-nav`. Rename, repeat or remove sections to fit the brief. Copy a '
+            .'`starter.typeScale` entry as a text or heading node\'s style. Every stack and grid needs its layout.'
+            ."\n\n```json\n"
+            .json_encode(self::describe(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            ."\n```\n";
     }
 
     /**

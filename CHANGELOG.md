@@ -40,6 +40,17 @@ defects and fixes them. And **`unsupported_claim` is now an ERROR** for every
 kind except `quote` (still a warning), so `cms_check` summaries count more
 errors.
 
+**BREAKING, an agent may not write a `stack` or `grid` without `layout`.**
+`cms_apply` refuses it with `layout_required`, naming the node
+(`$.nodes.<id>.layout`) and the allowed values (`"stack"`, `"grid"`,
+`"free"`); no default is filled in. **What to do:** nothing in a host; human
+writes are not refused. A host script that drives the tools with layout-less
+stacks must add the layout.
+
+**Upgrading, also:** run the second new migration
+(`2026_11_12_000000_add_charlotte_finish_refusals`: an unsigned
+`charlotte_sessions.finish_refusals`, default 0).
+
 **Upgrading:** run the new migration (`2026_11_11_000000_add_charlotte_sites`:
 a `charlotte_sites` table, nullable `charlotte_sessions.site_key` and
 `charlotte_proposals.page_key`). **The guide text changed** (new sections),
@@ -218,8 +229,27 @@ instead of resolving it from the container need to change.
   month and year, the brief does not give (run 426 added "From 1 February
   2027"). Dates compare by meaning: "18 March 2027", "March 18, 2027", "18th
   of March" and "31 Jan" match their brief spellings.
-- **The responsive starter** (`Design\Starter`), in `cms_describe` as
-  `starter`: a skeleton of ops (`header`, `page`, `footer`: header row with a
+- **Located defects.** Every finish-gate defect carries `node` (a node id,
+  or the page handle `page:<doc id>` for page-level ones, with `field` for
+  meta) and `rule` (the rule it breaks, `Checks::RULES`). A page-wide
+  `responsive_layout` names the container to change.
+- **The not_ready limit.** Charlotte counts consecutive `not_ready` results
+  per session (`charlotte_sessions.finish_refusals`). At
+  `charlotte.finish.max_not_ready` (default 3, minimum 1) `cms_finish` returns
+  `not_ready_limit` with the remaining `defects`, `refusals`, `limit` and, for
+  a page sub-agent, its `draft` reference; `cms_apply` and `site_nav_set` are
+  refused `not_ready_limit` too, and a turn at the limit is not continued
+  after an output-limit stop. The agent stops and hands the defects back
+  instead of retrying. The count starts again on a successful finish, a new
+  message, a page created or selected, a page sub-agent spawned, or a
+  delegation bound.
+- **Cache tokens in telemetry.** `usage.observed` carries `cacheReadTokens`
+  and `cacheWriteTokens` from Prism's usage (null when the provider does not
+  report them), so prompt caching (prism#29) shows when it starts working.
+- **The responsive starter** (`Design\Starter`), in every builder mode's
+  system prompt as the guide's closing "Starter" section (so it is in the
+  guide hash and the cacheable prompt, and read as instructions rather than as
+  tool-result data): a skeleton of ops (`header`, `page`, `footer`: header row with a
   wrapping nav, a two-column hero at lg, a grid of 1, 2 at md and 3 at lg, a
   CTA band, a footer row), a type scale (display, h2, h3, lead, body, small,
   eyebrow per breakpoint), the section spacing scale and a card style. All

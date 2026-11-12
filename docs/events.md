@@ -59,7 +59,7 @@ can test its reducer against.
 | `checks.result` | system | `revision`, `summary {errors, warnings, info}`, `defects[]`, `facts {outline, images, links}` |
 | `draft.ready` | agent | `revision`, `staged` (true when the revision is a pending change set) |
 | `draft.published` | human | `revision` |
-| `usage.observed` | system | `provider`, `model`, `inputTokens`, `outputTokens`, `costUsd` (null when unpriced), `priced`. Only when the dev enabled telemetry |
+| `usage.observed` | system | `provider`, `model`, `inputTokens`, `outputTokens`, `cacheReadTokens` and `cacheWriteTokens` (prompt-cache tokens; null when the provider does not report them), `costUsd` (null when unpriced), `priced`. Only when the dev enabled telemetry |
 | `run.finished` | system | `runId`, `finishReason` |
 | `run.failed` | system | `runId` (may be null), `code`. Never a provider message |
 | `error` | system | `code`, `message` (a fixed, safe sentence). Reserved: 0.1 does not emit it yet, but clients should render it |
@@ -93,7 +93,8 @@ new `run.started` whose `continues` names that run. The session stays
 `running` throughout. Tool error codes include
 `surface_changed_under_you`, `invalid_request`, `invalid_operation`,
 `image_source_refused`, `link_refused`, `island_invalid` (with `errors`),
-`not_ready` (with `defects`) and `stopped`; on a site also `route_reserved`, `route_invalid`, `route_taken`,
+`not_ready` and `not_ready_limit` (with `defects`), `layout_required` (with
+`errors`) and `stopped`; on a site also `route_reserved`, `route_invalid`, `route_taken`,
 `site_page_missing`, `site_page_exists`, `site_page_unrouted`,
 `site_not_found_exists` and `site_full`.
 
@@ -122,7 +123,12 @@ every page (they may live on any of them), a shared region is not held to
 `cms_finish` refuses with tool error `not_ready` (carrying `defects`) while any
 `layout_missing`, `link_spacing`, `responsive_layout`, `required_image_missing`,
 `meta_description` or `unsupported_claim` error remains (`Checks::FINISH_GATES`).
-It still records its `checks.result`, and emits no `draft.ready`.
+It still records its `checks.result`, and emits no `draft.ready`. Every such
+defect carries `node` (a node id, or `page:<doc id>` for a page-level one) and
+`rule`. The error also carries `refusals` and `limit`; at the limit
+(`charlotte.finish.max_not_ready`, default 3) the code is `not_ready_limit`
+(with `draft {page, revision}` for a page sub-agent), and `cms_apply` and
+`site_nav_set` are refused `not_ready_limit` until new work starts.
 
 ## Delivery
 
