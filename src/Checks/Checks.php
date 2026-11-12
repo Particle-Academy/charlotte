@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Charlotte\Checks;
 
 use Charlotte\Brief\Brief;
+use Charlotte\Data\Bindings;
+use Charlotte\Data\DataCatalogue;
 use Charlotte\Policy\LinkPolicy;
 
 /**
@@ -33,10 +35,16 @@ final class Checks
      * @return array{revision: string, summary: array{errors: int, warnings: int, info: int}, defects: list<array>, facts: array, contrast: array}
      */
     public static function run(array $doc, string $revision, Brief $brief, LinkPolicy $links, ?RenderedEvidence $rendered = null,
-        array $alsoAccept = [], array $skip = [], ?string $unavailable = null): array
+        array $alsoAccept = [], array $skip = [], ?string $unavailable = null, ?DataCatalogue $data = null): array
     {
         $facts = PageChecks::facts($doc);
         $defects = [...PageChecks::check($doc), ...FactChecks::check($doc, $brief)];
+        if ($data !== null) {
+            foreach (Bindings::validate($doc, $data) as $error) {
+                $defects[] = ['code' => 'invalid_binding', 'severity' => 'error', 'path' => $error['path'], 'expected' => $error['expected'], 'got' => $error['got'],
+                    'message' => 'A data binding does not match the host data catalogue; rebind it to a stream and field from cms_describe data.'];
+            }
+        }
         foreach ($facts['links'] as $link) {
             if ($link['external'] && $link['safe'] && ! $links->allows($link['href'])) {
                 $defects[] = ['code' => 'link_not_allowlisted', 'severity' => 'warning', 'node' => $link['node'],

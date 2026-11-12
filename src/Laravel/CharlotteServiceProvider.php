@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Charlotte\Laravel;
 
 use Charlotte\Charlotte;
+use Charlotte\Data\ArrayDataCatalogue;
+use Charlotte\Data\DataCatalogue;
 use Charlotte\Drafts\PageRepository;
 use Charlotte\Events\EventLog;
 use Charlotte\Guide\BuilderMode;
@@ -17,6 +19,7 @@ use Charlotte\Policy\AssetCatalogue;
 use Charlotte\Policy\EmptyAssetCatalogue;
 use Charlotte\Policy\LinkPolicy;
 use Charlotte\Runtime\HarnessDefaults;
+use Charlotte\Runtime\PageSubagents;
 use Charlotte\Runtime\TurnContextFactory;
 use Charlotte\Runtime\TurnDispatcher;
 use Charlotte\Runtime\TurnRunner;
@@ -47,6 +50,7 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\ServiceProvider;
 use Prism\Harness\Modes\ModeRegistry;
 use Prism\Harness\Sessions\Session;
+use Prism\Harness\Subagents\SubagentRunner;
 use Prism\Harness\Tools\ToolRegistry;
 
 /**
@@ -69,6 +73,8 @@ final class CharlotteServiceProvider extends ServiceProvider
         $this->app->bindIf(ReservedRoutes::class, fn (Application $app) => new ReservedRoutes((array) $app['config']->get('charlotte.site.reserved_routes', [])));
         $this->app->bindIf(IslandCatalogue::class, fn () => CmsDescribeIslands::catalogue());
         $this->app->bindIf(RenderedEvidenceSource::class, fn () => new NoRenderedEvidence);
+        // Bound, not a singleton: a host may rebind its streams per tenant.
+        $this->app->bindIf(DataCatalogue::class, fn () => ArrayDataCatalogue::empty());
         $this->app->singleton(SessionStore::class, fn (Application $app) => new SessionStore($app['db']->connection()));
         $this->app->singleton(ProposalStore::class, fn (Application $app) => new ProposalStore($app['db']->connection()));
         $this->app->singletonIf(AssetCatalogue::class, fn () => new EmptyAssetCatalogue);
@@ -86,7 +92,7 @@ final class CharlotteServiceProvider extends ServiceProvider
         $this->app->bind(Workspace::class, fn (Application $app) => new Workspace(
             $app['db']->connection(), $app->make(SessionStore::class), $app->make(PageRepository::class),
             $app->make(ProposalStore::class), $app->make(EventLog::class), $app->make(AssetCatalogue::class), $app->make(LinkPolicy::class),
-            $app->make(IslandCatalogue::class), $app->make(RenderedEvidenceSource::class),
+            $app->make(IslandCatalogue::class), $app->make(RenderedEvidenceSource::class), $app->make(DataCatalogue::class),
         ));
         $this->app->bind(SiteWorkspace::class, fn (Application $app) => new SiteWorkspace(
             $app['db']->connection(), $app->make(Workspace::class), $app->make(SessionStore::class), $app->make(SiteRepository::class),
@@ -108,6 +114,12 @@ final class CharlotteServiceProvider extends ServiceProvider
             $app->make(PrismHarness::class), $app->make(AgentRuntime::class), $app->make(TurnContextFactory::class),
             max(0, (int) $app['config']->get('charlotte.max_continuations', 3)),
             $app->make(SiteWorkspace::class),
+            $app->make(PageSubagents::class),
+        ));
+        // A singleton: it holds the site turn in flight for the page sub-agent tool.
+        $this->app->singleton(PageSubagents::class, fn (Application $app) => new PageSubagents(
+            $app->make(PrismHarness::class), $app->make(SessionStore::class),
+            fn (): SubagentRunner => $app->make(SubagentRunner::class), fn (): ModeRegistry => $app->make(ModeRegistry::class),
         ));
         $this->app->singleton(Charlotte::class, fn (Application $app) => new Charlotte($app));
         $this->app->singletonIf(Authorizer::class, fn () => new DenyAll);
@@ -119,17 +131,17 @@ final class CharlotteServiceProvider extends ServiceProvider
         $this->app->extend(ModeRegistry::class, function (ModeRegistry $registry, Application $app): ModeRegistry {
             $agent = (array) $app['config']->get('prism-harness.agent', []);
             $modes = is_array($agent['modes'] ?? null) ? $agent['modes'] : [];
-            foreach ([false, true] as $site) {
-                $name = BuilderMode::nameFor($site);
-                if (! isset($modes[$name])) {
-                    $modes[$name] = BuilderMode::config(
-                        $app->make(Guides::class)->current(),
-                        (int) $app['config']->get($site ? 'charlotte.site.max_steps' : 'charlotte.max_steps', $site ? 120 : 40),
-                        (array) $app['config']->get('charlotte.provider_options', []),
-                        $site,
-                    );
-                }
-            }
+            $config = $app['config'];
+            $guide = $app->make(Guides::class)->current();
+            $options = (array) $config->get('charlotte.provider_options', []);
+            $pageSteps = max(1, (int) $config->get('charlotte.max_steps', BuilderMode::PAGE_STEPS));
+            // The orchestrator's ceiling is the whole TREE's: page sub-agent
+            // budgets nest within it, so it must cover every page and region.
+            $siteSteps = (int) ($config->get('charlotte.site.max_steps')
+                ?? $pageSteps * (max(1, (int) $config->get('charlotte.site.max_pages', 12)) + 3));
+            $modes[BuilderMode::NAME] ??= BuilderMode::config($guide, $pageSteps, $options);
+            $modes[BuilderMode::SITE_NAME] ??= BuilderMode::config($guide, $siteSteps, $options, true, $pageSteps);
+            $modes[BuilderMode::PAGE_SUB_NAME] ??= BuilderMode::pageConfig($guide, $pageSteps, $options);
             $agent['modes'] = $modes;
 
             return new ModeRegistry($agent);
@@ -152,7 +164,15 @@ final class CharlotteServiceProvider extends ServiceProvider
         // page, the tenant or itself. Guarded on the mode so unrelated runs pay
         // nothing: ToolRegistry runs every provider on every resolve.
         $this->app->make(ToolRegistry::class)->registerProvider(function (Session $session): array {
-            if (! in_array($session->mode(), [BuilderMode::NAME, BuilderMode::SITE_NAME], true)) {
+            $mode = $session->mode();
+            if ($mode === BuilderMode::PAGE_SUB_NAME) {
+                // A page sub-agent: bound by host code to one Charlotte session
+                // at exactly this address (PageSubagents::boundSession).
+                $record = $this->app->make(PageSubagents::class)->boundSession($session);
+
+                return $record === null ? [] : (new PageTools($this->app->make(Workspace::class), $record->id, $this->app->make(SiteWorkspace::class), child: true))->prismTools();
+            }
+            if (! in_array($mode, [BuilderMode::NAME, BuilderMode::SITE_NAME], true)) {
                 return [];
             }
             $capability = $session->capability('charlotte');
@@ -161,7 +181,8 @@ final class CharlotteServiceProvider extends ServiceProvider
                 return [];
             }
 
-            return (new PageTools($this->app->make(Workspace::class), $id, $this->app->make(SiteWorkspace::class)))->prismTools();
+            return (new PageTools($this->app->make(Workspace::class), $id, $this->app->make(SiteWorkspace::class),
+                subagents: $mode === BuilderMode::SITE_NAME ? $this->app->make(PageSubagents::class) : null))->prismTools();
         });
 
         // Optional usage/cost observation. Listens only if the installed Prism

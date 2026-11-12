@@ -11,12 +11,12 @@ use Charlotte\Policy\Refused;
 use Charlotte\Sessions\SessionRecord;
 use Charlotte\SiteWorkspace;
 use Charlotte\Workspace;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Prism\Harness\AgentRuntime;
 use Prism\Harness\Contracts\HasErrorCode;
 use Prism\Harness\Modes\ModeRegistry;
 use Prism\Harness\PrismHarness;
+use Prism\Harness\Subagents\RunBudget;
+use Prism\Harness\Subagents\RunContext;
 use Prism\Prism\Streaming\Events\StreamStartEvent;
 use Throwable;
 
@@ -43,6 +43,7 @@ final class TurnRunner
         private readonly TurnContextFactory $contexts = new HarnessDefaults,
         private readonly int $maxContinuations = 3,
         private readonly ?SiteWorkspace $sites = null,
+        private readonly ?PageSubagents $subagents = null,
     ) {}
 
     /** The page (or, for a site session, the whole site) was marked ready at the revision it is at now. */
@@ -81,7 +82,14 @@ final class TurnRunner
             }
             BuilderMode::assertEmbeds($mode, $guide);
 
-            $harness = $this->harness->session($this->participant($session), $session->scope())
+            $participant = PageSubagents::participant($session);
+            if ($session->isSite()) {
+                // The orchestrator's page sub-agent address, bound before the
+                // run: its session, provider and model come from here, never
+                // from the task the orchestrator writes.
+                $this->subagents?->prepareSite($session, $participant);
+            }
+            $harness = $this->harness->session($participant, $session->scope())
                 ->usingMode($modeName)
                 ->usingProvider($session->provider)
                 ->usingModel($session->model)
@@ -92,6 +100,12 @@ final class TurnRunner
             // host refusing admission fails the turn with its code, before
             // any provider call.
             $context = $this->contexts->forTurn(new Turn($session, $harness, $text));
+            if ($session->isSite()) {
+                // The tree the page sub-agents spend from: the host's context
+                // when it gave one, else a root on the orchestrator's ceiling.
+                // Only the sub-agent tool reads it; the stream still gets $context.
+                $this->subagents?->begin($session, $harness, $context ?? RunContext::root('charlotte-'.$session->id, new RunBudget(maxSteps: $mode->maxSteps)));
+            }
 
             // One turn may span several runs: a response cut off at the output
             // limit (`length`) before the page is ready is continued, up to
@@ -147,6 +161,8 @@ final class TurnRunner
                 $e instanceof HasErrorCode => $e->code(),
                 default => 'run_failed',
             });
+        } finally {
+            $this->subagents?->end($session->id);
         }
     }
 
@@ -161,15 +177,5 @@ final class TurnRunner
     {
         $fresh = $this->workspace->session($session->id);
         $this->workspace->status($fresh, $fresh->stopped() ? 'stopped' : $status);
-    }
-
-    private function participant(SessionRecord $session): Model
-    {
-        $class = Relation::getMorphedModel($session->participantType) ?? $session->participantType;
-        if (! is_string($class) || ! is_subclass_of($class, Model::class)) {
-            throw new Refused('session_missing');
-        }
-
-        return $class::query()->find($session->participantId) ?? throw new Refused('session_missing');
     }
 }

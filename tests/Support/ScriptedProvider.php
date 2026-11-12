@@ -17,6 +17,10 @@ use Prism\Prism\Streaming\Events\TextStartEvent;
 use Prism\Prism\Streaming\Events\ToolCallEvent;
 use Prism\Prism\Streaming\Events\ToolResultEvent;
 use Prism\Prism\Text\Request as TextRequest;
+use Prism\Prism\Text\Response as TextResponse;
+use Prism\Prism\Text\Step;
+use Prism\Prism\ValueObjects\Messages\AssistantMessage;
+use Prism\Prism\ValueObjects\Meta;
 use Prism\Prism\ValueObjects\ToolCall;
 use Prism\Prism\ValueObjects\ToolResult;
 use Prism\Prism\ValueObjects\Usage;
@@ -99,6 +103,51 @@ final class ScriptedProvider extends Provider
         }
 
         yield new StreamEndEvent('e-end', $at, FinishReason::Stop, new Usage(100 * count($steps), 20 * count($steps)));
+    }
+
+    /** @var list<TextRequest> the requests that came through text() (sub-agent runs use send, not stream) */
+    public array $textRequests = [];
+
+    /**
+     * The non-streaming path: a harness `send()`, which is how prism-harness
+     * runs a sub-agent. The same script format; the provider runs the tool
+     * loop itself, as a real provider handler does. A step's `text` may be a
+     * closure over the calls so far (a child replying with the reference its
+     * last tool returned).
+     */
+    public function text(TextRequest $request): TextResponse
+    {
+        $this->requests[] = $request;
+        $this->textRequests[] = $request;
+        $steps = array_shift($this->turns) ?? [['text' => 'Done.']];
+        $tools = [];
+        foreach ($request->tools() as $tool) {
+            $tools[$tool->name()] = $tool;
+        }
+        $meta = new Meta('scripted-'.count($this->requests), $request->model());
+        $done = [];
+        $allCalls = $allResults = [];
+        $text = '';
+        foreach ($steps as $i => $step) {
+            $text = ($step['text'] ?? '') instanceof \Closure ? ($step['text'])($this->calls) : (string) ($step['text'] ?? '');
+            $calls = $results = [];
+            foreach ($step['tools'] ?? [] as $k => $call) {
+                $args = $call['args'] instanceof \Closure ? ($call['args'])($this->calls) : $call['args'];
+                $id = 'tcall_'.count($this->requests).'_'.$i.'_'.$k;
+                $tool = $tools[$call['name']] ?? throw new RuntimeException('Script called an unoffered tool: '.$call['name']);
+                $output = $tool->handle(...$args);
+                $result = is_string($output) ? $output : (string) json_encode($output);
+                $this->calls[] = ['name' => $call['name'], 'args' => $args, 'result' => $result];
+                $calls[] = new ToolCall($id, $call['name'], $args);
+                $results[] = new ToolResult($id, $call['name'], $args, $result);
+            }
+            array_push($allCalls, ...$calls);
+            array_push($allResults, ...$results);
+            $done[] = new Step($text, $calls === [] ? FinishReason::Stop : FinishReason::ToolCalls, $calls, $results, [], new Usage(100, 20), $meta, [], []);
+        }
+
+        return new TextResponse(collect($done), $text, FinishReason::Stop, $allCalls, $allResults, new Usage(100 * count($done), 20 * count($done)), $meta,
+            collect([...$request->messages(), new AssistantMessage($text)]));
     }
 
     /** The decoded result of the Nth call to a tool. */

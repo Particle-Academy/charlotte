@@ -60,6 +60,14 @@ final class FactChecks
             }
         }
 
+        foreach (self::figures($doc) as [$node, $figure]) {
+            if (self::supportedFigure($figure, $evidence)) {
+                continue;
+            }
+            $defects[] = ['code' => 'unsupported_claim', 'severity' => 'warning', 'kind' => 'figure', 'claim' => $figure, 'node' => $node,
+                'message' => "The page shows the figure {$figure}, which no brief fact supports. Bind figures to host data instead of typing them."];
+        }
+
         foreach ($sources as $source) {
             foreach (self::claims($source['text'], $currentYear) as [$kind, $claim]) {
                 if (self::supported($kind, $claim, $evidence)) {
@@ -112,6 +120,9 @@ final class FactChecks
                 continue;
             }
             $walk = function (mixed $value, string|int $key) use (&$walk, &$out, $id): void {
+                if (is_array($value) && array_key_exists('$bind', $value)) {
+                    return; // a data binding: evidence from the host, not copy (its $scope dates included)
+                }
                 if (is_array($value)) {
                     foreach ($value as $k => $v) {
                         $walk($v, is_int($k) ? $key : $k);
@@ -124,6 +135,69 @@ final class FactChecks
         }
 
         return $out;
+    }
+
+    /**
+     * Prop keys whose numbers are FIGURES the page shows (a KPI value, chart
+     * data, table rows), as opposed to presentation (decimals, limit, level).
+     * Every number below one of these is a figure, at any depth.
+     */
+    private const FIGURE_KEYS = ['value', 'delta', 'data', 'series', 'rows', 'categories', 'target', 'goal', 'amount', 'total', 'totals'];
+
+    /**
+     * Literal numbers in data props, by node. A value bound with `$bind` is
+     * skipped whole: it comes from the host's data, so it is evidence rather
+     * than a claim the agent made up. A literal the agent typed is not.
+     *
+     * @return list<array{0: string, 1: string}> [node, figure]
+     */
+    private static function figures(array $doc): array
+    {
+        $out = [];
+        foreach ((array) ($doc['nodes'] ?? []) as $id => $node) {
+            $node = json_decode(json_encode($node) ?: '[]', true);
+            if (! is_array($node) || ! is_array($node['props'] ?? null)) {
+                continue;
+            }
+            $walk = function (mixed $value, bool $figure) use (&$walk, &$out, $id): void {
+                if (is_array($value)) {
+                    if (array_key_exists('$bind', $value)) {
+                        return;
+                    }
+                    foreach ($value as $k => $v) {
+                        $walk($v, $figure || (is_string($k) && in_array(strtolower($k), self::FIGURE_KEYS, true)));
+                    }
+                } elseif ($figure && (is_int($value) || is_float($value))) {
+                    $out[] = [(string) $id, self::number($value)];
+                }
+            };
+            $walk($node['props'], false);
+        }
+
+        return $out;
+    }
+
+    private static function number(int|float $value): string
+    {
+        if (is_int($value) || floor($value) === $value && abs($value) < 1e15) {
+            return (string) (int) $value;
+        }
+
+        return rtrim(rtrim(sprintf('%.10F', $value), '0'), '.');
+    }
+
+    /** A figure is supported when the brief carries it, or carries it as a percentage of a ratio. */
+    private static function supportedFigure(string $figure, array $evidence): bool
+    {
+        if (self::contains($evidence['text'], $figure)) {
+            return true;
+        }
+        $ratio = (float) $figure;
+        if (abs($ratio) <= 1 && $ratio !== 0.0) {
+            return self::contains($evidence['text'], self::number($ratio * 100).'%');
+        }
+
+        return false;
     }
 
     /** @return list<array{0: string, 1: string}> */

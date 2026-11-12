@@ -21,13 +21,13 @@ function createPage(\Charlotte\CharlotteSession $site, string $id, string $route
     return tool($site, 'site_page_create', ['page' => $id, 'title' => $title, 'kind' => $kind, 'route' => $route]);
 }
 
-test('a site session offers the page tools plus the site tools; a page session keeps exactly nine', function (): void {
+test('a site session offers the orchestrator tools (the page sub-agent only during a turn); a page session keeps exactly nine', function (): void {
     $site = array_map(fn ($t) => $t->name(), openSite()->tools()->prismTools());
     $page = array_map(fn ($t) => $t->name(), openSession()->tools()->prismTools());
 
-    expect($site)->toBe(BuilderMode::SITE_TOOLS)
+    expect($site)->toBe(array_values(array_diff(BuilderMode::SITE_TOOLS, [BuilderMode::SITE_SUBAGENT])))
         ->and($page)->toBe(BuilderMode::TOOLS)
-        ->and(array_slice(BuilderMode::SITE_TOOLS, 0, 9))->toBe(BuilderMode::TOOLS);
+        ->and($site)->not->toContain('cms_apply');
 });
 
 test('a page tool on a page session refuses the site tools as unknown', function (): void {
@@ -294,10 +294,15 @@ test('site export matches the shape the lab host serves', function (): void {
 test('a site turn runs in the site builder mode and reaches the site tools through the harness', function (): void {
     $provider = new \Charlotte\Tests\Support\ScriptedProvider([[
         ['tools' => [['name' => 'site_page_create', 'args' => ['page' => 'home', 'title' => 'Acme Ledger', 'kind' => 'page', 'route' => '/']]]],
-        ['tools' => [['name' => 'cms_apply', 'args' => fn (array $calls) => [
-            'ops' => sectionOps(), 'basedOn' => json_decode($calls[0]['result'], true)['revision'],
-        ]]]],
+        ['tools' => [['name' => BuilderMode::SITE_SUBAGENT, 'args' => ['task' => 'Build the home hero.']]]],
         ['text' => 'Home is in place.'],
+    ], [
+        // The page sub-agent builds the selected page.
+        ['tools' => [['name' => 'cms_get', 'args' => []]]],
+        ['tools' => [['name' => 'cms_apply', 'args' => fn (array $calls) => [
+            'ops' => sectionOps(), 'basedOn' => json_decode(end($calls)['result'], true)['revision'],
+        ]]]],
+        ['text' => 'Done.'],
     ]]);
     charlotteApp(['charlotte.autonomy' => 'full', 'charlotte.site.reserved_routes' => FORTIFY_ROUTES], $provider);
     $site = openSite();

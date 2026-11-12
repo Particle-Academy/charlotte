@@ -7,6 +7,9 @@ namespace Charlotte;
 use Charlotte\Checks\Checks;
 use Charlotte\Checks\RenderedEvidence;
 use Charlotte\Checks\RenderedEvidenceSource;
+use Charlotte\Data\ArrayDataCatalogue;
+use Charlotte\Data\BindingPolicy;
+use Charlotte\Data\DataCatalogue;
 use Charlotte\Drafts\NodeTypes;
 use Charlotte\Drafts\PageRepository;
 use Charlotte\Events\Event;
@@ -60,7 +63,14 @@ final class Workspace
         private readonly LinkPolicy $links,
         private readonly IslandCatalogue $islands,
         private readonly RenderedEvidenceSource $rendered,
+        private readonly ?DataCatalogue $data = null,
     ) {}
+
+    /** The host's data streams; empty when the host binds none. */
+    public function data(): DataCatalogue
+    {
+        return $this->data ?? ArrayDataCatalogue::empty();
+    }
 
     public function session(string $id): SessionRecord
     {
@@ -178,19 +188,25 @@ final class Workspace
         }
         [$rendered, $unavailable] = $this->rendered($session);
 
-        return Checks::run($view['doc'], $view['revision'], $session->brief, $this->links, $rendered, $alsoAccept, $skip, $unavailable);
+        return Checks::run($view['doc'], $view['revision'], $session->brief, $this->links, $rendered, $alsoAccept, $skip, $unavailable, $this->data());
     }
 
-    /** Mark the observed revision ready for a person's review. Never publishes, never freezes editing. */
-    public function finish(SessionRecord $session, string $basedOn): array
+    /**
+     * Mark the observed revision ready for a person's review. Never publishes, never freezes editing.
+     * `$markSession` false (one page of a site, finished by its page sub-agent) records the page's
+     * readiness without setting the session's ready revision, which on a site is the SITE revision.
+     */
+    public function finish(SessionRecord $session, string $basedOn, bool $markSession = true): array
     {
-        return $this->db->transaction(function () use ($session, $basedOn): array {
+        return $this->db->transaction(function () use ($session, $basedOn, $markSession): array {
             $view = $this->view($session);
             $this->assertCurrent($view['revision'], $basedOn);
             $checks = $this->check($session, $basedOn);
-            $this->sessions->update($session->id, ['ready_revision' => $view['revision']]);
+            if ($markSession) {
+                $this->sessions->update($session->id, ['ready_revision' => $view['revision']]);
+            }
             $this->events->append($session->id, EventTypes::DRAFT_READY, self::AGENT,
-                ['revision' => $view['revision'], 'staged' => $view['staged']]);
+                ['revision' => $view['revision'], 'staged' => $view['staged']] + $this->pageField($session));
 
             return ['revision' => $view['revision'], 'ready' => true, 'staged' => $view['staged'], 'checks' => $checks['summary']];
         });
@@ -367,11 +383,12 @@ final class Workspace
         return PageSession::fromJson($json, NodeTypes::forStored($json, $this->islands->types()));
     }
 
-    /** The policies every write passes, for every actor: assets, then islands. */
+    /** The policies every write passes, for every actor: assets, islands, then data bindings. */
     private function guard(array $before, array $after, ?string $revision): void
     {
         AssetPolicy::assert($after, $this->assets, $revision);
         IslandPolicy::assert($before, $after, $this->islands, $this->assets, $revision);
+        BindingPolicy::assert($before, $after, $this->data(), $revision);
     }
 
     /** @return array{0: ?RenderedEvidence, 1: ?string} the report, or why there is none */

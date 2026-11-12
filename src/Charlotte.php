@@ -8,6 +8,9 @@ use Charlotte\Brief\Brief;
 use Charlotte\Checks\CallbackRenderedEvidenceSource;
 use Charlotte\Checks\RenderedEvidenceSource;
 use Charlotte\Site\Site;
+use Charlotte\Data\Bindings;
+use Charlotte\Guide\BuilderMode;
+use Charlotte\Data\DataCatalogue;
 use Charlotte\Drafts\NodeTypes;
 use Charlotte\Drafts\PageRepository;
 use Charlotte\Events\EventTypes;
@@ -153,6 +156,85 @@ final class Charlotte
     public function renderedUsing(Closure $source): void
     {
         $this->container->instance(RenderedEvidenceSource::class, new CallbackRenderedEvidenceSource($source));
+    }
+
+    /**
+     * Hand ONE page to Charlotte as a prism-harness sub-agent of the host's
+     * own agent. Opens a page session (tenant, page and brief from host
+     * context, never from the parent's task) and binds the child address
+     * the harness will spawn at, `<parent scope>::sub::<suffix>`, to it.
+     *
+     * The parent mode declares the sub-agent in its own config:
+     *
+     *     'subagents' => ['charlotte' => BuilderMode::subagent()]   // mode charlotte, 40 steps, nested budget
+     *
+     * then, per turn: delegate, run the parent; Charlotte's result reaches the
+     * parent as data, `{"draft": {"page", "revision"}}`; read the draft with
+     * the returned session. The suffix is the subagent's `scope` config, or
+     * its name when it has none. Bindings carry the session's provider and
+     * model in harness session state, which expires with the harness's
+     * ephemeral TTL: call {@see CharlotteSession::bindAsSubagent()} again
+     * before a later parent turn.
+     */
+    public function delegate(
+        Model $participant,
+        string $parentScope,
+        string $tenant,
+        string $page,
+        Brief $brief,
+        string $scopeSuffix = BuilderMode::PAGE_SUB_NAME,
+        ?Autonomy $autonomy = null,
+        ?string $provider = null,
+        ?string $model = null,
+        ?array $document = null,
+    ): CharlotteSession {
+        if (str_contains($page, '/')) {
+            // A slash is how a site's documents are keyed; a delegated page never names one.
+            throw new InvalidArgumentException('A delegated page key holds no slash.');
+        }
+        $session = $this->open($participant, $tenant, $page, $brief, $autonomy, $provider, $model, $document);
+        $session->bindAsSubagent($parentScope, $scopeSuffix);
+
+        return $session;
+    }
+
+    /**
+     * The host's data streams, which report and dashboard pages bind to.
+     * `cms_describe` lists them; a binding to anything else is refused. Same
+     * as binding a {@see DataCatalogue}; bind a closure instead to vary it
+     * per tenant.
+     *
+     *     Charlotte::dataCatalogue(ArrayDataCatalogue::fromArray([...]));
+     */
+    public function dataCatalogue(DataCatalogue $catalogue): void
+    {
+        $this->container->instance(DataCatalogue::class, $catalogue);
+    }
+
+    /**
+     * Render time, host code: what to fetch for one viewer. One entry per
+     * bound query on the page, its params, and its scope NARROWED to what the
+     * viewer may see (a binding or page input can never widen it). Fetch each,
+     * then pass {@see dataContext()} of the results to fancy-cms's renderer.
+     *
+     * @param  array<string, mixed>  $viewer  the viewer's whole visible scope, every parameter stated
+     * @param  array<string, mixed>  $inputs  page input values by id
+     * @param  (Closure(string): list<string>)|null  $descendants  a tree id's descendants, for children:true
+     * @return list<array{key: string, stream: string, params: array<string, string>, scope: array<string, mixed>}>
+     */
+    public function dataQueries(array $doc, array $viewer, array $inputs = [], ?Closure $descendants = null): array
+    {
+        return Bindings::queries($doc, $this->container->make(DataCatalogue::class), $viewer, $inputs, $descendants);
+    }
+
+    /**
+     * The render data context from each query's `{rows, totals?}` by query key.
+     *
+     * @param  array<string, array{rows?: list<array>, totals?: array}>  $results
+     */
+    public function dataContext(array $results): array
+    {
+        return Bindings::context($results);
     }
 
     /** A session by id, or null. Pass the tenant the request resolved to; a session from another tenant is not found. */

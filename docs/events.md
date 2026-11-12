@@ -71,7 +71,9 @@ session edits several documents. On a site, `checks.result` from `cms_check`
 also carries `page` and `site {revision, defects}`, and every defect a `page`;
 `cms_finish` records one `checks.result` for the whole site (`site`,
 `revision` = the site revision, `contrast` per document), then `draft.ready`
-with `site`. `draft.published` from a site publish carries `site` and
+with `site`. A page sub-agent's `cms_finish` on one page of a site records
+`draft.ready` with `page` (the document key) and leaves the site's ready
+revision alone. `draft.published` from a site publish carries `site` and
 `documents`. Page sessions are unchanged.
 
 Every `checks.result` carries `contrast`: `{source: "rendered", renderedBy,

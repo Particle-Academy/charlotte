@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Charlotte;
 
+use Charlotte\Guide\BuilderMode;
+use Charlotte\Runtime\PageSubagents;
 use Charlotte\Sessions\SessionRecord;
 use Charlotte\Tools\PageTools;
+use InvalidArgumentException;
 use Charlotte\Transport\LongPoll;
 
 /**
@@ -53,6 +56,23 @@ final class CharlotteSession
     public function tools(): PageTools
     {
         return new PageTools($this->workspace(), $this->id, $this->sites());
+    }
+
+    /**
+     * Bind this PAGE session as the `charlotte` sub-agent a parent agent at
+     * `$parentScope` will spawn (address `<parentScope>::sub::<suffix>`), on
+     * this session's participant, provider and model. Host code; see
+     * {@see Charlotte::delegate()}. A site session's pages are built by its
+     * own orchestrator, so a site cannot be delegated this way.
+     */
+    public function bindAsSubagent(string $parentScope, string $scopeSuffix = BuilderMode::PAGE_SUB_NAME): void
+    {
+        $record = $this->record();
+        if ($record->isSite() || $parentScope === '' || $scopeSuffix === '') {
+            throw new InvalidArgumentException('Only a page session binds as a sub-agent, under a non-empty parent scope and suffix.');
+        }
+        $this->charlotte->container()->make(PageSubagents::class)
+            ->bind($record, PageSubagents::participant($record), $parentScope.'::sub::'.$scopeSuffix);
     }
 
     /**

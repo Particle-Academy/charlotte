@@ -13,7 +13,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 Whole sites, kit islands and rendered contrast (lab plan
-`lab-full-kit-site-benchmark.md`, phase P2; findings K13, S10, S12).
+`lab-full-kit-site-benchmark.md`, phase P2; findings K13, S10, S12), then
+report dashboards and Charlotte as a prism-harness sub-agent (plan
+`report-dashboards.md`, phase 3; charlotte#1).
+
+**Upgrading, dashboards and sub-agents:** nothing to do unless you use them.
+Two behaviours change for everyone: **every `$bind` is now checked against
+the host `DataCatalogue`**, and with none bound (the default) a write that
+adds or changes a binding is refused `binding_invalid`. A host that never
+bound data sees no difference; one that let pages bind `repeat.each` must
+declare those streams. And a **literal number in a data prop** (`value`,
+`delta`, `rows`, `series`, `data`, `categories` …) is now an
+`unsupported_claim` (kind `figure`) unless the brief carries it. It is a
+warning, as every claim is.
 
 **Upgrading:** run the new migration (`2026_11_11_000000_add_charlotte_sites`:
 a `charlotte_sites` table, nullable `charlotte_sessions.site_key` and
@@ -28,15 +40,22 @@ instead of resolving it from the container need to change.
 ### Added
 - **Whole-site sessions.** `Charlotte::for($user)->tenant($t)->site($key)->brief($b)->open()`
   (or `POST /sessions {site, brief}`) opens a session that builds several
-  pages. It runs in a new harness mode, `charlotte_site_builder`, with five
-  more tools: `site_get`, `site_page_create`, `site_page_select`,
-  `site_page_route` and `site_nav_set`. Each page has its own document and a
-  real route; `@header` and `@footer` are shared regions edited once for every
-  page; one page of kind `not_found` is the 404; `site_nav_set` writes the
-  header nav as links to the pages' routes. The `cms_*` tools act on the
-  selected document. `cms_finish` and `publish()` take the SITE revision and
-  cover every page and region. `CharlotteSession::site()` and `siteExport()`
-  return the structure and the site in the lab kit-site `site.json` shape.
+  pages. It runs in a new harness mode, `charlotte_site_builder`, an
+  ORCHESTRATOR (Prism maintainers, msg_ccda3aeb: no 120-step turn): its tools
+  are `charlotte_brief`, `site_get`, `site_page_create`, `site_page_select`,
+  `site_page_route`, `site_nav_set`, `cms_check`, `cms_finish` and
+  `charlotte_page`, which spawns a `charlotte` page sub-agent for the selected
+  page or region (40 steps, budget nested within the turn's). The
+  orchestrator never loads a whole document; it keeps page ids and outcomes.
+  Each page sub-agent starts on a fresh conversation. Each page has its own
+  document and a real route; `@header` and `@footer` are shared regions edited
+  once for every page; one page of kind `not_found` is the 404;
+  `site_nav_set` writes the header nav as links to the pages' routes. The
+  `cms_*` tools act on the selected document. `cms_finish` and `publish()`
+  take the SITE revision and cover every page and region.
+  `CharlotteSession::site()` and `siteExport()` return the structure and the
+  site in the lab kit-site `site.json` shape. `charlotte.site.max_steps` is the
+  whole tree's ceiling and now defaults to `max_steps x (max_pages + 3)`.
 - **Reserved routes (K13).** `charlotte.site.reserved_routes`: routes the host
   serves itself (Fortify's `/login`, `/register`, `/forgot-password` …), exact
   or `/prefix/*`. A page there is refused with `route_reserved`, naming the
@@ -71,6 +90,39 @@ instead of resolving it from the container need to change.
 - Tool refusals may carry agent-facing details beside the fixed message (for
   example `route` and `reserved` on `route_reserved`), and a refusal without
   its own revision now reports the current one.
+- **Host data catalogue (report dashboards).** `Data\DataCatalogue`, built
+  with `Data\ArrayDataCatalogue::fromArray([...])` and bound with
+  `Charlotte::dataCatalogue()`: named streams with row fields and types,
+  optional totals, enum params, and the scope parameters each accepts
+  (`set`, `tree`, `period`). `cms_describe` returns it under `data`. A
+  binding is fancy-cms's `{"$bind", "$source"?}` plus optional `$params` and
+  `$scope`; paths are `<stream>.rows`, `<stream>.columns.<field>`,
+  `<stream>.totals.<field>`, `<as>.<field>` inside a repeat, and
+  `<stream>#<alias>` binds a stream twice. Every write, by any actor, is
+  checked (`Data\BindingPolicy`, `binding_invalid` with the field's path and
+  what exists); `cms_check` reports stale bindings as `invalid_binding`.
+- **Scope only narrows.** `Data\Scope::narrow()` intersects a binding's (or
+  a page input's) scope with the viewer's whole visible scope, which the host
+  states; a parameter the viewer scope omits fails closed. Host render-time
+  helpers: `Charlotte::dataQueries($doc, $viewer, $inputs, $descendants)` (one
+  narrowed query per bound stream) and `Charlotte::dataContext($results)`
+  (the `$data` context for fancy-cms's renderer, with `columns` derived).
+- **Fact checks treat bindings as evidence**: a bound figure is never an
+  `unsupported_claim`, nor are dates inside its `$scope`; a literal figure is.
+- **Charlotte as a prism-harness sub-agent.** Mode `charlotte` (the page
+  guide, the nine page tools, 40 steps, nothing that publishes). A host's
+  agent declares it with `'subagents' => ['charlotte' => BuilderMode::subagent()]`
+  and hands it a page with `Charlotte::delegate($user, $parentScope, $tenant,
+  $page, $brief)`, which binds the child address to that page in host
+  context; `CharlotteSession::bindAsSubagent()` re-binds before a later turn.
+  The child's `cms_finish` returns the draft by reference,
+  `{"draft": {"page", "revision"}}`. Its run is its own harness run, linked
+  beneath the parent's thread. A child capability copied to another address
+  or participant binds no tools.
+- Tool handlers pass every argument to the closed dispatch, so an undeclared
+  one (`tenant`, `page`) is reported as `$.arguments.<field>: no such field`
+  instead of failing inside the PHP call with a generic error.
+- `draft.ready` from one page of a site carries `page`.
 
 ## [0.3.0] - 2026-10-30
 

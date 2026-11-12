@@ -99,6 +99,141 @@ measurements (`Checks\RenderedEvidence::fromAxe()` reads axe-core results), so
 contrast is judged on the rendered page, islands included. Without one it is
 judged on the document, and every check result says which ran.
 
+**How a site turn runs.** The site mode is an orchestrator. It plans the pages,
+creates and routes them, and hands each page (and `@header` / `@footer`) to a
+`charlotte` page sub-agent through prism-harness's sub-agent API. Each
+sub-agent gets 40 steps, a budget nested within the turn's, and a fresh
+context. The orchestrator never loads a whole document; it keeps page ids and
+outcomes. `charlotte.site.max_steps` bounds the whole tree.
+
+## Reports / dashboards
+
+Charlotte can build report and dashboard pages for your app. **The figures
+come from your data, never from the model.** You declare the data streams your
+app supplies; the agent binds fancy-cms's infographic nodes (`chart`, `kpi`,
+`table`, `leaderboard`) and page inputs to them with `$bind`; you compute the
+data per viewer when the page renders.
+
+### 1. Declare the streams
+
+```php
+use Charlotte\Data\ArrayDataCatalogue;
+use Charlotte\Facades\Charlotte;
+
+Charlotte::dataCatalogue(ArrayDataCatalogue::fromArray([
+    // One scope object for every stream. Kinds: set (ids), tree (ids + children), period (from/to).
+    'scope' => [
+        'people'        => ['kind' => 'set',    'description' => 'User ids'],
+        'dealTypes'     => ['kind' => 'set',    'description' => 'Deal type keys'],
+        'period'        => ['kind' => 'period', 'description' => 'Inclusive date range'],
+        'organizations' => ['kind' => 'tree',   'description' => 'Organization ids; children:true adds child organizations'],
+    ],
+    'streams' => [
+        'metrics' => [
+            'description' => 'Pipeline metrics grouped by owner, stage or deal type.',
+            'fields' => ['group' => 'string', 'deals' => 'integer', 'revenue' => 'number', 'winRate' => 'number'],
+            'totals' => ['deals' => 'integer', 'revenue' => 'number'],    // omit when the stream returns plain rows
+            'params' => ['groupBy' => ['owner', 'stage', 'dealType']],
+            'scope'  => ['people', 'dealTypes', 'period', 'organizations'],
+        ],
+        'revenueByRep'  => ['fields' => ['rep' => 'string', 'revenue' => 'number'], 'scope' => ['people', 'period', 'organizations']],
+        'dealsCutEarly' => ['fields' => ['deal' => 'string', 'owner' => 'string', 'closedOn' => 'date', 'value' => 'number'],
+                            'scope' => ['people', 'dealTypes', 'period']],
+    ],
+]));
+```
+
+Field types: `string`, `number`, `integer`, `boolean`, `date`. A malformed
+declaration throws when you build it, not mid-run.
+
+### 2. What the agent writes
+
+`cms_describe` returns the catalogue under `data`. The agent binds paths, with
+optional `$params` and `$scope`:
+
+```json
+{"label": "Revenue", "format": "currency",
+ "value": {"$bind": "metrics.totals.revenue",
+           "$params": {"groupBy": "owner"},
+           "$scope": {"period": {"$input": "period"}, "organizations": {"ids": ["org-7"], "children": true}}}}
+```
+
+The paths are:
+
+- `<stream>.rows`: the list of rows, for a table, a leaderboard or `repeat.each`.
+- `<stream>.columns.<field>`: one field's values across the rows, for chart categories and series.
+- `<stream>.totals.<field>`: one total, for streams that declare totals.
+- `<as>.<field>`: inside a node repeating over `<stream>.rows`.
+
+To bind one stream twice with different params, give it an alias:
+`metrics#byStage.rows`.
+
+A write that binds an unknown stream, field, param or scope parameter is
+refused `binding_invalid`, naming the field and what exists. That applies to
+every actor. With no catalogue bound, nothing can be bound.
+
+**Fact checks:** a bound figure is evidence, not an `unsupported_claim`. A
+number the agent types into a data prop is still checked against the brief.
+
+### 3. Render for a viewer: scope only narrows
+
+You state everything the viewer may see. Charlotte intersects each binding's
+scope (and any page input) with it, so the page can only narrow the view,
+never widen it. If the viewer scope leaves out a parameter, the call throws
+instead of reading it as unrestricted.
+
+```php
+$queries = Charlotte::dataQueries($doc, viewer: [
+    'people' => $visiblePeopleIds, 'dealTypes' => $visibleDealTypes,
+    'period' => ['from' => '2026-01-01', 'to' => '2026-12-31'],
+    'organizations' => $visibleOrgIdsIncludingChildren,
+], inputs: $request->query(), descendants: fn (string $org) => $orgs->descendantIds($org));
+
+$results = [];
+foreach ($queries as $q) {                      // ['key' => 'metrics', 'stream' => 'metrics', 'params' => [...], 'scope' => [...narrowed]]
+    $results[$q['key']] = $streams->fetch($q['stream'], $q['params'], $q['scope']);   // ['rows' => [...], 'totals' => [...]]
+}
+$rendered = \FancyCms\Render\PageRenderer::render($doc, Charlotte::dataContext($results));   // fancy-cms's $data argument
+```
+
+A `set` or `tree` that narrows to `[]`, or a `period` that narrows to `null`,
+means the viewer sees nothing for that parameter. Return no rows.
+
+### 4. Hand a brief off from your own agent
+
+Charlotte runs as a prism-harness **sub-agent** of your agent, using the
+harness's existing sub-agent API. Declare it in your mode:
+
+```php
+// config/prism-harness.php
+'modes' => ['reports' => [
+    'system_prompt' => 'You are the reports assistant.', 'tools' => [...], 'max_steps' => 60,
+    'subagents' => ['charlotte' => \Charlotte\Guide\BuilderMode::subagent()],   // mode charlotte, 40 steps, nested budget
+]],
+```
+
+Before each parent turn, bind the page. Tenant, page, actor and brief come
+from your context, never from the parent's task text:
+
+```php
+$parent = PrismHarness::session($user, 'reports:'.$report->id)->usingMode('reports');
+$page = Charlotte::delegate($user, $parent->scope(), tenant: (string) $team->id, page: 'q3-pipeline',
+    brief: Brief::fromArray(['summary' => 'Q3 pipeline dashboard for the sales leads.', 'facts' => []]));
+
+$parent->send('Build me a Q3 pipeline dashboard.');
+// The parent calls `charlotte` with a task. The page is saved as a draft, and
+// the result reaches the parent as data: {"draft": {"page": "q3-pipeline", "revision": "r..."}}.
+$page->state();                          // read the draft by that reference
+$page->publish($page->state()['revision'], (string) $user->id);   // publishing stays host code
+```
+
+Every Charlotte tool acts only on the bound page. A task or brief that names
+another tenant's page reaches nothing: there is no tenant or page argument to
+pass, and an undeclared one is refused. The child's run is its own harness
+run, linked beneath the parent's thread. Call
+`$page->bindAsSubagent($parent->scope())` again before a later parent turn,
+because the binding's provider and model live in harness session state.
+
 ## Host budgets (optional)
 
 Charlotte never requires billing: with nothing bound, every turn runs on

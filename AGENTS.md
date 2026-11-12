@@ -49,8 +49,10 @@ read config through the container.
   create/route/select/nav, the site revision (sha1 of structure + every doc
   revision), site checks, finish and publish; every document write still goes
   through `Workspace` via `SessionRecord::onPage()`. Mode `charlotte_site_builder`
-  offers `BuilderMode::SITE_TOOLS` (the nine plus `site_*`); `TurnRunner` picks
-  the mode per session. Proposals are keyed by `page_key` for site sessions
+  is an ORCHESTRATOR: `BuilderMode::SITE_TOOLS` (brief, `site_*`, `cms_check`,
+  `cms_finish`, `charlotte_page`), no whole-document tools. `charlotte_page`
+  spawns a `charlotte` page sub-agent on the selected document; `TurnRunner`
+  picks the mode per session. Proposals are keyed by `page_key` for site sessions
   (null for page sessions, as in 0.3).
 - `Checks\SiteChecks`: broken links, anchors, orphans, unrouted pages, home,
   404, nav consistency, region h1/anchors, duplicate titles, and
@@ -67,6 +69,26 @@ read config through the container.
   `Islands\PropsSchema` is our own JSON Schema subset (no dependency).
   `NodeTypes::forStored()` adds island types already in a stored history, so
   a narrowed catalogue never makes a draft unreadable.
+- **Data (report dashboards)**: `Data\DataCatalogue` (default empty
+  `ArrayDataCatalogue`; `Charlotte::dataCatalogue()`). `Data\Bindings` finds
+  every `$bind` (props at any depth, `repeat.each`), validates paths
+  (`<query>.rows|columns.<f>|totals.<f>`, `<as>.<f>`, `<stream>#<alias>`),
+  `$params` and `$scope`, and builds render queries. `Data\Scope::narrow()` is
+  the only place scope is resolved: intersection with the viewer's stated
+  scope, fail-closed on a missing parameter. `FactChecks` skips binding objects
+  and checks literal numbers under `FIGURE_KEYS`.
+- **Sub-agents** (`Runtime\PageSubagents`, a singleton): host code binds a
+  child harness address (`<parent scope>::sub::<suffix>`) to a Charlotte
+  session as capability `charlotte {session, scope}` plus provider and model.
+  `Charlotte::delegate()` does it for a host's own agent; `TurnRunner` does
+  it for a site orchestrator's `::sub::page` child each turn, and `begin()`s
+  the turn so `tool()` can offer `charlotte_page` through the harness's
+  `SubagentRunner` (prism-harness 0.17's uncapped `stream()` drops declared
+  sub-agents; when the harness offers its own tool of that name, it replaces
+  ours). `site_page_create` / `site_page_select` retire the child's thread so
+  each page starts fresh. `PageTools(child: true)` = the nine tools, no site
+  tools, and `cms_finish` returns `{draft: {page, revision}}` without setting
+  the site's ready revision.
 
 ## Invariants a change must keep
 
@@ -94,8 +116,13 @@ read config through the container.
   carries a code (`Refused::reason`, `HasErrorCode::code()`, else
   `run_failed`); API errors use `Refused::MESSAGES` only.
 - **Tools bind to a session through harness capability state**, written only
-  by `TurnRunner`, and the provider in `CharlotteServiceProvider::boot()`
-  also requires the harness scope to be `charlotte:<id>`.
+  by host code (`TurnRunner`, `PageSubagents::bind()`), and the provider in
+  `CharlotteServiceProvider::boot()` also requires the harness scope to be
+  `charlotte:<id>`, or for mode `charlotte` the exact address the capability
+  names, on the session's own participant (`PageSubagents::boundSession()`;
+  a site's child only at `charlotte:<id>::sub::page`).
+- **`BindingPolicy::assert` runs after every write** with the asset and island
+  policies, on the nodes the write changed.
 - **Telemetry is optional.** `Telemetry\UsageTelemetry` is the only reader of
   Prism telemetry, swallows its own failures, and nothing reads
   `usage.observed`. Never make a turn depend on it. Prism fires its event for

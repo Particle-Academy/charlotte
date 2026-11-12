@@ -22,7 +22,8 @@ return [
     */
     'autonomy' => env('CHARLOTTE_AUTONOMY', 'approve_on_save'),
 
-    // The builder mode's step ceiling and Prism provider options, passed
+    // The builder mode's step ceiling (also each `charlotte` page
+    // sub-agent's) and Prism provider options, passed
     // through unchanged (e.g. ['cache_control' => ['type' => 'ephemeral']]
     // for Anthropic). A mode named charlotte_builder in prism-harness.agent.modes
     // replaces Charlotte's entirely.
@@ -48,12 +49,16 @@ return [
     | A site page on one of them is refused with route_reserved.
     |
     | max_pages: pages per site, the 404 included. max_steps: the site
-    | builder mode's step ceiling (a site takes several times a page's).
+    | orchestrator's step ceiling for the WHOLE run tree. The orchestrator
+    | hands each page and region to a `charlotte` page sub-agent of
+    | charlotte.max_steps steps, and those budgets nest within this one, so
+    | null means max_steps x (max_pages + 3): every page, both regions and the
+    | orchestrator's own steps.
     */
     'site' => [
         'reserved_routes' => [],
         'max_pages' => (int) env('CHARLOTTE_SITE_MAX_PAGES', 12),
-        'max_steps' => (int) env('CHARLOTTE_SITE_MAX_STEPS', 120),
+        'max_steps' => env('CHARLOTTE_SITE_MAX_STEPS') === null ? null : (int) env('CHARLOTTE_SITE_MAX_STEPS'),
     ],
 
     // External origins an AGENT may link to. Relative paths, anchors,

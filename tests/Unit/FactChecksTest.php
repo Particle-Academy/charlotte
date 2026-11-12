@@ -118,3 +118,52 @@ test('claims in meta are checked too, because they reach search results', functi
         ->and($claims[0]['node'] ?? null)->toBeNull()
         ->and($claims[0]['field'])->toBe('meta.seo.description');
 });
+
+/** A page with one dashboard island holding these props. */
+function dashboardPage(array $props, array $copy = ['Pipeline this quarter.']): array
+{
+    $page = pageWithCopy($copy);
+    $page['nodes']['kpi'] = ['id' => 'kpi', 'type' => 'kit:Kpi', 'island' => true, 'parent' => 'root', 'order' => 'b0', 'style' => ['base' => []], 'props' => $props];
+
+    return $page;
+}
+
+test('a figure that comes from a binding is evidence, not an unsupported claim, scope dates included', function (): void {
+    $page = dashboardPage([
+        'label' => 'Revenue',
+        'value' => ['$bind' => 'metrics.totals.revenue', '$scope' => ['period' => ['from' => '2025-01-01', 'to' => '2025-12-31']]],
+        'rows' => ['$bind' => 'metrics.rows'],
+        'format' => 'currency',
+        'decimals' => 0,
+    ]);
+
+    expect(defectsBy(FactChecks::check($page, factBrief(), 2026), 'unsupported_claim'))->toBe([]);
+});
+
+test('a literal figure the agent types into a data prop is still checked', function (): void {
+    $page = dashboardPage(['label' => 'Revenue', 'value' => 1250000, 'rows' => [['rep' => 'Ada', 'revenue' => 640000]], 'decimals' => 0, 'limit' => 5]);
+
+    $claims = defectsBy(FactChecks::check($page, factBrief(), 2026), 'unsupported_claim');
+
+    expect(array_column($claims, 'claim'))->toBe(['1250000', '640000'])
+        ->and(array_unique(array_column($claims, 'kind')))->toBe(['figure'])
+        ->and($claims[0]['node'])->toBe('kpi');
+});
+
+test('a literal number beside a bound one is caught, and the bound one is not', function (): void {
+    $page = dashboardPage(
+        ['label' => 'Revenue', 'value' => ['$bind' => 'metrics.totals.revenue'], 'delta' => 0.42],
+        ['Revenue reached $2,400,000 this quarter.'],
+    );
+
+    $claims = defectsBy(FactChecks::check($page, factBrief(), 2026), 'unsupported_claim');
+
+    expect(array_column($claims, 'claim'))->toEqualCanonicalizing(['$2400000', '0.42'])
+        ->and(array_column($claims, 'node'))->toEqualCanonicalizing(['t0', 'kpi']);
+});
+
+test('a literal figure the brief supports passes', function (): void {
+    $brief = Brief::fromArray(['summary' => 'Dashboard.', 'facts' => [['id' => 'deals', 'kind' => 'stat', 'value' => '1,250 deals closed']]]);
+
+    expect(defectsBy(FactChecks::check(dashboardPage(['value' => 1250]), $brief, 2026), 'unsupported_claim'))->toBe([]);
+});
