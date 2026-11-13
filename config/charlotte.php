@@ -92,7 +92,14 @@ return [
     | max_steps / max_cost_usd / max_output_tokens: the critic's OWN budget.
     | It nests in the turn's run tree: it gets the smaller of these and what
     | the tree has left, and its spend counts against the turn's caps.
-    | max_items: critique items kept (the rest are counted as `dropped`).
+    | max_output_tokens counts the critic's THINKING too: Haiku 5.5 thinks
+    | adaptively by default (effort medium), and at 2048 thinking took about
+    | two thirds of the budget and cut every reply off (flabs runs 579/580).
+    | A reply that is still cut off keeps its complete items (`truncated`).
+    | max_items: critique items kept (the rest are counted as `dropped`); the
+    | critic's prompt asks for no more than this, one sentence each.
+    | provider_options: the critic mode's, e.g. ['effort' => 'low'] to bound
+    | its thinking. Empty: the provider's defaults.
     |
     | allow_uncapped_when_unmetered: on a run tree with an unmetered call (no
     | price for some model, billing off) a dollar cap cannot be enforced, and
@@ -117,8 +124,9 @@ return [
         'max_revisions' => (int) env('CHARLOTTE_CRITIQUE_MAX_REVISIONS', 1),
         'max_steps' => 1,
         'max_cost_usd' => (float) env('CHARLOTTE_CRITIQUE_MAX_COST_USD', 0.05),
-        'max_output_tokens' => 2048,
+        'max_output_tokens' => 4096,
         'max_items' => 8,
+        'provider_options' => [],
         'widths' => [375, 768, 1280],
         'allow_uncapped_when_unmetered' => (bool) env('CHARLOTTE_CRITIQUE_ALLOW_UNCAPPED_WHEN_UNMETERED', true),
         'revision_includes_screenshot' => (bool) env('CHARLOTTE_CRITIQUE_REVISION_SCREENSHOT', true),

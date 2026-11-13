@@ -24,7 +24,12 @@ final readonly class CritiqueSettings
         public int $maxRevisions = 1,
         public int $maxSteps = 1,
         public ?float $maxCostUsd = 0.05,
-        public ?int $maxOutputTokens = 2048,
+        /**
+         * Per critic call, thinking INCLUDED: Haiku 5.5 thinks adaptively by
+         * default and its thinking counts against max_tokens (flabs runs
+         * 579/580: 1408 and 1338 of 2048 were thinking, and the reply was cut).
+         */
+        public ?int $maxOutputTokens = 4096,
         public int $maxItems = 8,
         public array $widths = [375, 768, 1280],
         /** On a tree with an unmetered run, drop the critic's dollar cap (the step cap bounds it) rather than skip the critique. */
@@ -35,6 +40,8 @@ final readonly class CritiqueSettings
         public int $maxCaptureHeight = 1200,
         /** Sections per width sent to the critic; the rest, from the bottom, are left out and counted. */
         public int $maxCapturesPerWidth = 6,
+        /** The critic mode's provider options, e.g. `['effort' => 'low']` to bound its thinking. Empty: the provider's defaults. */
+        public array $providerOptions = [],
     ) {}
 
     public static function fromConfig(Repository $config): self
@@ -59,13 +66,14 @@ final readonly class CritiqueSettings
             maxRevisions: $int($c['max_revisions'] ?? null, 1, 0, 5),
             maxSteps: $int($c['max_steps'] ?? null, 1, 1, 5),
             maxCostUsd: is_numeric($cost) && (float) $cost > 0 ? (float) $cost : null,
-            maxOutputTokens: array_key_exists('max_output_tokens', $c) && $c['max_output_tokens'] === null ? null : $int($c['max_output_tokens'] ?? null, 2048, 256, 32768),
+            maxOutputTokens: array_key_exists('max_output_tokens', $c) && $c['max_output_tokens'] === null ? null : $int($c['max_output_tokens'] ?? null, 4096, 256, 32768),
             maxItems: $int($c['max_items'] ?? null, 8, 1, 20),
             widths: $widths === [] ? [375, 768, 1280] : $widths,
             allowUncappedWhenUnmetered: is_bool($c['allow_uncapped_when_unmetered'] ?? null) ? $c['allow_uncapped_when_unmetered'] : true,
             revisionIncludesScreenshot: is_bool($c['revision_includes_screenshot'] ?? null) ? $c['revision_includes_screenshot'] : true,
             maxCaptureHeight: $int($c['max_capture_height'] ?? null, 1200, 300, 10000),
             maxCapturesPerWidth: $int($c['max_captures_per_width'] ?? null, 6, 1, 20),
+            providerOptions: is_array($c['provider_options'] ?? null) ? $c['provider_options'] : [],
         );
     }
 

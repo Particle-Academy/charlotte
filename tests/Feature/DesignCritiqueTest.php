@@ -11,6 +11,7 @@ use Charlotte\Tests\Support\ScriptedProvider;
 use Prism\Harness\Models\Thread;
 use Prism\Harness\Subagents\RunBudget;
 use Prism\Harness\Subagents\RunContext;
+use Prism\Prism\Enums\FinishReason;
 use Prism\Prism\ValueObjects\Messages\SystemMessage;
 use Prism\Prism\ValueObjects\Messages\UserMessage;
 
@@ -686,4 +687,93 @@ test('a revision run that leaves the page unfinished records no after revision',
     expect($revised)->toMatchArray(['before' => $result['revisionOf'], 'after' => null, 'ready' => false, 'changed' => true])
         ->and($revised['revision'])->toBe($session->state()['revision'])
         ->and($session->documentAt($revised['revision']))->toEqual($session->state()['doc']);
+});
+
+// --- A critic reply cut off at max_tokens (flabs runs 579, 580) ------------------
+
+test('a critic reply cut off at max_tokens keeps its complete items, records truncated, and the revision still runs', function (): void {
+    $cut = '{"verdict": "revise", "items": [{"node": "hero-h", "viewport": 375, "region": "375-1", "criterion": "visual_design", '
+        .'"issue": "The h1 is body size at 375, so nothing draws the eye.", "fix": "Set the h1 to 40px."}, '
+        .'{"node": "plans-grid", "viewport": 768, "region": "768-1", "criterion": "responsive", "issue": "The two cards leave a wide gut';
+    $provider = new ScriptedProvider([critiqueBuildTurn(), [['text' => $cut, 'finish' => FinishReason::Length]], critiqueRevisionTurn()]);
+    critiqueApp($provider);
+    $renders = [];
+    critiqueRenderer($renders);
+    $session = openSession();
+    $session->send('Build the page.', 'user-7');
+
+    $result = eventsOf($session, 'critique.result')[0]['data'];
+    expect($result)->toMatchArray(['outcome' => 'completed', 'verdict' => 'revise', 'truncated' => true, 'revision' => 'running'])
+        ->and(array_column($result['items'], 'node'))->toBe(['hero-h'], 'the cut-off plans-grid item is never invented')
+        ->and(eventsOf($session, 'critique.revised'))->toHaveCount(1);
+});
+
+test('a complete critic reply records truncated false', function (): void {
+    $provider = new ScriptedProvider([critiqueBuildTurn(), criticReply(), critiqueRevisionTurn()]);
+    critiqueApp($provider);
+    $renders = [];
+    critiqueRenderer($renders);
+    $session = openSession();
+    $session->send('Build the page.', 'user-7');
+
+    expect(eventsOf($session, 'critique.result')[0]['data']['truncated'])->toBeFalse();
+});
+
+test('a reply cut off before any complete item revises nothing, and says why', function (): void {
+    $provider = new ScriptedProvider([critiqueBuildTurn(), [['text' => '{"verdict": "revise", "items": [{"node": "hero-h", "viewport": 375, "iss', 'finish' => FinishReason::Length]]]);
+    critiqueApp($provider);
+    $renders = [];
+    critiqueRenderer($renders);
+    $session = openSession();
+    $session->send('Build the page.', 'user-7');
+
+    expect(eventsOf($session, 'critique.result')[0]['data'])->toMatchArray(['outcome' => 'completed', 'truncated' => true, 'items' => [], 'revision' => 'not_needed'])
+        ->and(eventsOf($session, 'run.started'))->toHaveCount(1);
+});
+
+// --- The critic's prompt and output budget ---------------------------------------
+
+test('the critic prompt caps its items at the number kept, and asks for one sentence per issue', function (): void {
+    expect(CriticMode::prompt())->toContain('at most 8 items')
+        ->and(CriticMode::prompt(3))->toContain('at most 3 items')
+        ->and(CriticMode::prompt())->toContain('one sentence');
+
+    $provider = new ScriptedProvider([critiqueBuildTurn(), criticReply('pass', [])]);
+    critiqueApp($provider, ['charlotte.critique.max_items' => 5]);
+    $renders = [];
+    critiqueRenderer($renders);
+    openSession()->send('Build the page.', 'user-7');
+
+    $system = implode("\n", array_map(fn (SystemMessage $m) => $m->content, criticRequests($provider)[0]->systemPrompts()));
+    expect($system)->toBe(CriticMode::prompt(5))->and($system)->toContain('at most 5 items');
+});
+
+test('the critic\'s output budget defaults to 4096 tokens, room for its thinking AND its reply, and is configurable', function (): void {
+    // Haiku 5.5 thinks adaptively by default and its thinking counts against
+    // max_tokens: 1408 of run 579's 2048 were thinking. 4096 leaves the reply room.
+    expect((require dirname(__DIR__, 2).'/config/charlotte.php')['critique']['max_output_tokens'])->toBe(4096);
+
+    $provider = new ScriptedProvider([critiqueBuildTurn(), criticReply('pass', [])]);
+    critiqueApp($provider);
+    $renders = [];
+    critiqueRenderer($renders);
+    openSession()->send('Build the page.', 'user-7');
+    expect(criticRequests($provider)[0]->maxTokens())->toBe(4096, 'the default');
+    expect(\Charlotte\Critique\CritiqueSettings::fromConfig(new \Illuminate\Config\Repository([]))->maxOutputTokens)->toBe(4096, 'with no config at all');
+
+    $provider = new ScriptedProvider([critiqueBuildTurn(), criticReply('pass', [])]);
+    critiqueApp($provider, ['charlotte.critique.max_output_tokens' => 6000]);
+    critiqueRenderer($renders);
+    openSession()->send('Build the page.', 'user-7');
+    expect(criticRequests($provider)[0]->maxTokens())->toBe(6000);
+});
+
+test('the critic\'s provider options are configurable, to set its thinking effort', function (): void {
+    $provider = new ScriptedProvider([critiqueBuildTurn(), criticReply('pass', [])]);
+    critiqueApp($provider, ['charlotte.critique.provider_options' => ['effort' => 'low']]);
+    $renders = [];
+    critiqueRenderer($renders);
+    openSession()->send('Build the page.', 'user-7');
+
+    expect(criticRequests($provider)[0]->providerOptions('effort'))->toBe('low');
 });

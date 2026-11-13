@@ -169,7 +169,13 @@ read config through the container.
   every end is a `critique.result` outcome code. The critic prompt
   (`CriticMode`) lists OBSERVABLE DEFECTS only: no score, scale, anchor or
   wording asking for a better number (a test refuses them), and the builder
-  gets items only.
+  gets items only. It asks for at most `max_items` items, one sentence each,
+  so the reply fits `max_output_tokens` (default 4096), which counts the
+  critic's THINKING too (Haiku 5.5 thinks by default; runs 579/580 spent two
+  thirds of 2048 thinking and were cut off). Parse replies only through
+  `Critique\CriticReply::parse()`: a reply cut off at `max_tokens` keeps the
+  items complete before the cut (each candidate end must decode as real
+  JSON), never a partial one, and records `truncated`.
 - `Checks\SiteChecks`: broken links, anchors, orphans, unrouted pages, home,
   404, nav consistency, region h1/anchors, duplicate titles, and
   `missing_required_fact` across the whole site.

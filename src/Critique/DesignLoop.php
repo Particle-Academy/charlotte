@@ -7,7 +7,6 @@ namespace Charlotte\Critique;
 use Charlotte\Events\EventTypes;
 use Charlotte\Sessions\SessionRecord;
 use Charlotte\Workspace;
-use JsonException;
 use Prism\Harness\AgentRuntime;
 use Prism\Harness\Exceptions\RunNotPermitted;
 use Prism\Harness\PrismHarness;
@@ -15,6 +14,7 @@ use Prism\Harness\Sessions\Session;
 use Prism\Harness\Subagents\RunBudget;
 use Prism\Harness\Subagents\RunContext;
 use Prism\Harness\Subagents\Subagent;
+use Prism\Prism\Enums\FinishReason;
 use Throwable;
 
 /**
@@ -93,7 +93,7 @@ final class DesignLoop
         $model = $this->settings->modelFor($session->provider, $session->model);
         $widths = $this->settings->widths;
         $base = ['revisionOf' => $revision, 'provider' => $provider, 'model' => $model, 'widths' => $widths,
-            'verdict' => null, 'items' => [], 'dropped' => 0, 'droppedReasons' => self::noDrops(), 'costUsd' => 0.0, 'steps' => 0,
+            'verdict' => null, 'truncated' => false, 'items' => [], 'dropped' => 0, 'droppedReasons' => self::noDrops(), 'costUsd' => 0.0, 'steps' => 0,
             'criticRunId' => null, 'captures' => [], 'capturesOmitted' => 0, 'costCap' => null, 'budget' => null,
             'revisionIncludesScreenshot' => $this->settings->revisionIncludesScreenshot, 'revisionImages' => []];
 
@@ -164,8 +164,10 @@ final class DesignLoop
             return $this->record($session, $base + $spent() + ['outcome' => 'failed'], null);
         }
 
-        $parsed = self::parse($response->text());
-        $base = ['criticRunId' => $response->runId] + $spent() + $base;
+        // Cut off at the output limit (max_tokens): keep the complete items, never a partial one.
+        $cut = $response->response->finishReason === FinishReason::Length;
+        $parsed = CriticReply::parse($response->text(), $cut);
+        $base = ['criticRunId' => $response->runId, 'truncated' => $parsed['truncated'] ?? $cut] + $spent() + $base;
         if ($parsed === null) {
             return $this->record($session, $base + ['outcome' => 'invalid_output'], null);
         }
@@ -288,26 +290,6 @@ final class DesignLoop
 
         return "The captures are attached in this order, one viewport each, at native resolution:\n".implode("\n", $captures)
             ."\n\nThe page's nodes:\n".implode("\n", $lines)."\n\nList the observable defects as your instructions describe. JSON only.";
-    }
-
-    /** @return array{verdict: string, items: list<mixed>}|null */
-    private static function parse(string $text): ?array
-    {
-        $start = strpos($text, '{');
-        $end = strrpos($text, '}');
-        if ($start === false || $end === false || $end < $start) {
-            return null;
-        }
-        try {
-            $json = json_decode(substr($text, $start, $end - $start + 1), true, 8, JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            return null;
-        }
-        if (! is_array($json) || ! in_array($json['verdict'] ?? null, ['revise', 'pass'], true) || ! is_array($json['items'] ?? [])) {
-            return null;
-        }
-
-        return ['verdict' => $json['verdict'], 'items' => array_values((array) ($json['items'] ?? []))];
     }
 
     /** @return array{incomplete: int, over_cap: int, unknown_node: int, unlocated: int} */

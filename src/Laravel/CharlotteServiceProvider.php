@@ -156,7 +156,8 @@ final class CharlotteServiceProvider extends ServiceProvider
             $modes[BuilderMode::NAME] ??= BuilderMode::config($guide, $pageSteps, $options);
             $modes[BuilderMode::SITE_NAME] ??= BuilderMode::config($guide, $siteSteps, $options, true, $pageSteps);
             $modes[BuilderMode::PAGE_SUB_NAME] ??= BuilderMode::pageConfig($guide, $pageSteps, $options);
-            $modes[CriticMode::NAME] ??= CriticMode::config(CritiqueSettings::fromConfig($config)->maxSteps);
+            $critique = CritiqueSettings::fromConfig($config);
+            $modes[CriticMode::NAME] ??= CriticMode::config($critique->maxSteps, $critique->maxItems, $critique->providerOptions);
             $agent['modes'] = $modes;
 
             return new ModeRegistry($agent);

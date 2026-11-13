@@ -29,7 +29,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `charlotte.critique` (enabled, provider, model, default_models, max_revisions,
   max_steps, max_cost_usd, max_output_tokens, max_items, widths,
   allow_uncapped_when_unmetered, revision_includes_screenshot,
-  max_capture_height, max_captures_per_width). New events
+  max_capture_height, max_captures_per_width, provider_options). New events
   `critique.result` and `critique.revised`. **On by default when a renderer is
   supplied, off otherwise**: a host that supplies none sees no change, and
   needs to do nothing.
@@ -47,6 +47,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     node on the page AND the width (`viewport`) or capture (`region`,
     `<width>-<part>`) where the defect shows; the rest are dropped and counted
     by reason (`droppedReasons`).
+  - **A critic reply cut off at its output limit still counts.** Flabs runs
+    579 and 580: both Haiku 5.5 critic replies stopped at 2048 tokens in the
+    middle of an item (1408 and 1338 of those tokens were thinking, which
+    Haiku 5.5 does by default and which counts against `max_tokens`), the
+    whole reply was refused as `invalid_output`, and no revision ever ran.
+    Now `Critique\CriticReply` keeps every item that was complete before the
+    cut, never one built from the partial item, and `critique.result` records
+    `truncated`. The prompt asks for at most `max_items` items (8), one
+    sentence per issue and per fix; the critic's default `max_output_tokens`
+    is 4096, room for its thinking and its reply; and the new
+    `charlotte.critique.provider_options` (e.g. `['effort' => 'low']`) sets the
+    critic mode's provider options.
   - **The builder's revision carries the captures** each item concerns, at
     native resolution, beside the items. `revision_includes_screenshot: false`
     sends text only, so a lab can A/B the two (`revisionIncludesScreenshot`,

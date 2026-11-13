@@ -187,7 +187,10 @@ final class ScriptedProvider extends Provider
             }
             array_push($allCalls, ...$calls);
             array_push($allResults, ...$results);
-            $done[] = new Step($text, $calls === [] ? FinishReason::Stop : FinishReason::ToolCalls, $calls, $results, [], new Usage(100, 20), $meta, $request->messages(), []);
+            // A step may END the call with a recorded finish reason, as a
+            // provider does when output hits max_tokens (FinishReason::Length).
+            $finish = $step['finish'] ?? ($calls === [] ? FinishReason::Stop : FinishReason::ToolCalls);
+            $done[] = new Step($text, $finish, $calls, $results, [], new Usage(100, 20), $meta, $request->messages(), []);
             $transcript[] = new AssistantMessage($text, $calls);
             if ($results !== []) {
                 $transcript[] = new ToolResultMessage($results);
@@ -195,7 +198,9 @@ final class ScriptedProvider extends Provider
         }
 
         // Stopped at maxSteps with script left: report the tool calls, so the caller's loop continues.
-        return new TextResponse(collect($done), $text, $more ? FinishReason::ToolCalls : FinishReason::Stop,
+        $last = $done === [] ? null : end($done)->finishReason;
+
+        return new TextResponse(collect($done), $text, $more ? FinishReason::ToolCalls : ($last === FinishReason::Length ? FinishReason::Length : FinishReason::Stop),
             $more ? end($done)->toolCalls : $allCalls, $more ? end($done)->toolResults : $allResults,
             new Usage(100 * count($done), 20 * count($done)), $meta, collect([...$request->messages(), ...$transcript]));
     }
