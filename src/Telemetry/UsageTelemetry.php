@@ -27,6 +27,20 @@ final class UsageTelemetry
 {
     public const PRISM_EVENT = 'Prism\Prism\Events\Telemetry\GenerationCompleted';
 
+    /** One provider call within a generation; its usage is that call's alone. */
+    public const PRISM_STEP_EVENT = 'Prism\Prism\Events\Telemetry\StepCompleted';
+
+    /**
+     * Traces whose calls were already recorded step by step, so their
+     * GenerationCompleted (the sum) is not recorded again. Bounded: a trace
+     * that never completes (a failed generation) ages out.
+     *
+     * @var array<string, true>
+     */
+    private static array $stepped = [];
+
+    private const STEPPED_MAX = 1000;
+
     /**
      * The workspace may be passed as a resolver, and the listener does: it is
      * built only after the flags and the session key say this generation is
@@ -65,7 +79,13 @@ final class UsageTelemetry
         return Ulid::valid($m[1]) ? $m[1] : null;
     }
 
-    /** Listener for Prism's GenerationCompleted. Never throws into the run. */
+    /**
+     * Listener for Prism's StepCompleted and GenerationCompleted. Never throws
+     * into the run. Each provider CALL (a step) is one `usage.observed` with
+     * its own input tokens and cost and `step` = its index; a generation
+     * whose calls were recorded is not recorded again as a total. A
+     * generation that reported no steps is recorded whole, with `step` null.
+     */
     public function handle(object $event): void
     {
         try {
@@ -75,8 +95,22 @@ final class UsageTelemetry
             $context = $event->context ?? null;
             $session = self::sessionFromKey($context->sessionId ?? null);
             $usage = $event->usage ?? null;
+            $trace = is_string($context->traceId ?? null) ? $context->traceId : null;
+            $isStep = is_a($event, self::PRISM_STEP_EVENT);
+            if (! $isStep && $trace !== null && isset(self::$stepped[$trace])) {
+                unset(self::$stepped[$trace]);
+
+                return;
+            }
             if ($session === null || $usage === null) {
                 return;
+            }
+            $step = $isStep && is_int($context->stepIndex ?? null) ? $context->stepIndex : null;
+            if ($isStep && $trace !== null) {
+                if (count(self::$stepped) >= self::STEPPED_MAX) {
+                    self::$stepped = array_slice(self::$stepped, (int) (self::STEPPED_MAX / 2), null, true);
+                }
+                self::$stepped[$trace] = true;
             }
             $provider = (string) $context->provider;
             $model = (string) $context->model;
@@ -97,7 +131,7 @@ final class UsageTelemetry
             $workspace->record($session, EventTypes::USAGE_OBSERVED, Workspace::SYSTEM, [
                 'provider' => $provider, 'model' => $model, 'inputTokens' => $input, 'outputTokens' => $output,
                 'cacheReadTokens' => is_int($cacheRead) ? $cacheRead : null, 'cacheWriteTokens' => is_int($cacheWrite) ? $cacheWrite : null,
-                'costUsd' => $cost, 'priced' => $cost !== null,
+                'costUsd' => $cost, 'priced' => $cost !== null, 'step' => $step,
             ]);
         } catch (Throwable) {
             // Observation is a courtesy. It must never fail a turn.

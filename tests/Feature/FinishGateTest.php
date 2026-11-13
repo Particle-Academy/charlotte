@@ -35,7 +35,7 @@ test('cms_finish on a bare page is refused with every gate it fails, and nothing
         ->and($result['revision'])->toBe($rev)
         ->and($result['error']['code'])->toBe('not_ready')
         ->and($result['error']['message'])->toContain('cms_finish')
-        ->and(array_values(array_unique(array_column($result['error']['defects'], 'code'))))->toEqualCanonicalizing(['meta_description', 'responsive_layout', 'hero_thin'])
+        ->and(array_values(array_unique(array_column($result['error']['defects'], 'code'))))->toEqualCanonicalizing(['meta_description', 'responsive_layout'])
         ->and($session->state()['readyRevision'])->toBeNull()
         ->and(eventsOf($session, 'draft.ready'))->toBe([]);
 });
@@ -62,7 +62,8 @@ test('a gate-free error such as a second h1 is still only reported, as before', 
         ->and($result['checks']['errors'])->toBeGreaterThan(0);
 });
 
-test('run 427, replayed: the real page is refused for its meta description, its 2+1 grids at md and its 17 px footer links, and for nothing else', function (): void {
+test('run 427, replayed with the design gates live: refused for its meta description, its 2+1 grids at md and its 17 px footer links, and for nothing else', function (): void {
+    charlotteApp(['charlotte.autonomy' => 'full', 'charlotte.finish.staged_gates' => false]);
     $fixture = json_decode((string) file_get_contents(__DIR__.'/../fixtures/lab-run-427-page.json'), true);
     preg_match_all('~https?://[a-z0-9.-]+~', $fixture['brief']['summary'], $origins); // what the lab allowlists from its brief
     app()->instance(\Charlotte\Policy\LinkPolicy::class, new \Charlotte\Policy\LinkPolicy(array_unique($origins[0])));
@@ -90,6 +91,52 @@ test('run 427, replayed: the real page is refused for its meta description, its 
     expect($defects[0]['code'])->toBe('meta_description')
         ->and($defects[0]['message'])->toContain('meta.seo.description')
         ->and($located)->toBe(['grid_orphan:proof-grid@md', 'grid_orphan:gifts-grid@md', 'tap_target:footer-link-give@base', 'tap_target:footer-link-donate@base']);
+});
+
+/**
+ * finishablePageOps() broken five ways at once: no meta description, a hero
+ * with no lead, three cards in two columns at md, a 4-item list and a 19 px link.
+ */
+function fiveFaultOps(): array
+{
+    $ops = array_values(array_filter(finishablePageOps(), fn (array $op) => $op['t'] !== 'set_meta' && ($op['node']['id'] ?? null) !== 'hero-t'));
+    $node = fn (string $id, string $type, string $parent, string $order, array $props, ?string $layout = null) => ['t' => 'insert_node',
+        'node' => ['id' => $id, 'type' => $type, 'parent' => $parent, 'order' => $order, 'props' => $props, 'style' => ['base' => []]] + ($layout === null ? [] : ['layout' => $layout])];
+
+    return [...$ops, $node('plan-c', 'card', 'plans-grid', 'a2', [], 'stack'), textOp('plan-c-t', 'plan-c', 'Write to hello@example.com', 'a0'),
+        $node('perks', 'list', 'plan-a', 'a1', ['items' => ['Receipts', 'Mileage', 'Tips', 'Payroll']]),
+        $node('plans-more', 'link', 'plans', 'a1', ['content' => 'Write to us', 'href' => 'mailto:hello@example.com'])];
+}
+
+test('staged (the default), the four design checks are reported as warnings and do not hold cms_finish back', function (): void {
+    $session = openSession();
+    $rev = rev(tool($session, 'cms_apply', ['ops' => fiveFaultOps(), 'basedOn' => $session->state()['revision']]));
+
+    $check = tool($session, 'cms_check', ['basedOn' => $rev]);
+    $refused = tool($session, 'cms_finish', ['basedOn' => $rev]);
+    $staged = array_values(array_filter($check['defects'], fn ($d) => in_array($d['code'], \Charlotte\Checks\Checks::STAGED_GATES, true)));
+
+    expect(array_column($refused['error']['defects'], 'code'))->toBe(['meta_description'])
+        ->and(array_values(array_unique(array_column($staged, 'code'))))->toEqualCanonicalizing(['grid_orphan', 'hero_thin', 'tap_target', 'bare_list'])
+        ->and(array_values(array_unique(array_column($staged, 'severity'))))->toBe(['warning'])
+        ->and(array_values(array_unique(array_column($staged, 'staged'))))->toBe([true])
+        ->and($staged[0])->toHaveKeys(['node', 'rule']);
+});
+
+test('with staging off, ONE not_ready lists every blocking defect at once, never one gate per refusal', function (): void {
+    charlotteApp(['charlotte.autonomy' => 'full', 'charlotte.finish.staged_gates' => false]);
+    $session = openSession();
+    $rev = rev(tool($session, 'cms_apply', ['ops' => fiveFaultOps(), 'basedOn' => $session->state()['revision']]));
+
+    $first = tool($session, 'cms_finish', ['basedOn' => $rev]);
+    $second = tool($session, 'cms_finish', ['basedOn' => $rev]);
+
+    expect($first['error']['code'])->toBe('not_ready')
+        ->and(array_values(array_unique(array_column($first['error']['defects'], 'code'))))
+        ->toEqualCanonicalizing(['meta_description', 'hero_thin', 'grid_orphan', 'tap_target', 'bare_list'])
+        // Refusing again on the same revision repeats the whole list; nothing was held back for a later refusal.
+        ->and($second['error']['defects'])->toBe($first['error']['defects'])
+        ->and(array_unique(array_column($first['error']['defects'], 'severity')))->toBe(['error']);
 });
 
 test('a required image is a gate: refused until the page places it', function (): void {
@@ -186,7 +233,8 @@ test('the starter section stays small: it rides in every prompt', function (): v
     expect(strlen(Starter::promptSection()))->toBeLessThan(7000);
 });
 
-test('the starter skeleton applies cleanly, and with copy in it the page clears every gate', function (): void {
+test('the starter skeleton applies cleanly, and with copy in it the page clears every gate, the design gates live', function (): void {
+    charlotteApp(['charlotte.autonomy' => 'full', 'charlotte.finish.staged_gates' => false]);
     $session = openSession();
     $ops = [...Starter::skeleton('header'), ...Starter::skeleton('page'), ...Starter::skeleton('footer'),
         ['t' => 'set_meta', 'patch' => ['title' => 'Acme Ledger', 'seo' => ['description' => 'Bookkeeping for food trucks.']]]];
@@ -219,22 +267,24 @@ test('the starter skeleton applies cleanly, and with copy in it the page clears 
         ->and(tool($session, 'cms_finish', ['basedOn' => rev($applied)])['ready'] ?? null)->toBeTrue();
 });
 
-test('the guide\'s worked design example applies cleanly on the starter: fancy-cms and every Charlotte write policy accept it', function (): void {
-    $example = guideDesignExample();
-    expect($example)->toHaveCount(4);
+test('each of the guide\'s worked design examples applies cleanly on the starter: fancy-cms and every Charlotte write policy accept it', function (string $label, string $tint, string $node): void {
+    $example = guideDesignExamples()[$label] ?? [];
     $session = openSession();
     $ops = [...Starter::skeleton('header'), ...Starter::skeleton('page'), ...Starter::skeleton('footer'),
         ['t' => 'insert_node', 'node' => ['id' => 'title', 'type' => 'heading', 'parent' => 'hero-copy', 'order' => 'a0', 'props' => ['content' => 'Acme Ledger', 'level' => 1], 'style' => Starter::TYPE_SCALE['display']]],
-        ['t' => 'insert_node', 'node' => ['id' => 'hours-rows', 'type' => 'stack', 'layout' => 'stack', 'parent' => 'features-inner', 'order' => 'a2', 'props' => [], 'style' => ['base' => []]]],
         ...$example];
 
     $applied = tool($session, 'cms_apply', ['ops' => $ops, 'basedOn' => $session->state()['revision']]);
     $css = CssEmitter::emit(json_decode(json_encode($session->state()['doc']), true));
 
-    expect($applied['isError'] ?? false)->toBeFalse()
-        ->and($css)->toContain('--cms-color-tint: #fdf1e7')
-        ->and($css)->toMatch('/\[data-cms="hero-stamp"\] \{[^}]*display: flex;/s');
-});
+    expect($example)->not->toBe([])
+        ->and($applied['isError'] ?? false)->toBeFalse()
+        ->and($css)->toContain('--cms-color-tint: '.$tint)
+        ->and($css)->toMatch('/\[data-cms="'.$node.'"\] \{[^}]*display: (flex|grid);/s');
+})->with([
+    'warm local shop' => ['Warm local shop', '#fdf1e7', 'hero-stamp'],
+    'clean B2B product' => ['Clean B2B product', '#eef4ff', 'hero-panel'],
+]);
 
 test('fancy-cms renders the starter as real flex and grid layouts that change at md and lg', function (): void {
     $session = openSession();

@@ -236,3 +236,19 @@ test('the four design checks are finish gates with a stated rule, and every defe
     }
     expect(Checks::REGION_SKIP)->toContain('hero_thin', 'hero_visual');
 });
+
+test('staged, the same four checks report as warnings marked staged, and none of them holds cms_finish back', function (): void {
+    $doc = ddoc([...dhero([dnode('hours', 'list', 'hero', 'a1', ['items' => ['a', 'b', 'c', 'd']]), dnode('l', 'link', 'hero', 'a2', ['content' => 'Call'])]),
+        ...dgrid(3, ['base' => ['columns' => 1], 'md' => ['columns' => 2]])]);
+
+    $live = DesignChecks::check($doc);
+    $staged = DesignChecks::check($doc, staged: true);
+
+    expect(array_column($staged, 'code'))->toBe(array_column($live, 'code'))
+        ->and(array_unique(array_column(array_filter($live, fn ($d) => in_array($d['code'], Checks::STAGED_GATES, true)), 'severity')))->toBe(['error'])
+        ->and(array_values(array_unique(array_column(array_filter($staged, fn ($d) => in_array($d['code'], Checks::STAGED_GATES, true)), 'severity'))))->toBe(['warning'])
+        ->and(array_values(array_filter(array_column($staged, 'staged'))))->toHaveCount(count(array_filter($staged, fn ($d) => in_array($d['code'], Checks::STAGED_GATES, true))))
+        ->and(Checks::gates($staged))->toBe([])
+        ->and(array_values(array_unique(array_column(Checks::gates($live), 'code'))))->toEqualCanonicalizing(['hero_thin', 'bare_list', 'tap_target', 'grid_orphan'])
+        ->and(Checks::STAGED_GATES)->toBe(['grid_orphan', 'hero_thin', 'tap_target', 'bare_list']);
+});

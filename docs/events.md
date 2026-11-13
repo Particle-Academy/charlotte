@@ -59,7 +59,7 @@ can test its reducer against.
 | `checks.result` | system | `revision`, `summary {errors, warnings, info}`, `defects[]`, `facts {outline, images, links}` |
 | `draft.ready` | agent | `revision`, `staged` (true when the revision is a pending change set) |
 | `draft.published` | human | `revision` |
-| `usage.observed` | system | `provider`, `model`, `inputTokens`, `outputTokens`, `cacheReadTokens` and `cacheWriteTokens` (prompt-cache tokens; null when the provider does not report them), `costUsd` (null when unpriced), `priced`. Only when the dev enabled telemetry |
+| `usage.observed` | system | `provider`, `model`, `inputTokens`, `outputTokens`, `cacheReadTokens` and `cacheWriteTokens` (prompt-cache tokens; null when the provider does not report them), `costUsd` (null when unpriced), `priced`, `step` (the provider call's index in its generation: one event per call; null when the generation reported no calls and is recorded whole). Only when the dev enabled telemetry |
 | `run.finished` | system | `runId`, `finishReason` |
 | `run.failed` | system | `runId` (may be null), `code`. Never a provider message |
 | `error` | system | `code`, `message` (a fixed, safe sentence). Reserved: 0.1 does not emit it yet, but clients should render it |

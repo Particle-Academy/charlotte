@@ -41,6 +41,12 @@ final class Checks
     public const FINISH_GATES = ['layout_missing', 'link_spacing', 'responsive_layout', 'required_image_missing', 'meta_description', 'unsupported_claim',
         'grid_orphan', 'hero_thin', 'tap_target', 'bare_list'];
 
+    /**
+     * The design gates (runs 504-512) that `charlotte.finish.staged_gates`
+     * (default on) reports as warnings instead of blocking on.
+     */
+    public const STAGED_GATES = ['grid_orphan', 'hero_thin', 'tap_target', 'bare_list'];
+
     /** The rule each gate holds a page to, as every gate defect states it. */
     public const RULES = [
         'layout_missing' => 'Every stack and grid has a layout ("stack", "grid" or "free"); fancy-cms renders a container without one as a plain block.',
@@ -89,13 +95,14 @@ final class Checks
      * @param  list<string>  $skip  defect codes the caller judges elsewhere
      * @param  string|null  $unavailable  why no report could be obtained, when the caller tried
      * @param  list<array{handle: string}>  $assets  the host AssetCatalogue's catalogue(), for the required-image check
+     * @param  bool  $stagedGates  report Checks::STAGED_GATES as warnings (config charlotte.finish.staged_gates)
      * @return array{revision: string, summary: array{errors: int, warnings: int, info: int}, defects: list<array>, facts: array, contrast: array}
      */
     public static function run(array $doc, string $revision, Brief $brief, LinkPolicy $links, ?RenderedEvidence $rendered = null,
-        array $alsoAccept = [], array $skip = [], ?string $unavailable = null, ?DataCatalogue $data = null, array $assets = []): array
+        array $alsoAccept = [], array $skip = [], ?string $unavailable = null, ?DataCatalogue $data = null, array $assets = [], bool $stagedGates = false): array
     {
         $facts = PageChecks::facts($doc);
-        $defects = [...PageChecks::check($doc), ...FactChecks::check($doc, $brief), ...QualityChecks::check($doc, $brief, $assets), ...DesignChecks::check($doc)];
+        $defects = [...PageChecks::check($doc), ...FactChecks::check($doc, $brief), ...QualityChecks::check($doc, $brief, $assets), ...DesignChecks::check($doc, $stagedGates)];
         if ($data !== null) {
             foreach (Bindings::validate($doc, $data) as $error) {
                 $defects[] = ['code' => 'invalid_binding', 'severity' => 'error', 'path' => $error['path'], 'expected' => $error['expected'], 'got' => $error['got'],

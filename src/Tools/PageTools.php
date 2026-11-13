@@ -162,8 +162,8 @@ final class PageTools
                 ->withStringParameter('basedOn', $site ? 'The exact revision of the selected page or region.' : 'The exact revision you want checked.')
                 ->using($this->handler('cms_check')),
             (new Tool)->as('cms_finish')->for($site
-                ? 'Mark the whole site ready for the person\'s review at the observed SITE revision (from site_get). It checks every page and region, and refuses (not_ready, with the defects) while any layout, link spacing, responsive, grid orphan, thin hero, tap target, bare list, required image, meta description or unsupported claim error remains. It does not publish.'
-                : 'Mark the page ready for the person\'s review at the observed revision. It runs the checks, and refuses (not_ready, with the defects) while any layout, link spacing, responsive, grid orphan, thin hero, tap target, bare list, required image, meta description or unsupported claim error remains. It does not publish.')
+                ? 'Mark the whole site ready for the person\'s review at the observed SITE revision (from site_get). It checks every page and region, and refuses (not_ready, with the defects) while any layout, link spacing, responsive, required image, meta description or unsupported claim error remains (grid orphan, thin hero, tap target and bare list too, unless the host stages them as warnings). It does not publish.'
+                : 'Mark the page ready for the person\'s review at the observed revision. It runs the checks, and refuses (not_ready, with the defects) while any layout, link spacing, responsive, required image, meta description or unsupported claim error remains (grid orphan, thin hero, tap target and bare list too, unless the host stages them as warnings). It does not publish.')
                 ->withStringParameter('basedOn', $site ? 'The site revision from site_get.' : 'The exact revision you inspected before finishing.')
                 ->using($this->handler('cms_finish')),
         ];

@@ -93,6 +93,7 @@ final class CharlotteServiceProvider extends ServiceProvider
             $app->make(ProposalStore::class), $app->make(EventLog::class), $app->make(AssetCatalogue::class), $app->make(LinkPolicy::class),
             $app->make(IslandCatalogue::class), $app->make(RenderedEvidenceSource::class), $app->make(DataCatalogue::class),
             max(1, (int) $app['config']->get('charlotte.finish.max_not_ready', 3)),
+            (bool) $app['config']->get('charlotte.finish.staged_gates', true),
         ));
         $this->app->bind(SiteWorkspace::class, fn (Application $app) => new SiteWorkspace(
             $app['db']->connection(), $app->make(Workspace::class), $app->make(SessionStore::class), $app->make(SiteRepository::class),
@@ -193,13 +194,17 @@ final class CharlotteServiceProvider extends ServiceProvider
         // handle(), only once the flags and the session key say the generation
         // is Charlotte's. A host-scoped dependency that throws outside a
         // builder turn must not reach an unrelated agent role.
+        // Each provider call (StepCompleted) is observed on its own, so input
+        // tokens and cost are per call, not per multi-call generation.
         if (class_exists(UsageTelemetry::PRISM_EVENT)) {
-            $this->app['events']->listen(UsageTelemetry::PRISM_EVENT, function (object $event): void {
+            $listener = function (object $event): void {
                 (new UsageTelemetry(
                     fn (): Workspace => $this->app->make(Workspace::class),
                     (array) $this->app['config']->get('charlotte.telemetry.prices', []),
                 ))->handle($event);
-            });
+            };
+            $events = class_exists(UsageTelemetry::PRISM_STEP_EVENT) ? [UsageTelemetry::PRISM_STEP_EVENT, UsageTelemetry::PRISM_EVENT] : [UsageTelemetry::PRISM_EVENT];
+            $this->app['events']->listen($events, $listener);
         }
     }
 }

@@ -140,17 +140,22 @@ function sectionOps(string $id = 'hero', string $order = 'a0', string $heading =
 }
 
 /**
- * The ops in the guide's worked design example. Line endings are normalised
- * first: a Windows checkout has the guide with CRLF.
+ * The guide's worked design examples, label => ops, from each
+ * `**<label>:**` paragraph followed by a json block. Line endings are
+ * normalised first: a Windows checkout has the guide with CRLF.
+ *
+ * @return array<string, list<array>>
  */
-function guideDesignExample(): ?array
+function guideDesignExamples(): array
 {
     $text = str_replace("\r\n", "\n", \Charlotte\Guide\PublishedGuide::charlotteGuide());
-    if (preg_match('/For a warm, hand-made bakery:\s*```json\n(.*?)\n```/s', $text, $m) !== 1) {
-        return null;
+    preg_match_all('/\*\*(Warm local shop|Clean B2B product):\*\*[^`]*```json\n(.*?)\n```/s', $text, $m, PREG_SET_ORDER);
+    $out = [];
+    foreach ($m as [, $label, $json]) {
+        $out[$label] = json_decode('['.preg_replace('/\}\n\{"t"/', '},{"t"', str_replace("\n ", '', $json)).']', true, 64, JSON_THROW_ON_ERROR);
     }
 
-    return json_decode('['.preg_replace('/\}\n\{"t"/', '},{"t"', str_replace("\n ", '', $m[1])).']', true, 64, JSON_THROW_ON_ERROR);
+    return $out;
 }
 
 /** One text node under a parent. */

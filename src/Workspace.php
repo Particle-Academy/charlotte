@@ -66,6 +66,7 @@ final class Workspace
         private readonly RenderedEvidenceSource $rendered,
         private readonly ?DataCatalogue $data = null,
         private readonly int $maxNotReady = 3,
+        private readonly bool $stagedGates = true,
     ) {}
 
     /** The host's data streams; empty when the host binds none. */
@@ -191,7 +192,7 @@ final class Workspace
         }
         [$rendered, $unavailable] = $this->rendered($session);
 
-        return Checks::run($view['doc'], $view['revision'], $session->brief, $this->links, $rendered, $alsoAccept, $skip, $unavailable, $this->data(), $this->assets->catalogue());
+        return Checks::run($view['doc'], $view['revision'], $session->brief, $this->links, $rendered, $alsoAccept, $skip, $unavailable, $this->data(), $this->assets->catalogue(), $this->stagedGates);
     }
 
     /**

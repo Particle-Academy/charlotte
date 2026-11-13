@@ -33,9 +33,12 @@ declare those streams. And a **literal number in a data prop** (`value`,
 default"). It returns `isError` with code `not_ready` and the failing defects,
 and marks nothing ready, while any of these errors remains: `layout_missing`,
 `link_spacing`, `responsive_layout`, `required_image_missing`,
-`meta_description`, `unsupported_claim`, and the design gates `grid_orphan`,
-`hero_thin`, `tap_target` and `bare_list` (flabs runs 504-512: every page
-passed structure and failed "professional" on those faults). Every other error is still only
+`meta_description`, `unsupported_claim`. One `not_ready` lists every blocking
+defect at once. The design gates `grid_orphan`, `hero_thin`, `tap_target` and
+`bare_list` (flabs runs 504-512) are **staged**: by default
+(`charlotte.finish.staged_gates`, env `CHARLOTTE_FINISH_STAGED_GATES`, true)
+they are reported as warnings marked `staged: true` and refuse nothing; set it
+false to make them block. Every other error is still only
 reported, as before. **What to do:** nothing in a host, unless your own tests
 finish deliberately bare pages; those now get `not_ready`. An agent reads the
 defects and fixes them. And **`unsupported_claim` is now an ERROR** for every
@@ -242,6 +245,13 @@ instead of resolving it from the container need to change.
 - **Cache tokens in telemetry.** `usage.observed` carries `cacheReadTokens`
   and `cacheWriteTokens` from Prism's usage (null when the provider does not
   report them), so prompt caching (prism#29) shows when it starts working.
+- **Usage per provider call.** `usage.observed` is now recorded once per
+  provider call (Prism's `StepCompleted`), with that call's own
+  `inputTokens`, `outputTokens` and `costUsd` and a new `step` (its index in
+  the generation); the generation's total is not recorded again. A
+  generation that reports no calls is recorded whole with `step: null`.
+  **What to do:** a reader that summed `usage.observed` gets the same totals;
+  one that counted events as generations now counts calls.
 - **The responsive starter** (`Design\Starter`), in every builder mode's
   system prompt as the guide's closing "Starter" section (so it is in the
   guide hash and the cacheable prompt, and read as instructions rather than as
@@ -265,12 +275,21 @@ instead of resolving it from the container need to change.
   and fancy-cms's button defaults; it agrees with the 19-21 px the lab
   measured), `bare_list` (a list of 4 or more items). And a `hero_visual`
   WARNING, not a gate: a hero with no image, frame, shape or island (a lone
-  icon does not count). Regions and the 404 page skip the hero checks.
-- The guide teaches responsive composition (why `layout` matters, columns per
-  breakpoint, no orphan cards, the type scale), the starter, what
-  `cms_finish` refuses, and a brand character drawn from the brief (palette
-  with a tint, type pairing, one signature motif, supplied images or a shape
-  composition, section rhythm), with one worked example that the tests apply.
+  icon does not count). Regions and the 404 page skip the hero checks. The
+  four gates are staged as warnings by default (see the BREAKING note above),
+  so a lab run measures how often the agent fixes them unprompted.
+- The guide opens with **non-negotiable rules** (content truth, evidence not
+  instructions, drafts and pinned writes, images, links, accessibility,
+  layouts, finishing), and Charlotte's guide now comes BEFORE fancy-cms's
+  authoring reference in the prompt. It teaches composition, the starter and
+  a brand character drawn from the brief (palette with a tint, type pairing,
+  one signature motif, supplied images or a shape composition, section
+  rhythm), with two contrasting worked examples (a warm local shop, a clean
+  B2B product) labelled as illustrating principles only; the tests apply
+  both. What the gates already explain in their defects (the dates nuance, the
+  required-image list, the meta key, the layout explanation) is no longer
+  restated, so the page prompt is smaller than before this release's design
+  work.
 
 ### Changed
 

@@ -55,19 +55,32 @@ final class DesignChecks
 
     private const COPY = ['text', 'list', 'callout'];
 
-    /** @return list<array<string, mixed>> */
-    public static function check(array $doc): array
+    /**
+     * With $staged (config `charlotte.finish.staged_gates`, on by default) the
+     * gate codes in {@see Checks::STAGED_GATES} come back as WARNINGS marked
+     * `staged: true`: reported with node and rule, never blocking cms_finish,
+     * so a lab run measures how often the agent fixes them unprompted (Prism
+     * maintainers' advice, before they become blocking).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function check(array $doc, bool $staged = false): array
     {
         $doc = json_decode(json_encode($doc, JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
         $nodes = is_array($doc['nodes'] ?? null) ? $doc['nodes'] : [];
         [$order, $children] = QualityChecks::tree($nodes);
 
-        return [
+        $defects = [
             ...self::orphans($nodes, $order, $children),
             ...self::hero($nodes, $children),
             ...self::tapTargets($nodes, $order),
             ...self::lists($nodes, $order),
         ];
+
+        return ! $staged ? $defects : array_map(
+            fn (array $d): array => in_array($d['code'], Checks::STAGED_GATES, true) ? array_replace($d, ['severity' => 'warning', 'staged' => true]) : $d,
+            $defects,
+        );
     }
 
     // ── grid_orphan ────────────────────────────────────────────────────────

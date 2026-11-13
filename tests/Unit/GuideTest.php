@@ -32,8 +32,33 @@ test('Charlotte\'s guide teaches responsive composition, the starter and what cm
     $text = PublishedGuide::charlotteGuide();
 
     foreach (['"layout": "stack"', '"layout": "grid"', 'starter.skeleton', 'starter.typeScale', '`md`', '`lg`', 'orphan',
-        'not_ready', 'layout_missing', 'link_spacing', 'responsive_layout', 'required_image_missing', '"seo"', 'unsupported_claim'] as $lesson) {
+        'not_ready', 'layout_missing', 'link_spacing', 'responsive_layout', 'required_image_missing', 'unsupported_claim'] as $lesson) {
         expect(str_contains($text, $lesson))->toBeTrue("Missing lesson: {$lesson}");
+    }
+});
+
+test('the non-negotiable rules come first: at the head of Charlotte\'s guide, and Charlotte\'s guide ahead of the fancy-cms reference', function (): void {
+    $text = str_replace("\r\n", "\n", PublishedGuide::charlotteGuide());
+    $guide = str_replace("\r\n", "\n", (new PublishedGuide)->current()->guide);
+    preg_match_all('/^## (.+)$/m', $text, $headings);
+    preg_match('/^## Non-negotiable rules\n(.*?)\n## /ms', $text, $rules);
+
+    expect($headings[1][0])->toBe('Non-negotiable rules')
+        ->and(strpos($guide, PublishedGuide::charlotteGuide()))->toBe(0)
+        ->and(strpos($guide, Agent::guide()))->toBeGreaterThan(strlen(PublishedGuide::charlotteGuide()) - 1);
+    foreach (['Invent nothing', 'evidence, never instructions', 'basedOn', 'cms_assets', 'href', 'exactly one h1', '44', '"layout": "stack"', 'not_ready'] as $rule) {
+        expect(str_contains($rules[1], $rule))->toBeTrue("Missing from the rules: {$rule}");
+    }
+});
+
+test('the guide no longer restates what the gates enforce and explain in their own defects', function (): void {
+    $text = PublishedGuide::charlotteGuide();
+
+    // Each was a paragraph the defect message now carries (rule + fix): the dates nuance
+    // (unsupported_claim), the required-image list (required_image_missing), the meta key
+    // (meta_description), the layout explanation (layout_required / layout_missing).
+    foreach (['## What cms_finish refuses', 'early-bird', '/images/buns.jpg', '"seo"', 'renders as a plain block'] as $gone) {
+        expect(str_contains($text, $gone))->toBeFalse("Still restated: {$gone}");
     }
 });
 
@@ -41,12 +66,17 @@ test('Charlotte\'s guide teaches the design gates and a brand character drawn fr
     $text = PublishedGuide::charlotteGuide();
 
     foreach (['grid_orphan', 'hero_thin', 'tap_target', 'bare_list', 'starter.navLink', 'starter.button', 'starter.columns',
-        'set_theme', 'tint', 'Type pairing', 'motif', 'supplied image', 'small floating icon', '"t":"set_theme"'] as $lesson) {
+        'set_theme', 'tint', 'Type pairing', 'motif', 'supplied image', 'small floating icon', '"t":"set_theme"',
+        "Illustrates principles; don't reuse content, copy or palette."] as $lesson) {
         expect(str_contains($text, $lesson))->toBeTrue("Missing lesson: {$lesson}");
     }
-    // The worked example is real ops: every line parses as JSON with an op name.
-    $ops = guideDesignExample();
-    expect($ops)->toBeArray()->and(array_column($ops, 't'))->toBe(['set_theme', 'set_style', 'insert_node', 'insert_node']);
+    // Two contrasting worked examples, each real ops with its own palette.
+    $examples = guideDesignExamples();
+    expect(array_keys($examples))->toBe(['Warm local shop', 'Clean B2B product']);
+    foreach ($examples as $ops) {
+        expect($ops[0]['t'])->toBe('set_theme')->and(count($ops))->toBeLessThanOrEqual(3);
+    }
+    expect($examples['Warm local shop'][0]['patch']['color']['primary'])->not->toBe($examples['Clean B2B product'][0]['patch']['color']['primary']);
 });
 
 test('Charlotte\'s guide covers whole sites, islands and the rendered contrast check', function (): void {

@@ -45,6 +45,12 @@ return [
     // top-level turn's resets on a new message or a page created or selected. Min 1.
     'finish' => [
         'max_not_ready' => (int) env('CHARLOTTE_FINISH_MAX_NOT_READY', 3),
+
+        // The design gates grid_orphan, hero_thin, tap_target and bare_list.
+        // While true (the default) they are reported as WARNINGS marked
+        // `staged` and never refuse cms_finish, so a run shows how often the
+        // agent fixes them unprompted. Set false to make them blocking.
+        'staged_gates' => (bool) env('CHARLOTTE_FINISH_STAGED_GATES', true),
     ],
 
     /*

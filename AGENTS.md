@@ -72,7 +72,10 @@ read config through the container.
   `Checks::locate()` gives every gate defect a `node` (else `page:<doc id>`)
   and `rule` (`Checks::RULES`).
   `Checks\DesignChecks` adds `grid_orphan`, `hero_thin`, `tap_target` and
-  `bare_list` (gates) and `hero_visual` (warning), from runs 504-512. It
+  `bare_list` (gates) and `hero_visual` (warning), from runs 504-512. The
+  four gates are `Checks::STAGED_GATES`: while `charlotte.finish.staged_gates`
+  is true (default) `Workspace` passes `stagedGates` to `Checks::run` and they
+  come back as warnings with `staged: true`, refusing nothing. It
   reuses QualityChecks' public walking/style helpers (`tree`, `subtree`,
   `effective`, `length`, `width`, `isChrome`). `tap_target` models fancy-cms's
   BASE_CSS (button: 10 px padding, line-height 1.2, 1 px border; link:
@@ -100,8 +103,11 @@ read config through the container.
   CssEmitter renders it as flex and grid, and caps the section under 7000 bytes.
   The features grid ships at 3 columns from md, for 3 cards (`Starter::COLUMNS`
   gives other counts); 2 at md was the 2+1 orphan of runs 504-512. The guide's
-  worked design example is applied on the skeleton by a test
-  (`guideDesignExample()` in tests/Pest.php), so it must stay valid ops.
+  two worked design examples are applied on the skeleton by a test
+  (`guideDesignExamples()` in tests/Pest.php), so they must stay valid ops.
+  `PublishedGuide` puts `charlotte.md` FIRST (it opens with the
+  non-negotiable rules), then fancy-cms's `Agent::guide()`, then the starter;
+  `GuideTest` holds that order and that the rules section is first.
 - `Checks\SiteChecks`: broken links, anchors, orphans, unrouted pages, home,
   404, nav consistency, region h1/anchors, duplicate titles, and
   `missing_required_fact` across the whole site.
@@ -199,7 +205,10 @@ read config through the container.
   Prism telemetry, swallows its own failures, and nothing reads
   `usage.observed`. Never make a turn depend on it. Prism fires its event for
   EVERY generation in the host: check the flags and the session key before
-  resolving anything from the container (`TelemetryLazyTest`).
+  resolving anything from the container (`TelemetryLazyTest`). It listens to
+  `StepCompleted` (one `usage.observed` per provider call, with `step`) and
+  `GenerationCompleted` (recorded only when no step of that trace was, so
+  totals are never counted twice).
 - **Billing is optional.** Nothing may require a `TurnContextFactory`; with
   none bound a page or site turn passes `context: null` and runs on harness
   config. (The 0.4 site-only cost-cap guard came out with prism-harness 0.23.2.)

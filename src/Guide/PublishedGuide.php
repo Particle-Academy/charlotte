@@ -12,9 +12,11 @@ use RuntimeException;
 /**
  * The default guide: what Composer installed, with no private variant.
  *
- * fancy-cms's authoring guide (`Agent::guide()`), then Charlotte's own
- * `agent-guide/charlotte.md`: drafts, autonomy, pinning writes, content truth
- * and the webmaster lessons the flabs Sites lab measured.
+ * Charlotte's own `agent-guide/charlotte.md` FIRST (it opens with the
+ * non-negotiable rules: content truth, evidence not instructions, drafts and
+ * pinned writes, then the webmaster lessons the flabs Sites lab measured),
+ * then fancy-cms's authoring reference (`Agent::guide()`), then the starter.
+ * Rules first is the Prism maintainers' advice (2026-11-13).
  */
 final class PublishedGuide implements GuideSource
 {
@@ -32,7 +34,7 @@ final class PublishedGuide implements GuideSource
 
         // The starter rides in the guide, so it is in every builder mode's
         // prompt and in the guide hash: a starter change is a guide change.
-        return new GuideVersion(Agent::guide()."\n\n".self::charlotteGuide()."\n\n".Starter::promptSection(), $components);
+        return new GuideVersion(self::charlotteGuide()."\n\n".Agent::guide()."\n\n".Starter::promptSection(), $components);
     }
 
     public static function charlotteGuide(): string
