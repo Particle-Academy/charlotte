@@ -64,6 +64,8 @@ can test its reducer against.
 | `run.failed` | system | `runId` (may be null), `code`. Never a provider message |
 | `error` | system | `code`, `message` (a fixed, safe sentence). Reserved: 0.1 does not emit it yet, but clients should render it |
 | `site.changed` | agent | Site sessions only. `site`, `version` (the structure version after), `change`: `page_created` (with `kind`, `route`), `page_routed` (with `route`) or `page_selected`; `page` (the page id, or `@header` / `@footer`) |
+| `critique.result` | system | Page sessions with a renderer only (`Charlotte::screenshotsUsing()`; see "Render, critique, revise" in the README). `outcome`: `completed`, `render_failed`, `exhausted`, `cancelled`, `denied`, `failed` or `invalid_output`; `revision`: `running` (a revision run starts next), `not_needed` (a pass, or no item named a node on the page) or `skipped` (no usable critique); `revisionOf` (the ready revision that was rendered), `provider`, `model`, `widths`, `verdict` (`revise`, `pass` or null), `scores` (`visual_design`, `responsive`, or null), `items` (`node`, `viewport`, `criterion`, `issue`, `fix`), `dropped` (items that named no node on the page, or past the cap), `costUsd` (the critic's spend on the turn's ledger), `steps`, `criticRunId` |
+| `critique.revised` | system | After the revision run a critique started. `revisions` (how many have run this turn), `ready` (the page was finished again at the revision it is now at), `revision` |
 
 **Site sessions** add `page` (the document key, `<site>/<id>`) to `doc.changed`,
 `proposal.created`, `proposal.updated` and `proposal.resolved`, because one

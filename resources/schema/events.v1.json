@@ -25,6 +25,7 @@
         "draft.ready", "draft.published",
         "usage.observed",
         "site.changed",
+        "critique.result", "critique.revised",
         "error"
       ]
     },

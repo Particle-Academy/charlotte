@@ -7,6 +7,9 @@ namespace Charlotte;
 use Charlotte\Brief\Brief;
 use Charlotte\Checks\CallbackRenderedEvidenceSource;
 use Charlotte\Checks\RenderedEvidenceSource;
+use Charlotte\Critique\CallbackPageRenderer;
+use Charlotte\Critique\PageRenderer;
+use Charlotte\Critique\Screenshot;
 use Charlotte\Site\Site;
 use Charlotte\Data\Bindings;
 use Charlotte\Guide\BuilderMode;
@@ -158,6 +161,26 @@ final class Charlotte
     public function renderedUsing(Closure $source): void
     {
         $this->container->instance(RenderedEvidenceSource::class, new CallbackRenderedEvidenceSource($source));
+    }
+
+    /**
+     * OPTIONAL: how the host renders a page draft, which turns on the render,
+     * critique, revise loop. Once a page's cms_finish passes its gates, the
+     * ready revision is captured at `charlotte.critique.widths` (375, 768,
+     * 1280), a design critic sub-agent critiques visual design and responsive
+     * layout from the captures, and the builder applies its items once and
+     * finishes again. Return one {@see Screenshot} per width. Without a
+     * renderer the loop is off and a turn is unchanged. Same as binding a
+     * {@see PageRenderer}.
+     *
+     *     Charlotte::screenshotsUsing(fn (SessionRecord $s, string $page, string $revision, array $widths): array =>
+     *         array_map(fn (int $w) => Screenshot::png($w, $browser->png($urlFor($page, $revision), $w)), $widths));
+     *
+     * @param  Closure(SessionRecord, string, string, list<int>): list<Screenshot>  $renderer
+     */
+    public function screenshotsUsing(Closure $renderer): void
+    {
+        $this->container->instance(PageRenderer::class, new CallbackPageRenderer($renderer));
     }
 
     /**

@@ -52,6 +52,12 @@ final class EventTypes
     /** A site session's structure changed: a page created, routed or selected (0.4). */
     public const SITE_CHANGED = 'site.changed';
 
+    /** The design critic's verdict on a ready page: outcome, items, cost, and whether a revision runs (0.5). */
+    public const CRITIQUE_RESULT = 'critique.result';
+
+    /** The revision run a critique started has ended: whether the page was finished again (0.5). */
+    public const CRITIQUE_REVISED = 'critique.revised';
+
     public const ALL = [
         self::SESSION_STATUS, self::RUN_STARTED, self::RUN_FINISHED, self::RUN_FAILED,
         self::MESSAGE_CREATED, self::MESSAGE_DELTA, self::MESSAGE_COMPLETED,
@@ -59,6 +65,7 @@ final class EventTypes
         self::PROPOSAL_CREATED, self::PROPOSAL_UPDATED, self::PROPOSAL_RESOLVED,
         self::CHECKS_RESULT, self::DRAFT_READY, self::DRAFT_PUBLISHED,
         self::USAGE_OBSERVED, self::ERROR, self::SITE_CHANGED,
+        self::CRITIQUE_RESULT, self::CRITIQUE_REVISED,
     ];
 
     public const ACTOR_KINDS = ['agent', 'human', 'system'];

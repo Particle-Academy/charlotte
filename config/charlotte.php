@@ -76,6 +76,37 @@ return [
         'max_steps' => env('CHARLOTTE_SITE_MAX_STEPS') === null ? null : (int) env('CHARLOTTE_SITE_MAX_STEPS'),
     ],
 
+    /*
+    | Render, critique, revise (page sessions). Needs a renderer from the
+    | host (Charlotte::screenshotsUsing()); without one none of this runs.
+    | Once cms_finish passes its gates, the ready revision is captured at
+    | `widths`, a design critic sub-agent (mode charlotte_critic, its own
+    | prompt, no tools) critiques visual design and responsive layout from
+    | the captures, and the builder applies its items and calls cms_finish
+    | again, at most `max_revisions` times per turn.
+    |
+    | enabled: null = on whenever a renderer is supplied; false = off.
+    | provider/model: the critic's. Unset: the session's provider, and
+    | `default_models[provider]` (a cheaper vision-capable model), else the
+    | builder's own model.
+    | max_steps / max_cost_usd / max_output_tokens: the critic's OWN budget.
+    | It nests in the turn's run tree: it gets the smaller of these and what
+    | the tree has left, and its spend counts against the turn's caps.
+    | max_items: critique items kept (the rest are counted as `dropped`).
+    */
+    'critique' => [
+        'enabled' => env('CHARLOTTE_CRITIQUE') === null ? null : (bool) env('CHARLOTTE_CRITIQUE'),
+        'provider' => env('CHARLOTTE_CRITIC_PROVIDER'),
+        'model' => env('CHARLOTTE_CRITIC_MODEL'),
+        'default_models' => ['anthropic' => 'claude-haiku-5-5'],
+        'max_revisions' => (int) env('CHARLOTTE_CRITIQUE_MAX_REVISIONS', 1),
+        'max_steps' => 1,
+        'max_cost_usd' => (float) env('CHARLOTTE_CRITIQUE_MAX_COST_USD', 0.05),
+        'max_output_tokens' => 2048,
+        'max_items' => 8,
+        'widths' => [375, 768, 1280],
+    ],
+
     // External origins an AGENT may link to. Relative paths, anchors,
     // mailto: and tel: are always allowed. e.g. ['https://example.com']
     'links' => [

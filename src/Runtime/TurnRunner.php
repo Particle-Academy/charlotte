@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Charlotte\Runtime;
 
+use Charlotte\Critique\DesignLoop;
 use Charlotte\Design\Examples;
 use Charlotte\Events\EventTypes;
 use Charlotte\Guide\BuilderMode;
@@ -44,6 +45,9 @@ final class TurnRunner
         private readonly int $maxContinuations = 3,
         private readonly ?SiteWorkspace $sites = null,
         private readonly ?PageSubagents $subagents = null,
+        private readonly ?DesignLoop $loop = null,
+        /** prism-harness.agent, for the root a critique turn opens when the host gave none. */
+        private readonly array $agentConfig = [],
     ) {}
 
     /** The page (or, for a site session, the whole site) was marked ready at the revision it is at now. */
@@ -104,6 +108,14 @@ final class TurnRunner
             // uncapped streams, run on this same context, so a child's steps
             // and spend count against the one tree (G-261, G-262).
             $context = $this->contexts->forTurn(new Turn($session, $harness, $text));
+            // With the critique loop on and no host context, Charlotte opens
+            // the turn's tree itself, so the critic nests in the builder's
+            // ledger. With no renderer this never runs: context stays null.
+            if ($context === null && $this->loop !== null && $this->loop->active($session)) {
+                $context = $this->loop->rootFor($session, $harness, $mode->maxSteps, $this->agentConfig);
+            }
+            $revisions = 0;
+            $revising = false;
 
             // One turn may span several runs: a response cut off at the output
             // limit (`length`) before the page is ready is continued, up to
@@ -160,6 +172,26 @@ final class TurnRunner
                 }
                 $this->workspace->record($session->id, EventTypes::RUN_FINISHED, Workspace::SYSTEM,
                     ['runId' => $runId, 'finishReason' => $finish]);
+                if ($revising) {
+                    $this->loop?->revised($session, $revisions, $this->ready($session->id));
+                    $revising = false;
+                }
+                // Render, critique, revise: once the page is ready (cms_finish
+                // passed its gates), at most max_revisions times per turn, on
+                // the SAME run context, so the critic and the revision run
+                // count against the host's caps like every other call.
+                if ($this->loop !== null && $context !== null && $this->loop->active($session) && $revisions < $this->loop->maxRevisions()
+                    && ! $this->workspace->session($session->id)->stopped() && $this->ready($session->id) && ! $this->workspace->limited($session->id)) {
+                    $message = $this->loop->critique($this->workspace->session($session->id), $harness, $context, (string) $runId);
+                    if ($message !== null) {
+                        $revisions++;
+                        $revising = true;
+                        $continues = null;
+                        $prompt = $message;
+
+                        continue;
+                    }
+                }
                 break;
             }
             $this->settle($session, 'idle');

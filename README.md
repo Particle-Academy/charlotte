@@ -118,6 +118,36 @@ measurements (`Checks\RenderedEvidence::fromAxe()` reads axe-core results), so
 contrast is judged on the rendered page, islands included. Without one it is
 judged on the document, and every check result says which ran.
 
+**Render, critique, revise.** Hand Charlotte a renderer and a page turn gets
+one design revision before it ends:
+
+```php
+Charlotte::screenshotsUsing(fn (SessionRecord $s, string $page, string $revision, array $widths): array =>
+    array_map(fn (int $w) => Screenshot::png($w, $browser->png($previewUrl($page, $revision), $w)), $widths));
+```
+
+Once `cms_finish` passes its gates, the ready revision is captured at 375, 768
+and 1280 px. A critic sub-agent (mode `charlotte_critic`: its own prompt, no
+tools, one step) looks at the captures and an outline of the page's nodes, and
+critiques visual design and responsive layout only, calibrated on the same
+anchor scale a reviewer uses but never with a reviewer's prompt. It returns
+items that each name a node on the page; the builder gets those items (never
+the critic's scores), applies them, and calls `cms_finish` again. One
+revision per turn by default (`charlotte.critique.max_revisions`).
+
+The critic runs on prism-harness's sub-agent API with its own nested budget
+(`charlotte.critique.max_steps`, `max_cost_usd`, `max_output_tokens`): it gets
+the smaller of that and what the turn's tree has left, its thread sits beneath
+the builder's, and its spend lands in the turn's ledger under the host's caps.
+On a turn with no price table the dollar cap cannot be enforced, so the critic
+is bounded by its steps and output tokens and reports its cost as `null`. Its
+model defaults to a cheaper vision model for the provider
+(`claude-haiku-5-5` on Anthropic; `charlotte.critique.model` to choose).
+`critique.result` and `critique.revised` record the verdict, items, cost and
+whether the revision ran. With no renderer nothing changes; with one, set
+`charlotte.critique.enabled` to `false` to turn it off. Page sessions only:
+a site's page sub-agents are not critiqued yet.
+
 **How a site turn runs.** The site mode is an orchestrator. It plans the pages,
 creates and routes them, and hands each page (and `@header` / `@footer`) to a
 `charlotte` page sub-agent through prism-harness's sub-agent API: the site

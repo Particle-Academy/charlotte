@@ -14,6 +14,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Render, critique, revise** (Prism maintainers' recommendation,
+  2026-11-13). `Charlotte::screenshotsUsing()` (or bind
+  `Critique\PageRenderer`) supplies the host's renderer; with one, a page
+  turn whose `cms_finish` passed its gates captures the ready revision at
+  375, 768 and 1280 px, runs a design critic sub-agent on the captures, and
+  sends the builder its locatable items (`node`, `viewport`, `criterion`,
+  `issue`, `fix`) for ONE revision pass that ends in `cms_finish` again. The
+  critic is mode `charlotte_critic`: its own prompt (`Critique\CriticMode`),
+  visual design and responsive layout only, the rubric's anchor scale, no
+  tools; it never sees the builder's prompt, guide, examples or conversation,
+  and the builder never sees its scores. It runs on prism-harness's sub-agent
+  API (`Subagent`, `RunContext::forChild()`, a thread linked beneath the
+  builder's) with its own nested budget, on the turn's one ledger. New config
+  `charlotte.critique` (enabled, provider, model, default_models, max_revisions,
+  max_steps, max_cost_usd, max_output_tokens, max_items, widths). New events
+  `critique.result` and `critique.revised`. **On by default when a renderer is
+  supplied, off otherwise**: a host that supplies none sees no change, and
+  needs to do nothing.
+
 - **Rotating worked design examples** (`Charlotte\Design\Examples`). A pool of
   six contrasting brands as real ops on the starter: the warm local shop
   (round stamp) and clean B2B product (tile panel) the guide had, plus an

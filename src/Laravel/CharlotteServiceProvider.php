@@ -40,6 +40,10 @@ use Charlotte\Workspace;
 use Charlotte\SiteWorkspace;
 use Charlotte\Checks\NoRenderedEvidence;
 use Charlotte\Checks\RenderedEvidenceSource;
+use Charlotte\Critique\CriticMode;
+use Charlotte\Critique\CritiqueSettings;
+use Charlotte\Critique\DesignLoop;
+use Charlotte\Critique\PageRenderer;
 use Charlotte\Islands\CmsDescribeIslands;
 use Charlotte\Islands\IslandCatalogue;
 use Charlotte\Site\ReservedRoutes;
@@ -110,12 +114,22 @@ final class CharlotteServiceProvider extends ServiceProvider
         // Optional: a host binds its own to supply each turn's RunContext
         // (budget, pricing, cost observer). The default keeps the harness's.
         $this->app->bindIf(TurnContextFactory::class, fn () => new HarnessDefaults);
+        // Render, critique, revise: active only when the host supplied a
+        // PageRenderer (Charlotte::screenshotsUsing()). Nothing is bound by
+        // default, so a host that supplies none gets no loop.
+        $this->app->bind(DesignLoop::class, fn (Application $app) => new DesignLoop(
+            $app->make(Workspace::class), $app->make(PrismHarness::class), $app->make(AgentRuntime::class),
+            CritiqueSettings::fromConfig($app['config']),
+            $app->bound(PageRenderer::class) ? $app->make(PageRenderer::class) : null,
+        ));
         $this->app->bind(TurnRunner::class, fn (Application $app) => new TurnRunner(
             $app->make(Workspace::class), $app->make(Guides::class), $app->make(ModeRegistry::class),
             $app->make(PrismHarness::class), $app->make(AgentRuntime::class), $app->make(TurnContextFactory::class),
             max(0, (int) $app['config']->get('charlotte.max_continuations', 3)),
             $app->make(SiteWorkspace::class),
             $app->make(PageSubagents::class),
+            $app->make(DesignLoop::class),
+            (array) $app['config']->get('prism-harness.agent', []),
         ));
         // Host-side binding of sub-agent addresses to Charlotte sessions; the harness runs the child.
         $this->app->singleton(PageSubagents::class, fn (Application $app) => new PageSubagents(
@@ -142,6 +156,7 @@ final class CharlotteServiceProvider extends ServiceProvider
             $modes[BuilderMode::NAME] ??= BuilderMode::config($guide, $pageSteps, $options);
             $modes[BuilderMode::SITE_NAME] ??= BuilderMode::config($guide, $siteSteps, $options, true, $pageSteps);
             $modes[BuilderMode::PAGE_SUB_NAME] ??= BuilderMode::pageConfig($guide, $pageSteps, $options);
+            $modes[CriticMode::NAME] ??= CriticMode::config(CritiqueSettings::fromConfig($config)->maxSteps);
             $agent['modes'] = $modes;
 
             return new ModeRegistry($agent);

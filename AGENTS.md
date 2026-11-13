@@ -135,6 +135,22 @@ read config through the container.
   charlotte.md + the largest pair at or under the 8960 bytes charlotte.md was
   before they moved (mode prompts likewise), so adding an example means
   paying for it in bytes.
+- **Render, critique, revise** (`Critique\*`): `DesignLoop` runs only when a
+  `PageRenderer` is bound (`Charlotte::screenshotsUsing()`; nothing is bound
+  by default) and `charlotte.critique.enabled` is not false, for PAGE
+  sessions. `TurnRunner` asks it after a run ends with the page ready, at most
+  `max_revisions` per turn, and continues the same `while` loop with the
+  returned message, on the SAME context (never a new `forTurn`). With the loop
+  active and no host context, `DesignLoop::rootFor()` opens the turn's root so
+  the critic always nests; with no renderer context stays null. The critic is
+  NOT spawned through `SubagentRunner::run()` (it takes no media): `DesignLoop`
+  repeats its pre-spawn checks, `forChild()`, the child address
+  `<scope>::sub::critic` and `linkBeneath()`, then `AgentRuntime::send()` with
+  the screenshots. Its dollar cap applies only when the ledger has no
+  unmetered run (a capped child on an unmetered tree is refused by the
+  harness, and billing is optional). Nothing in it fails a turn; every end is
+  a `critique.result` outcome code. Keep the critic prompt (`CriticMode`)
+  free of reviewer wording beyond `ANCHORS`, and send the builder items only.
 - `Checks\SiteChecks`: broken links, anchors, orphans, unrouted pages, home,
   404, nav consistency, region h1/anchors, duplicate titles, and
   `missing_required_fact` across the whole site.
