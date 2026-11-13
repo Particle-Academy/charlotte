@@ -93,6 +93,21 @@ return [
     | It nests in the turn's run tree: it gets the smaller of these and what
     | the tree has left, and its spend counts against the turn's caps.
     | max_items: critique items kept (the rest are counted as `dropped`).
+    |
+    | allow_uncapped_when_unmetered: on a run tree with an unmetered call (no
+    | price for some model, billing off) a dollar cap cannot be enforced, and
+    | prism-harness refuses a capped child there. true (default): the critic
+    | runs WITHOUT its dollar cap, bounded by max_steps (1), and
+    | critique.result records costCap `dropped_unmetered`. false: no critic
+    | runs on such a tree (outcome `unmetered`).
+    | revision_includes_screenshot: the builder's revision message carries the
+    | capture of each item's breakpoint as well as the items (default true);
+    | false sends the items as text only, for an A/B in a host lab.
+    | max_capture_height: the tallest capture accepted, in CSS px. Renderers
+    | capture one viewport at a time at native resolution (or one section of
+    | a tall page), never one tall strip scaled down.
+    | max_captures_per_width: sections per width sent to the critic; the rest,
+    | from the bottom of the page, are left out and counted.
     */
     'critique' => [
         'enabled' => env('CHARLOTTE_CRITIQUE') === null ? null : (bool) env('CHARLOTTE_CRITIQUE'),
@@ -105,6 +120,10 @@ return [
         'max_output_tokens' => 2048,
         'max_items' => 8,
         'widths' => [375, 768, 1280],
+        'allow_uncapped_when_unmetered' => (bool) env('CHARLOTTE_CRITIQUE_ALLOW_UNCAPPED_WHEN_UNMETERED', true),
+        'revision_includes_screenshot' => (bool) env('CHARLOTTE_CRITIQUE_REVISION_SCREENSHOT', true),
+        'max_capture_height' => 1200,
+        'max_captures_per_width' => 6,
     ],
 
     // External origins an AGENT may link to. Relative paths, anchors,

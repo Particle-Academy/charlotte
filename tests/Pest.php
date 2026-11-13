@@ -177,6 +177,25 @@ function eventsOf(CharlotteSession $session, string $type): array
 }
 
 /**
+ * A real, decodable PNG of the given pixel size (8-bit greyscale, blank). The
+ * critic and the builder see only bytes; Charlotte reads the header to check
+ * a capture is at native resolution, so the size has to be true.
+ */
+function capturePng(int $width, int $height): string
+{
+    static $made = [];
+
+    return $made[$width.'x'.$height] ??= (function () use ($width, $height): string {
+        $chunk = fn (string $type, string $data): string => pack('N', strlen($data)).$type.$data.pack('N', crc32($type.$data));
+
+        return hex2bin('89504e470d0a1a0a')
+            .$chunk('IHDR', pack('NNCCCCC', $width, $height, 8, 0, 0, 0, 0))
+            .$chunk('IDAT', (string) gzcompress(str_repeat(str_repeat(chr(0), $width + 1), $height)))
+            .$chunk('IEND', '');
+    })();
+}
+
+/**
  * A page that clears every cms_finish gate: a meta description, stacks and
  * grids with their layout, a section spacing scale, a hero with copy and a
  * 44 px button, and a grid of two cards, 1 then 2 at md (no orphan, no

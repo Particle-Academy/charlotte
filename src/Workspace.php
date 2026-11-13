@@ -114,6 +114,40 @@ final class Workspace
         return [...$page->get(), 'staged' => $open !== null];
     }
 
+    /**
+     * The page's document as it was at $revision, replayed from the draft's
+     * own attributed history (or an open change set's working copy). Null
+     * when neither history holds that revision. Reads only; nothing is saved.
+     * This is how a host lab judges the page BEFORE a critique's revision as
+     * well as after it (`critique.revised` `before` / `after`).
+     */
+    public function documentAt(SessionRecord $session, string $revision): ?array
+    {
+        $open = $this->openFor($session);
+        foreach ([$this->pages->read($session->tenant, $session->page), $open !== null ? $this->working($open) : null] as $page) {
+            if ($page === null) {
+                continue;
+            }
+            $json = $page->toJson();
+            $state = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+            $log = is_array($state['log'] ?? null) ? $state['log'] : [];
+            if (($state['initialRevision'] ?? null) === $revision) {
+                $state['log'] = [];
+            } else {
+                $at = array_search($revision, array_column($log, 'revision'), true);
+                if ($at === false) {
+                    continue;
+                }
+                $state['log'] = array_slice($log, 0, $at + 1);
+            }
+
+            return PageSession::fromJson(json_encode($state, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                NodeTypes::forStored($json, $this->islands->types()))->get()['doc'];
+        }
+
+        return null;
+    }
+
     /** @return array<string, mixed> the tool result */
     public function applyAgent(SessionRecord $session, array $ops, string $basedOn): array
     {

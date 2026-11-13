@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Charlotte\Runtime;
 
 use Charlotte\Critique\DesignLoop;
+use Charlotte\Critique\Revision;
 use Charlotte\Design\Examples;
 use Charlotte\Events\EventTypes;
 use Charlotte\Guide\BuilderMode;
@@ -115,7 +116,9 @@ final class TurnRunner
                 $context = $this->loop->rootFor($session, $harness, $mode->maxSteps, $this->agentConfig);
             }
             $revisions = 0;
-            $revising = false;
+            /** @var Revision|null $revising the revision run in flight, if any */
+            $revising = null;
+            $attachments = [];
 
             // One turn may span several runs: a response cut off at the output
             // limit (`length`) before the page is ready is continued, up to
@@ -137,7 +140,9 @@ final class TurnRunner
             $continuations = 0;
             while (true) {
                 $runId = null;
-                foreach ($this->runtime->stream($harness, $prompt, $tools, context: $context) as $event) {
+                $sending = $attachments;
+                $attachments = []; // the captures ride on the revision message only, never on a continuation
+                foreach ($this->runtime->stream($harness, $prompt, $tools, $sending, $context) as $event) {
                     if ($event instanceof StreamStartEvent && $runId === null) {
                         $runId = (string) ($harness->run()['id'] ?? '');
                         $this->workspace->record($session->id, EventTypes::RUN_STARTED, Workspace::SYSTEM,
@@ -172,9 +177,9 @@ final class TurnRunner
                 }
                 $this->workspace->record($session->id, EventTypes::RUN_FINISHED, Workspace::SYSTEM,
                     ['runId' => $runId, 'finishReason' => $finish]);
-                if ($revising) {
-                    $this->loop?->revised($session, $revisions, $this->ready($session->id));
-                    $revising = false;
+                if ($revising !== null) {
+                    $this->loop?->revised($session, $revisions, $this->ready($session->id), $revising);
+                    $revising = null;
                 }
                 // Render, critique, revise: once the page is ready (cms_finish
                 // passed its gates), at most max_revisions times per turn, on
@@ -182,12 +187,13 @@ final class TurnRunner
                 // count against the host's caps like every other call.
                 if ($this->loop !== null && $context !== null && $this->loop->active($session) && $revisions < $this->loop->maxRevisions()
                     && ! $this->workspace->session($session->id)->stopped() && $this->ready($session->id) && ! $this->workspace->limited($session->id)) {
-                    $message = $this->loop->critique($this->workspace->session($session->id), $harness, $context, (string) $runId);
-                    if ($message !== null) {
+                    $revision = $this->loop->critique($this->workspace->session($session->id), $harness, $context, (string) $runId);
+                    if ($revision !== null) {
                         $revisions++;
-                        $revising = true;
+                        $revising = $revision;
                         $continues = null;
-                        $prompt = $message;
+                        $prompt = $revision->message;
+                        $attachments = $revision->images;
 
                         continue;
                     }

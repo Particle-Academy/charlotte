@@ -19,19 +19,53 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `Critique\PageRenderer`) supplies the host's renderer; with one, a page
   turn whose `cms_finish` passed its gates captures the ready revision at
   375, 768 and 1280 px, runs a design critic sub-agent on the captures, and
-  sends the builder its locatable items (`node`, `viewport`, `criterion`,
-  `issue`, `fix`) for ONE revision pass that ends in `cms_finish` again. The
-  critic is mode `charlotte_critic`: its own prompt (`Critique\CriticMode`),
-  visual design and responsive layout only, the rubric's anchor scale, no
-  tools; it never sees the builder's prompt, guide, examples or conversation,
-  and the builder never sees its scores. It runs on prism-harness's sub-agent
+  sends the builder its located items (`node`, `viewport`, `region`,
+  `criterion`, `issue`, `fix`) for ONE revision pass that ends in `cms_finish`
+  again. The critic is mode `charlotte_critic`: its own prompt
+  (`Critique\CriticMode`), visual design and responsive layout only, no tools;
+  it never sees the builder's prompt, guide, examples or conversation. It runs on prism-harness's sub-agent
   API (`Subagent`, `RunContext::forChild()`, a thread linked beneath the
   builder's) with its own nested budget, on the turn's one ledger. New config
   `charlotte.critique` (enabled, provider, model, default_models, max_revisions,
-  max_steps, max_cost_usd, max_output_tokens, max_items, widths). New events
+  max_steps, max_cost_usd, max_output_tokens, max_items, widths,
+  allow_uncapped_when_unmetered, revision_includes_screenshot,
+  max_capture_height, max_captures_per_width). New events
   `critique.result` and `critique.revised`. **On by default when a renderer is
   supplied, off otherwise**: a host that supplies none sees no change, and
   needs to do nothing.
+  - **Captures are one viewport each, at native resolution.** A `Screenshot`
+    whose pixel width is not the CSS width times a whole device pixel ratio
+    (1 to 3) is refused where it is built; a page taller than the viewport is
+    several sections per width (`part` 1..n, top first), each at most
+    `max_capture_height` CSS px (default 1200). A renderer returning one tall
+    strip gets `render_failed` with `renderProblem: capture_too_tall`. Sections
+    past `max_captures_per_width` (default 6) are left out from the bottom and
+    counted (`capturesOmitted`).
+  - **The critic names observable defects, never scores.** Its prompt lists
+    visible defects ("the hero has no supporting visual at 1280") and has no
+    scale, score or target; its reply has no `scores`. Every item must name a
+    node on the page AND the width (`viewport`) or capture (`region`,
+    `<width>-<part>`) where the defect shows; the rest are dropped and counted
+    by reason (`droppedReasons`).
+  - **The builder's revision carries the captures** each item concerns, at
+    native resolution, beside the items. `revision_includes_screenshot: false`
+    sends text only, so a lab can A/B the two (`revisionIncludesScreenshot`,
+    `revisionImages` on `critique.result`).
+  - **An unmetered tree drops the critic's dollar cap only by config**:
+    `allow_uncapped_when_unmetered` (default true) runs it bounded by its one
+    step and records `costCap: dropped_unmetered`; false runs no critic there
+    (outcome `unmetered`). `costCap` and the critic's own `budget` are on every
+    `critique.result`.
+  - **A/B record**: `critique.revised` carries `before` (the ready revision
+    critiqued), `after` (the ready revision the revision run finished at, or
+    null) and `changed`. `CharlotteSession::documentAt($revision)` returns the
+    page's document at any revision in its history, so a lab can judge both
+    and count revisions that made a page worse.
+  - The critic is spawned beside prism-harness's `SubagentRunner` rather than
+    through it, because `run()` takes no media (harness gap G-265). Its
+    pre-spawn admission (`Critique\SpawnAdmission`) is a minimal copy of the
+    runner's, held to the runner's own refusal cases by a test, and is marked
+    for deletion once G-265 lands.
 
 - **Rotating worked design examples** (`Charlotte\Design\Examples`). A pool of
   six contrasting brands as real ops on the starter: the warm local shop

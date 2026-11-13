@@ -27,6 +27,14 @@ final readonly class CritiqueSettings
         public ?int $maxOutputTokens = 2048,
         public int $maxItems = 8,
         public array $widths = [375, 768, 1280],
+        /** On a tree with an unmetered run, drop the critic's dollar cap (the step cap bounds it) rather than skip the critique. */
+        public bool $allowUncappedWhenUnmetered = true,
+        /** The builder's revision message carries the capture of each item's breakpoint, not only the items. */
+        public bool $revisionIncludesScreenshot = true,
+        /** The tallest capture accepted, in CSS px: one viewport, or one section of a tall page. */
+        public int $maxCaptureHeight = 1200,
+        /** Sections per width sent to the critic; the rest, from the bottom, are left out and counted. */
+        public int $maxCapturesPerWidth = 6,
     ) {}
 
     public static function fromConfig(Repository $config): self
@@ -54,6 +62,10 @@ final readonly class CritiqueSettings
             maxOutputTokens: array_key_exists('max_output_tokens', $c) && $c['max_output_tokens'] === null ? null : $int($c['max_output_tokens'] ?? null, 2048, 256, 32768),
             maxItems: $int($c['max_items'] ?? null, 8, 1, 20),
             widths: $widths === [] ? [375, 768, 1280] : $widths,
+            allowUncappedWhenUnmetered: is_bool($c['allow_uncapped_when_unmetered'] ?? null) ? $c['allow_uncapped_when_unmetered'] : true,
+            revisionIncludesScreenshot: is_bool($c['revision_includes_screenshot'] ?? null) ? $c['revision_includes_screenshot'] : true,
+            maxCaptureHeight: $int($c['max_capture_height'] ?? null, 1200, 300, 10000),
+            maxCapturesPerWidth: $int($c['max_captures_per_width'] ?? null, 6, 1, 20),
         );
     }
 

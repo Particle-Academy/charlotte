@@ -43,6 +43,17 @@ final class CharlotteSession
     }
 
     /**
+     * The current page's document as it was at $revision, or null when its
+     * history does not hold that revision. For a host lab judging a critique's
+     * `before` and `after` revisions (`critique.revised`). On a site session,
+     * the selected document's history.
+     */
+    public function documentAt(string $revision): ?array
+    {
+        return $this->workspace()->documentAt($this->record(), $revision);
+    }
+
+    /**
      * Events after a cursor; waits up to $wait seconds (at most 25) for one.
      *
      * @return array{events: list<array<string, mixed>>, cursor: int}

@@ -122,29 +122,51 @@ judged on the document, and every check result says which ran.
 one design revision before it ends:
 
 ```php
-Charlotte::screenshotsUsing(fn (SessionRecord $s, string $page, string $revision, array $widths): array =>
-    array_map(fn (int $w) => Screenshot::png($w, $browser->png($previewUrl($page, $revision), $w)), $widths));
+// One viewport per capture, at native resolution (device pixel ratio 1 to 3,
+// never scaled down). A page taller than the viewport: several sections per
+// width, part 1, 2, ... from the top.
+Charlotte::screenshotsUsing(function (SessionRecord $s, string $page, string $revision, array $widths) use ($browser, $previewUrl): array {
+    $shots = [];
+    foreach ($widths as $w) {
+        foreach ($browser->viewportPngs($previewUrl($page, $revision), $w) as $i => $png) {
+            $shots[] = Screenshot::png($w, $png, part: $i + 1);
+        }
+    }
+
+    return $shots;
+});
 ```
 
 Once `cms_finish` passes its gates, the ready revision is captured at 375, 768
-and 1280 px. A critic sub-agent (mode `charlotte_critic`: its own prompt, no
-tools, one step) looks at the captures and an outline of the page's nodes, and
-critiques visual design and responsive layout only, calibrated on the same
-anchor scale a reviewer uses but never with a reviewer's prompt. It returns
-items that each name a node on the page; the builder gets those items (never
-the critic's scores), applies them, and calls `cms_finish` again. One
-revision per turn by default (`charlotte.critique.max_revisions`).
+and 1280 px, one viewport at a time at native resolution: a capture whose pixel
+width is not the CSS width times a whole device pixel ratio is refused, and so
+is one taller than `charlotte.critique.max_capture_height` (1200 CSS px), so a
+whole page squeezed into one strip never reaches the critic. A critic
+sub-agent (mode `charlotte_critic`: its own prompt, no tools, one step) looks
+at the labelled captures (`375-1`, `375-2`, ...) and an outline of the page's
+nodes, and reports observable defects in visual design and responsive layout
+only ("the hero has no supporting visual at 1280"). It sets no score and is
+never asked for a better one. Every item must name a node on the page AND the
+width or capture where the defect shows; the rest are dropped and counted. The
+builder gets those items plus the capture each one concerns
+(`charlotte.critique.revision_includes_screenshot`, default true; false sends
+the items as text only, for an A/B), applies them, and calls `cms_finish`
+again. One revision per turn by default (`charlotte.critique.max_revisions`).
 
 The critic runs on prism-harness's sub-agent API with its own nested budget
 (`charlotte.critique.max_steps`, `max_cost_usd`, `max_output_tokens`): it gets
 the smaller of that and what the turn's tree has left, its thread sits beneath
 the builder's, and its spend lands in the turn's ledger under the host's caps.
-On a turn with no price table the dollar cap cannot be enforced, so the critic
-is bounded by its steps and output tokens and reports its cost as `null`. Its
-model defaults to a cheaper vision model for the provider
-(`claude-haiku-5-5` on Anthropic; `charlotte.critique.model` to choose).
-`critique.result` and `critique.revised` record the verdict, items, cost and
-whether the revision ran. With no renderer nothing changes; with one, set
+On a tree with an unmetered call the dollar cap cannot be enforced; with
+`charlotte.critique.allow_uncapped_when_unmetered` (default true) the critic
+then runs without it, bounded by its one step and output tokens, reports its
+cost as `null` and records `costCap: dropped_unmetered`; set it to false and no
+critic runs there. Its model defaults to a cheaper vision model for the
+provider (`claude-haiku-5-5` on Anthropic; `charlotte.critique.model` to
+choose). `critique.result` and `critique.revised` record the captures, items,
+cost and the revision BEFORE and AFTER, and `CharlotteSession::documentAt($revision)`
+returns either document, so a lab can judge both and count revisions that made
+a page worse. With no renderer nothing changes; with one, set
 `charlotte.critique.enabled` to `false` to turn it off. Page sessions only:
 a site's page sub-agents are not critiqued yet.
 

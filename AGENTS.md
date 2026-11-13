@@ -143,14 +143,33 @@ read config through the container.
   returned message, on the SAME context (never a new `forTurn`). With the loop
   active and no host context, `DesignLoop::rootFor()` opens the turn's root so
   the critic always nests; with no renderer context stays null. The critic is
-  NOT spawned through `SubagentRunner::run()` (it takes no media): `DesignLoop`
-  repeats its pre-spawn checks, `forChild()`, the child address
-  `<scope>::sub::critic` and `linkBeneath()`, then `AgentRuntime::send()` with
-  the screenshots. Its dollar cap applies only when the ledger has no
-  unmetered run (a capped child on an unmetered tree is refused by the
-  harness, and billing is optional). Nothing in it fails a turn; every end is
-  a `critique.result` outcome code. Keep the critic prompt (`CriticMode`)
-  free of reviewer wording beyond `ANCHORS`, and send the builder items only.
+  NOT spawned through `SubagentRunner::run()` (it takes no media; prism-harness
+  G-265): `Critique\SpawnAdmission` is a MINIMAL copy of the runner's
+  pre-spawn checks (tree exhaustion, depth, zero steps; same order, same
+  `SubagentOutcome` values), and `DesignLoop` repeats its spawn (`forAgent`,
+  participant, actor, `<scope>::sub::critic`, `linkBeneath()`) then
+  `AgentRuntime::send()` with the captures. `CriticAdmissionTest` runs the
+  copy and the runner through the harness's refusal cases (budget, tool
+  scoping, media bounds); never add a check the runner lacks. DELETE
+  `SpawnAdmission`, that spawn block and `CriticAdmissionTest` once G-265
+  lands. `Screenshot` delegates media rules to the harness's
+  `TurnAttachments::admit()` and adds native resolution: pixel width = CSS
+  width x whole DPR 1-3, read from the image header; `DesignLoop` refuses
+  captures over `max_capture_height`, gaps in sections (`part` 1..n) or a
+  missing width (`renderProblem`), and keeps `max_captures_per_width` per
+  width. Dollar cap: `costCap` `applied` on a metered tree; on an unmetered
+  one `dropped_unmetered` only when `allow_uncapped_when_unmetered` (default
+  true), else outcome `unmetered` and no spawn. Items need a page node AND a
+  captured `viewport` or capture `region` (`<width>-<part>`), else dropped by
+  reason. The revision run's message carries the captures those items concern
+  (`Revision::$images`, passed by `TurnRunner` on that one run only, never a
+  continuation) unless `revision_includes_screenshot` is false.
+  `critique.revised` records `before`/`after`; `Workspace::documentAt()`
+  replays the draft's history to read either. Nothing in it fails a turn;
+  every end is a `critique.result` outcome code. The critic prompt
+  (`CriticMode`) lists OBSERVABLE DEFECTS only: no score, scale, anchor or
+  wording asking for a better number (a test refuses them), and the builder
+  gets items only.
 - `Checks\SiteChecks`: broken links, anchors, orphans, unrouted pages, home,
   404, nav consistency, region h1/anchors, duplicate titles, and
   `missing_required_fact` across the whole site.

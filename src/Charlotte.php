@@ -169,12 +169,14 @@ final class Charlotte
      * ready revision is captured at `charlotte.critique.widths` (375, 768,
      * 1280), a design critic sub-agent critiques visual design and responsive
      * layout from the captures, and the builder applies its items once and
-     * finishes again. Return one {@see Screenshot} per width. Without a
+     * finishes again. Return one {@see Screenshot} per viewport at native
+     * resolution for each width (several sections, `part` 1..n, for a tall
+     * page; never one strip scaled down): see {@see PageRenderer}. Without a
      * renderer the loop is off and a turn is unchanged. Same as binding a
      * {@see PageRenderer}.
      *
      *     Charlotte::screenshotsUsing(fn (SessionRecord $s, string $page, string $revision, array $widths): array =>
-     *         array_map(fn (int $w) => Screenshot::png($w, $browser->png($urlFor($page, $revision), $w)), $widths));
+     *         array_map(fn (int $w) => Screenshot::png($w, $browser->viewportPng($urlFor($page, $revision), $w)), $widths));
      *
      * @param  Closure(SessionRecord, string, string, list<int>): list<Screenshot>  $renderer
      */
