@@ -14,12 +14,51 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Rotating worked design examples** (`Charlotte\Design\Examples`). A pool of
+  six contrasting brands as real ops on the starter: the warm local shop
+  (round stamp) and clean B2B product (tile panel) the guide had, plus an
+  editorial practice (short heavy rule above the h1), a photo-led studio
+  (dark caption bar), a bold geometric (three-colour band) and a soft card
+  stack (tilted card). Each session sees TWO, sampled from its id
+  (`Examples::sample()`, reproducible), stored on the session at open
+  (`guide.examples`, `SessionRecord::examples()`), and named on every
+  `run.started` as `examples`. `pool()` and `motifs()` are public: each motif
+  is a node id plus a shape signature (type, layout, normalised base style;
+  see the class docblock), and `reuse($doc)` reports a node that copies one
+  by id or by shape, for a host lab to measure motif copying.
+- The guide's Design rules now say: "Never reuse a distinctive motif, badge or
+  shape from an example."
+
 - `theme_token_unset` (warning): a `var(--cms-…)` that nodes use with no
   fallback and the theme never sets, once per token with the first node and a
   count. When the token is `color-primary` and the theme sets `color.accent`,
   the message says accent does not stand in for primary. A warning only; it
   refuses nothing. `PageChecks::themeTokens()` is public: the `--cms-*` tokens
   fancy-cms emits for a theme.
+
+### Changed
+
+- **The worked examples left the static guide.** Every session saw the same
+  two, and paid lab runs copied their motifs (stamp badges, tile panels, ids
+  like `hero-media-panel`) onto unrelated briefs. They now reach the model in
+  the conversation, not the system prompt: a page session's first run carries
+  its two ahead of the person's message (the thread replays them later; the
+  event log keeps only the person's text), and every fresh page sub-agent
+  conversation (a site's page child, a host's delegated Charlotte) opens with
+  them as one user message, since a child's prompt is its parent's task. The
+  system prompt stays per-install, so it caches across sessions and the guide
+  hash invariant (`guide_mode_stale`) holds; a tool result was ruled out
+  because tool results are framed as data. A site orchestrator gets none. The
+  guide shrank from 8960 to 7492 bytes for charlotte.md; with the largest
+  pair the per-session total is 8948, under the old size, and a test holds it
+  there. Consumers: nothing to do. Hosts that replay sessions get the same two
+  examples from the session id; a guide override no longer needs to account
+  for example text. A page sub-agent's first call now has two user messages
+  (examples, task), not one.
+- The Design rules no longer list stock motifs (pill shapes, a stamp-like
+  badge, an offset tint panel); they ask for one motif of your own. The
+  Composition aside "an unstyled link is 19px tall" went to pay for the
+  examples' bytes; the `tap_target` defect still carries it.
 
 ### Fixed
 

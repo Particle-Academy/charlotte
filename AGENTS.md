@@ -108,12 +108,33 @@ read config through the container.
   proves the skeleton clears the gates once filled and that fancy-cms's
   CssEmitter renders it as flex and grid, and caps the section under 7000 bytes.
   The features grid ships at 3 columns from md, for 3 cards (`Starter::COLUMNS`
-  gives other counts); 2 at md was the 2+1 orphan of runs 504-512. The guide's
-  two worked design examples are applied on the skeleton by a test
-  (`guideDesignExamples()` in tests/Pest.php), so they must stay valid ops.
+  gives other counts); 2 at md was the 2+1 orphan of runs 504-512.
   `PublishedGuide` puts `charlotte.md` FIRST (it opens with the
   non-negotiable rules), then fancy-cms's `Agent::guide()`, then the starter;
   `GuideTest` holds that order and that the rules section is first.
+- `Design\Examples`: the ROTATING worked design examples, a pool of six
+  (`pool()`, `motifs()`: public, shape documented in the class docblock; a
+  host lab reads it to score motif reuse with `reuse()` / `shapeOf()`). Each
+  session sees two, `sample($sessionId)` (sha256 rank, reproducible), stored
+  at open in the session's `guide` JSON as `examples` (`SessionRecord::examples()`,
+  falling back to the sample for older rows) and named on every `run.started`.
+  They are NOT in the guide (the same two for every session got copied onto
+  unrelated briefs), so the guide hash and the cached system prompt are one
+  per install. They reach the model in the CONVERSATION: `TurnRunner`
+  prefixes a page session's first run, when its thread is empty
+  (`Examples::delivered()`, the section then the person's text; the log keeps
+  only the person's text), and the thread replays it on later runs;
+  `PageSubagents` seeds every fresh page sub-agent thread (site child, a
+  host's delegated child) with one user message holding the section, because
+  the child's prompt is its parent's task. Why there: the system prompt is
+  shared and cached and the guide-hash invariant forbids per-session text in
+  it; a tool result is framed as data (Prism maintainers). A site
+  orchestrator gets none: it builds no page. Every pool example is applied on
+  the starter by a test (`guideDesignExamples()` in tests/Pest.php parses the
+  section back), so they must stay valid ops; `ExamplesTest` holds
+  charlotte.md + the largest pair at or under the 8960 bytes charlotte.md was
+  before they moved (mode prompts likewise), so adding an example means
+  paying for it in bytes.
 - `Checks\SiteChecks`: broken links, anchors, orphans, unrouted pages, home,
   404, nav consistency, region h1/anchors, duplicate titles, and
   `missing_required_fact` across the whole site.
@@ -239,7 +260,9 @@ agent once, as `notices` on the next `cms_get` or `cms_apply`.
 modes by `extend()`ing `ModeRegistry`, so it is built on first resolve, after
 host overrides registered in `boot()`. A host-defined mode of that name wins.
 `TurnRunner` refuses (`guide_mode_stale`) when the current guide hash differs
-from the session's or the mode prompt does not embed it exactly once.
+from the session's or the mode prompt does not embed it exactly once. So
+nothing per-session may enter the guide or a mode prompt: per-session text
+(the worked examples) goes in the conversation, as `Design\Examples` says.
 
 ## Tests
 

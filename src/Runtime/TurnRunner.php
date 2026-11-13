@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Charlotte\Runtime;
 
+use Charlotte\Design\Examples;
 use Charlotte\Events\EventTypes;
 use Charlotte\Guide\BuilderMode;
 use Charlotte\Guide\Guides;
@@ -15,6 +16,7 @@ use Prism\Harness\AgentRuntime;
 use Prism\Harness\Contracts\HasErrorCode;
 use Prism\Harness\Modes\ModeRegistry;
 use Prism\Harness\PrismHarness;
+use Prism\Harness\Sessions\Session;
 use Prism\Prism\Streaming\Events\StreamStartEvent;
 use Throwable;
 
@@ -109,7 +111,16 @@ final class TurnRunner
             // step and cost caps bound the whole turn. Without this a model
             // that spends its output on reasoning ends the turn with nothing
             // built (flabs runs 146, 148, 149; and lane 358 before Charlotte).
-            $prompt = $text;
+            //
+            // A page session's worked examples ride ahead of the person's
+            // message in its FIRST run, and the thread replays them on every
+            // later run. Not in the guide: the guide hash and the cached
+            // system prompt stay the same for every session. Not in a tool
+            // result: those are framed as data. A site's orchestrator builds
+            // no page itself; its page sub-agent's fresh conversation opens
+            // with them instead (PageSubagents).
+            $examples = $session->examples();
+            $prompt = ! $session->isSite() && self::threadEmpty($harness) ? Examples::delivered($examples, $text) : $text;
             $continues = null;
             $continuations = 0;
             while (true) {
@@ -118,7 +129,7 @@ final class TurnRunner
                     if ($event instanceof StreamStartEvent && $runId === null) {
                         $runId = (string) ($harness->run()['id'] ?? '');
                         $this->workspace->record($session->id, EventTypes::RUN_STARTED, Workspace::SYSTEM,
-                            ['runId' => $runId, 'mode' => $modeName, 'provider' => $session->provider, 'model' => $session->model]
+                            ['runId' => $runId, 'mode' => $modeName, 'provider' => $session->provider, 'model' => $session->model, 'examples' => $examples]
                             + ($continues === null ? [] : ['continues' => $continues]));
                     }
                     $recorder->record($event);
@@ -160,6 +171,15 @@ final class TurnRunner
                 default => 'run_failed',
             });
         }
+    }
+
+    private static function threadEmpty(Session $harness): bool
+    {
+        foreach ($harness->thread()->messages() as $ignored) {
+            return false;
+        }
+
+        return true;
     }
 
     private function fail(SessionRecord $session, ?string $runId, string $code): void

@@ -100,9 +100,10 @@ test('a site turn spawns one page sub-agent per page; the parent keeps page ids 
         ->and(count($provider->textRequests))->toBe(8)
         ->and(array_unique(array_map(fn ($r) => $r->model(), $provider->textRequests)))->toBe(['test-model'])
         ->and(toolNames($provider->textRequests[0]->tools()))->toBe(BuilderMode::TOOLS)
-        // A fresh conversation per page: each child's FIRST call carries only its own task.
-        ->and(count($provider->textRequests[0]->messages()))->toBe(1)
-        ->and(count($provider->textRequests[4]->messages()))->toBe(1)
+        // A fresh conversation per page: each child's FIRST call carries only the
+        // session's design examples (the seed every fresh child thread opens with) and its own task.
+        ->and(array_map(fn ($m) => $m->content, $provider->textRequests[0]->messages()))->toBe([\Charlotte\Design\Examples::promptSection($site->record()->examples()), 'Build the home page from the brief.'])
+        ->and(array_map(fn ($m) => $m->content, $provider->textRequests[4]->messages()))->toBe([\Charlotte\Design\Examples::promptSection($site->record()->examples()), 'Build the pricing page from the brief.'])
         // The event log is the child's own harness run, linked beneath the parent's.
         ->and($childThreads->pluck('parent_thread_id')->unique()->all())->toBe([$parentThread->getKey()])
         ->and($childThreads)->toHaveCount(2);
@@ -216,7 +217,11 @@ test('CAPPED: a child admitted near the cap stops at the tree\'s cost cap; the t
     $probe = new ScriptedProvider([$spawn(1), $oneCall('One')]);
     charlotteApp(['charlotte.autonomy' => 'full'], $probe);
     $roomy = cappedTree(5.0);
-    openSite()->send('Build.', 'user-7');
+    $probeSite = openSite();
+    $probeSite->send('Build.', 'user-7');
+    // The child's first call carries the session's two worked examples, and
+    // their size varies by pair: the measured site must draw the probe's pair.
+    $probeGuide = $probeSite->record()->guide;
     $calls = \Prism\Harness\Subagents\CallBudget::forRun($roomy, 'scripted', 'test-model', []);
     $parentReserve = $calls->worstCase($probe->requests[0]);
     $childReserve = $calls->worstCase($probe->textRequests[0]);
@@ -229,6 +234,8 @@ test('CAPPED: a child admitted near the cap stops at the tree\'s cost cap; the t
     charlotteApp(['charlotte.autonomy' => 'full'], $provider);
     $tree = cappedTree($cap);
     $site = openSite();
+    app(\Illuminate\Database\ConnectionInterface::class)->table('charlotte_sessions')->where('id', $site->id())
+        ->update(['guide_json' => json_encode($probeGuide, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)]);
 
     $site->send('Build.', 'user-7');
 

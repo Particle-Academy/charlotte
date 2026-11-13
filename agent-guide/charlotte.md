@@ -101,8 +101,8 @@ a browser, islands included) or `document` (styles alone).
 - No orphan: a grid's columns divide its items at every breakpoint
   (`starter.columns`). Five items: a featured card above a grid of four.
 - The hero: eyebrow, h1, a lead, buttons, and a visual.
-- Links take `starter.navLink`, buttons `starter.button` (an unstyled link is
-  19px tall). Side by side, they sit in a row stack with a gap.
+- Links take `starter.navLink`, buttons `starter.button`. Side by side, they
+  sit in a row stack with a gap.
 - Type from `starter.typeScale`: `display` h1, `h2` section titles, `h3` in
   cards, `lead` under the h1, `body`, `small`. Images in one row share an
   `aspectRatio`. Decorative frames and shapes take `props.decorative: true`;
@@ -118,8 +118,8 @@ write, derive a brand character from the brief, then hold to it:
   `var(--cms-color-…)`.
 - **Type pairing:** a display face that suits the trade and a plain body face,
   as `fontFamily` stacks of system fonts.
-- **One signature motif,** repeated two or three times: pill shapes, a rule
-  beside quotes, a stamp-like badge, an offset tint panel.
+- **One signature motif of your own,** drawn from the brief's trade and
+  repeated two or three times.
 - **Imagery:** place every supplied image that fits (hero, then cards or a
   split). With none, compose the hero visual on a tint panel from shapes, a
   large icon and a key fact. Never one small floating icon.
@@ -127,25 +127,6 @@ write, derive a brand character from the brief, then hold to it:
   primary contrast block, give each section one dominant fact. Hours, menus,
   prices and 4+ points are label-and-value rows or cards (`bare_list`).
 
-Two contrasting examples. Illustrates principles; don't reuse content, copy or palette.
-
-**Warm local shop:** a serif display face and a round stamp motif.
-
-```json
-{"t":"set_theme","patch":{"color":{"primary":"#9a3412","tint":"#fdf1e7","accent":"#4d7c0f","ink":"#292524","muted":"#57534e","line":"#ead7c3"}}}
-{"t":"set_style","id":"title","breakpoint":"base","patch":{"fontFamily":"Georgia, Cambria, serif","color":"var(--cms-color-primary)"}}
-{"t":"insert_node","node":{"id":"hero-stamp","type":"shape","layout":"stack","parent":"hero-media","order":"a0","props":{},
- "style":{"base":{"background":"var(--cms-color-primary)","color":"#ffffff","radius":{"value":999,"unit":"px"},"padding":{"value":40,"unit":"px"},"align":"center"}}}}
-```
-
-**Clean B2B product:** a tight sans and a product panel of key-fact tiles.
-
-```json
-{"t":"set_theme","patch":{"color":{"primary":"#1d4ed8","tint":"#eef4ff","accent":"#0f766e","ink":"#0f172a","muted":"#475569","line":"#e2e8f0"}}}
-{"t":"set_style","id":"title","breakpoint":"base","patch":{"fontFamily":"system-ui, sans-serif","letterSpacing":{"value":-1,"unit":"px"}}}
-{"t":"insert_node","node":{"id":"hero-panel","type":"frame","layout":"grid","parent":"hero-media","order":"a0","props":{},
- "style":{"base":{"background":"#ffffff","border":"1px solid var(--cms-color-line)","radius":{"value":16,"unit":"px"},"padding":{"value":24,"unit":"px"},"columns":2,"gap":{"value":16,"unit":"px"}}}}}
-```
-
-The stamp holds an icon and a short line from the brief; the panel holds two
-or four tiles, each a brief fact in `h2` type over a `small` label.
+Your first message has two worked examples, a new pair each session:
+don't reuse their content, copy or palette.
+Never reuse a distinctive motif, badge or shape from an example.

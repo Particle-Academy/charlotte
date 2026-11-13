@@ -39,6 +39,16 @@ test('the shipped JSON schema names exactly the emitted types and the envelope k
         ->and($schema['properties']['v']['const'])->toBe(1);
 });
 
+test('run.started names the session\'s worked examples, in the fixture and the docs', function (): void {
+    $started = array_values(array_filter(fixtureEvents(), fn (array $e) => $e['type'] === 'run.started'))[0];
+    $docs = (string) file_get_contents(__DIR__.'/../../docs/events.md');
+    preg_match('/^\| `run\.started` \|.*$/m', $docs, $row);
+
+    expect($started['data']['examples'] ?? null)->toBeArray()
+        ->and(array_diff($started['data']['examples'], array_column(\Charlotte\Design\Examples::pool(), 'id')))->toBe([])
+        ->and($row[0] ?? '')->toContain('`examples`');
+});
+
 test('an unknown type is still a valid envelope, so old clients can skip it', function (): void {
     $array = fixtureEvents()[0];
     $array['type'] = 'future.thing';

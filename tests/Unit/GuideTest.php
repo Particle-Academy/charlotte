@@ -66,17 +66,18 @@ test('Charlotte\'s guide teaches the design gates and a brand character drawn fr
     $text = PublishedGuide::charlotteGuide();
 
     foreach (['grid_orphan', 'hero_thin', 'tap_target', 'bare_list', 'starter.navLink', 'starter.button', 'starter.columns',
-        'set_theme', 'tint', 'Type pairing', 'motif', 'supplied image', 'small floating icon', '"t":"set_theme"',
-        "Illustrates principles; don't reuse content, copy or palette."] as $lesson) {
+        'set_theme', 'tint', 'Type pairing', 'motif', 'supplied image', 'small floating icon',
+        "don't reuse their content, copy or palette", 'Never reuse a distinctive motif, badge or shape from an example.'] as $lesson) {
         expect(str_contains($text, $lesson))->toBeTrue("Missing lesson: {$lesson}");
     }
-    // Two contrasting worked examples, each real ops with its own palette.
+    // Contrasting worked examples, each real ops with its own palette: now a
+    // rotating pool delivered per session, two at a time (ExamplesTest).
     $examples = guideDesignExamples();
-    expect(array_keys($examples))->toBe(['Warm local shop', 'Clean B2B product']);
+    expect(array_slice(array_keys($examples), 0, 2))->toBe(['Warm local shop', 'Clean B2B product']);
     foreach ($examples as $ops) {
         expect($ops[0]['t'])->toBe('set_theme')->and(count($ops))->toBeLessThanOrEqual(3);
     }
-    expect($examples['Warm local shop'][0]['patch']['color']['primary'])->not->toBe($examples['Clean B2B product'][0]['patch']['color']['primary']);
+    expect(array_unique(array_map(fn ($ops) => $ops[0]['patch']['color']['primary'], $examples)))->toHaveCount(count($examples));
 });
 
 test('Charlotte\'s guide covers whole sites, islands and the rendered contrast check', function (): void {

@@ -267,8 +267,10 @@ test('the starter skeleton applies cleanly, and with copy in it the page clears 
         ->and(tool($session, 'cms_finish', ['basedOn' => rev($applied)])['ready'] ?? null)->toBeTrue();
 });
 
-test('each of the guide\'s worked design examples applies cleanly on the starter: fancy-cms and every Charlotte write policy accept it', function (string $label, string $tint, string $node): void {
+test('each worked design example in the pool applies cleanly on the starter: fancy-cms and every Charlotte write policy accept it', function (string $label): void {
     $example = guideDesignExamples()[$label] ?? [];
+    $pool = array_column(\Charlotte\Design\Examples::pool(), null, 'label')[$label];
+    $tint = $pool['ops'][0]['patch']['color']['tint'];
     $session = openSession();
     $ops = [...Starter::skeleton('header'), ...Starter::skeleton('page'), ...Starter::skeleton('footer'),
         ['t' => 'insert_node', 'node' => ['id' => 'title', 'type' => 'heading', 'parent' => 'hero-copy', 'order' => 'a0', 'props' => ['content' => 'Acme Ledger', 'level' => 1], 'style' => Starter::TYPE_SCALE['display']]],
@@ -278,13 +280,16 @@ test('each of the guide\'s worked design examples applies cleanly on the starter
     $css = CssEmitter::emit(json_decode(json_encode($session->state()['doc']), true));
 
     expect($example)->not->toBe([])
+        ->and($example)->toBe($pool['ops'])
         ->and($applied['isError'] ?? false)->toBeFalse()
-        ->and($css)->toContain('--cms-color-tint: '.$tint)
-        ->and($css)->toMatch('/\[data-cms="'.$node.'"\] \{[^}]*display: (flex|grid);/s');
-})->with([
-    'warm local shop' => ['Warm local shop', '#fdf1e7', 'hero-stamp'],
-    'clean B2B product' => ['Clean B2B product', '#eef4ff', 'hero-panel'],
-]);
+        ->and($css)->toContain('--cms-color-tint: '.$tint);
+    foreach ($pool['motifs'] as $motif) {
+        expect($session->state()['doc']['nodes'])->toHaveKey($motif['id']);
+        if ($motif['layout'] !== null) {
+            expect($css)->toMatch('/\[data-cms="'.$motif['id'].'"\] \{[^}]*display: (flex|grid);/s');
+        }
+    }
+})->with(fn (): array => array_column(\Charlotte\Design\Examples::pool(), 'label'));
 
 test('fancy-cms renders the starter as real flex and grid layouts that change at md and lg', function (): void {
     $session = openSession();

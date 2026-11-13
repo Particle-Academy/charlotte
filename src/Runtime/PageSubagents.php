@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Charlotte\Runtime;
 
+use Charlotte\Design\Examples;
 use Charlotte\Guide\BuilderMode;
 use Charlotte\Policy\Refused;
 use Charlotte\Sessions\SessionRecord;
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Prism\Harness\PrismHarness;
 use Prism\Harness\Sessions\Session;
+use Prism\Prism\Contracts\Message;
+use Prism\Prism\ValueObjects\Messages\UserMessage;
 
 /**
  * Charlotte as a prism-harness SUB-AGENT, on the harness's existing API.
@@ -51,10 +54,13 @@ final class PageSubagents
     public function bind(SessionRecord $session, Model $participant, string $scope): void
     {
         $this->sessions->resetRefusals($session->id); // a host delegating (again) is new work
-        $this->harness->session($participant, $scope)
+        $child = $this->harness->session($participant, $scope)
             ->usingProvider($session->provider)
             ->usingModel($session->model)
             ->usingCapability(self::CAPABILITY, ['session' => $session->id, 'scope' => $scope]);
+        if (self::opening($child) === []) {
+            $this->seed($child, $session);
+        }
     }
 
     /** Before a site turn: bind the orchestrator's page sub-agent address. */
@@ -75,12 +81,49 @@ final class PageSubagents
             return;
         }
         $child = $this->harness->session(self::participant($session), self::siteChildScope($session));
-        // An empty thread is already fresh; retiring it would only leave an unlinked row behind.
-        foreach ($child->thread()->messages() as $ignored) {
-            $child->newConversation();
+        $opening = self::opening($child);
+        $section = Examples::promptSection($session->examples());
+        // A thread holding nothing, or only the examples seed, is already
+        // fresh; retiring it would only leave an unlinked row behind.
+        if ($opening === []) {
+            $this->seed($child, $session);
 
             return;
         }
+        if (count($opening) === 1 && $opening[0] instanceof UserMessage && $opening[0]->content === $section) {
+            return;
+        }
+        $child->newConversation();
+        $this->seed($child, $session);
+    }
+
+    /**
+     * Open a page sub-agent's conversation with the session's worked examples
+     * ({@see Examples}), as one user message from Charlotte. The child's
+     * prompt is the task its parent writes, so this is the only place they
+     * can reach it without entering the system prompt (shared and cached
+     * across sessions) or a tool result (framed as data).
+     */
+    private function seed(Session $child, SessionRecord $session): void
+    {
+        $section = Examples::promptSection($session->examples());
+        if ($section !== '') {
+            $child->thread()->record([new UserMessage($section)]);
+        }
+    }
+
+    /** @return list<Message> at most the first two messages of the thread */
+    private static function opening(Session $child): array
+    {
+        $out = [];
+        foreach ($child->thread()->messages() as $message) {
+            $out[] = $message;
+            if (count($out) === 2) {
+                break;
+            }
+        }
+
+        return $out;
     }
 
     /**

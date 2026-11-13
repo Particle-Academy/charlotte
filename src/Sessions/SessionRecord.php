@@ -6,6 +6,7 @@ namespace Charlotte\Sessions;
 
 use Charlotte\Autonomy;
 use Charlotte\Brief\Brief;
+use Charlotte\Design\Examples;
 
 /** One builder session as stored. Page, tenant and participant are host-owned, never model input. */
 final readonly class SessionRecord
@@ -46,6 +47,20 @@ final readonly class SessionRecord
         return new self($this->id, $this->tenant, $page, $this->participantType, $this->participantId, $this->autonomy,
             $this->provider, $this->model, $this->brief, $this->guideHash, $this->guide, $this->status,
             $this->stopRequestedAt, $this->readyRevision, $this->site);
+    }
+
+    /**
+     * The session's two worked examples ({@see Examples}): the ids recorded in
+     * `guide.examples` when it opened, else (a session opened before they
+     * were recorded) sampled from its id, which is what it would have drawn.
+     *
+     * @return list<string>
+     */
+    public function examples(): array
+    {
+        $ids = $this->guide['examples'] ?? null;
+
+        return is_array($ids) ? array_values(array_filter($ids, 'is_string')) : Examples::sample($this->id);
     }
 
     public function stopped(): bool

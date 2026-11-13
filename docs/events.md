@@ -47,7 +47,7 @@ can test its reducer against.
 |---|---|---|
 | `session.status` | system | `status`: `idle`, `queued`, `running`, `stopping`, `stopped`, `failed` |
 | `message.created` | human | `messageId`, `role: "user"`, `text` |
-| `run.started` | system | `runId`, `mode`, `provider`, `model`; `continues` (the previous run's id) when the turn continues after a run stopped at the output limit |
+| `run.started` | system | `runId`, `mode`, `provider`, `model`, `examples` (the ids of the session's two worked design examples, from `Charlotte\Design\Examples::pool()`; the same for every run of a session); `continues` (the previous run's id) when the turn continues after a run stopped at the output limit |
 | `message.delta` | agent | `messageId`, `role: "assistant"`, `text` (a chunk). Coalesced to at most one per 250 ms plus a flush at the end, so append them in order |
 | `message.completed` | agent | `messageId`, `role`, `text` (the whole message; replace the deltas with it) |
 | `tool.call` | agent | `callId`, `tool`, `args` (JSON text, at most 1200 bytes), `truncated` |

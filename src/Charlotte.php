@@ -11,6 +11,7 @@ use Charlotte\Site\Site;
 use Charlotte\Data\Bindings;
 use Charlotte\Guide\BuilderMode;
 use Charlotte\Data\DataCatalogue;
+use Charlotte\Design\Examples;
 use Charlotte\Drafts\NodeTypes;
 use Charlotte\Drafts\PageRepository;
 use Charlotte\Events\EventTypes;
@@ -75,11 +76,12 @@ final class Charlotte
             throw new InvalidArgumentException('Set charlotte.provider and charlotte.model (any Prism provider).');
         }
         $guide = $this->guides()->current();
+        $id = Ulid::generate();
         $record = new SessionRecord(
-            id: Ulid::generate(), tenant: $tenant, page: $page,
+            id: $id, tenant: $tenant, page: $page,
             participantType: $participant->getMorphClass(), participantId: (string) $participant->getKey(),
             autonomy: $autonomy, provider: $provider, model: $model, brief: $brief,
-            guideHash: $guide->guideHash, guide: $guide->toArray(), status: 'idle',
+            guideHash: $guide->guideHash, guide: $guide->toArray() + ['examples' => Examples::sample($id)], status: 'idle',
             stopRequestedAt: null, readyRevision: null,
         );
 
@@ -131,7 +133,7 @@ final class Charlotte
                 id: $id, tenant: $tenant, page: $structure->documentKey($first),
                 participantType: $participant->getMorphClass(), participantId: (string) $participant->getKey(),
                 autonomy: $autonomy, provider: $provider, model: $model, brief: $brief,
-                guideHash: $guide->guideHash, guide: $guide->toArray(), status: 'idle',
+                guideHash: $guide->guideHash, guide: $guide->toArray() + ['examples' => Examples::sample($id)], status: 'idle',
                 stopRequestedAt: null, readyRevision: null, site: $site,
             );
             $this->container->make(SessionStore::class)->create($record);
