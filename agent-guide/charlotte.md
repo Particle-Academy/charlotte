@@ -82,13 +82,13 @@ you are building several pages that share one header and one footer.
 
 ## Kit islands
 
-`cms_describe` returns `islands`: interactive kit components the host renders,
-each with a JSON Schema for its props. Place one as a leaf node with
-`island: true` and props matching its schema; wrong props are refused
-`island_invalid` with the field's path. If `islands.types` is empty, build
-with native elements. Island images are `asset` handles; island facts are held
-to the same truth. `cms_check`'s `contrast.source` is `rendered` (measured in
-a browser, islands included) or `document` (styles alone).
+`cms_describe` lists `islands.families`: every island the host renders, one
+line each. Read a type's schema and example with `cms_island_schema`, place
+it with `island: true`, and bind data as `{"$bind": …}` from `data`. Wrong or
+undeclared props: `island_invalid`, with the path. No families: use native
+elements. Island images are `asset` handles; island facts are held to the
+same truth. `cms_check`'s `contrast.source` is `rendered` (measured in a
+browser, islands included) or `document` (styles alone).
 
 ## Composition
 

@@ -67,6 +67,7 @@ final class Workspace
         private readonly ?DataCatalogue $data = null,
         private readonly int $maxNotReady = 3,
         private readonly bool $stagedGates = true,
+        private readonly int $islandSchemaMax = 8,
     ) {}
 
     /** The host's data streams; empty when the host binds none. */
@@ -265,6 +266,12 @@ final class Workspace
     public function maxNotReady(): int
     {
         return $this->maxNotReady;
+    }
+
+    /** The most island types one cms_island_schema call returns (charlotte.islands.schema_max_types). */
+    public function islandSchemaMax(): int
+    {
+        return $this->islandSchemaMax;
     }
 
     /**

@@ -34,6 +34,6 @@ interface IslandCatalogue
     /** @return list<array{path: string, expected: string, got: string}> empty when the props are valid; paths start at `$` */
     public function validate(string $type, mixed $props): array;
 
-    /** Where the catalogue came from: `fancy-cms`, `host` or `none`. */
+    /** Where the catalogue came from: `fancy-cms`, `fancy-cms-kit` (every kit component), `host` or `none`. */
     public function source(): string;
 }

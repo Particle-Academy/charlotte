@@ -14,6 +14,39 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Every kit component as an island** (owner, 2026-11-13). Set
+  `charlotte.islands.kit` (`CHARLOTTE_KIT_ISLANDS`) true, or bind
+  `CmsDescribeIslands::kit()`, and Charlotte reads fancy-cms's
+  `IslandCatalogue::kit()`: its built-ins (`echart` included) plus 180
+  `<package>:<Component>` islands. Only for a host that renders with
+  fancy-cms-ui's `kitIslands` registered. Needs the fancy-cms release after
+  0.9.1; on an older one `kit()` throws rather than quietly falling back to
+  the built-ins. Off by default: nothing changes for an existing host.
+- **`cms_island_schema(types)`**, a new page tool: the full props schema,
+  example and `slot` of the named types, with only the `$defs` they use.
+  Unknown names come back under `unknown`. At most
+  `charlotte.islands.schema_max_types` (default 8) types per call.
+- `echart` options are checked with fancy-cms's own `EchartOption`
+  validator in `IslandPolicy`, behind fancy-cms's document check.
+
+### Changed
+
+- **BREAKING (tool result shape):** `cms_describe` `islands` no longer
+  carries every type's schema under `types`. It has `families` (family =>
+  type => one-line description), `count`, `builtins` (fancy-cms's built-ins
+  with their full schemas, as before) and `defs`. The kit catalogue is about
+  300 KB of schemas, too big for one result. What to do: a host that reads
+  `cms_describe` itself reads `families`, and calls `cms_island_schema` for
+  a host or kit island's schema. The guide's island section says the same in
+  the same number of bytes, so the prompt size is unchanged.
+- **BREAKING (validation):** island props are now closed at the top level. A
+  prop the type's schema does not declare is refused `island_invalid`, unless
+  the schema sets its own `additionalProperties`. The renderer dropped such
+  props anyway, so they did nothing on the page. What to do: nothing, unless
+  you wrote undeclared props on purpose; every kit catalogue example passes.
+- `BuilderMode::TOOLS` has ten page tools (`cms_island_schema` after
+  `cms_describe`). A catalogue may hold up to 512 types (was 200).
+
 - **Render, critique, revise** (Prism maintainers' recommendation,
   2026-11-13). `Charlotte::screenshotsUsing()` (or bind
   `Critique\PageRenderer`) supplies the host's renderer; with one, a page

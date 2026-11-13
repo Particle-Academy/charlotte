@@ -21,13 +21,22 @@ function cmsCatalogueFile(): array
 test('Agent::describe() islands are read: the built-in node types as bare names, with their $defs', function (): void {
     $catalogue = CmsDescribeIslands::fromDescribe(Agent::describe());
 
+    $kpi = array_values(array_filter($catalogue->describe(), fn (array $e) => $e['type'] === 'kpi'))[0];
+
     expect($catalogue)->not->toBeNull()
-        ->and($catalogue->types())->toBe(['chart', 'kpi', 'table', 'leaderboard', 'input'])
+        ->and($catalogue->types())->toBe(installedBuiltins())
+        ->and($catalogue->types())->toContain('chart', 'kpi', 'table', 'leaderboard', 'input')
         ->and($catalogue->source())->toBe('fancy-cms')
         ->and(array_keys($catalogue->defs()))->toContain('Binding', 'Number', 'Text')
-        ->and(array_column($catalogue->describe(), 'type'))->toBe(['chart', 'kpi', 'table', 'leaderboard', 'input'])
-        ->and($catalogue->describe()[1]['example']['value'])->toBe(['$bind' => 'metrics.revenue']);
+        ->and(array_column($catalogue->describe(), 'type'))->toBe(installedBuiltins())
+        ->and($kpi['example']['value'])->toBe(['$bind' => 'metrics.revenue']);
 });
+
+/** The installed fancy-cms's built-ins: chart, kpi, table, leaderboard and input, and echart from the release after 0.9.1. */
+function installedBuiltins(): array
+{
+    return array_keys(cmsCatalogueFile()['types']);
+}
 
 test('the catalogue file parses to the same catalogue as describe()', function (): void {
     expect(CmsDescribeIslands::fromCatalogue(cmsCatalogueFile())->describe())
@@ -35,7 +44,7 @@ test('the catalogue file parses to the same catalogue as describe()', function (
 });
 
 test('the default binding is fancy-cms\'s catalogue', function (): void {
-    expect(CmsDescribeIslands::catalogue()->types())->toBe(['chart', 'kpi', 'table', 'leaderboard', 'input']);
+    expect(CmsDescribeIslands::catalogue()->types())->toBe(installedBuiltins());
 });
 
 test('props are validated with the catalogue\'s $defs: a binding or a number, never a typed-in string', function (string $type, array $props, ?string $path): void {
@@ -58,7 +67,7 @@ test('props are validated with the catalogue\'s $defs: a binding or a number, ne
 test('host islands are added beside the built-ins and stay namespace:Name', function (): void {
     $catalogue = CmsDescribeIslands::withHost([['type' => 'kit:Tabs', 'description' => 'Tabs.', 'props' => ['type' => 'object']]]);
 
-    expect($catalogue->types())->toBe(['chart', 'kpi', 'table', 'leaderboard', 'input', 'kit:Tabs'])
+    expect($catalogue->types())->toBe([...installedBuiltins(), 'kit:Tabs'])
         ->and(fn () => CmsDescribeIslands::withHost([['type' => 'tabs', 'props' => ['type' => 'object']]]))->toThrow(InvalidArgumentException::class)
         ->and(fn () => SchemaIslandCatalogue::fromArray([['type' => 'gauge', 'props' => ['type' => 'object']]]))->toThrow(InvalidArgumentException::class);
 });

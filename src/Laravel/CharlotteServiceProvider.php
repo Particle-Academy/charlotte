@@ -74,7 +74,10 @@ final class CharlotteServiceProvider extends ServiceProvider
         $this->app->singletonIf(SiteRepository::class, fn (Application $app) => new DatabaseSiteRepository($app['db']->connection()));
         // Bound, not singletons, like AssetCatalogue: a host may rebind them per tenant.
         $this->app->bindIf(ReservedRoutes::class, fn (Application $app) => new ReservedRoutes((array) $app['config']->get('charlotte.site.reserved_routes', [])));
-        $this->app->bindIf(IslandCatalogue::class, fn () => CmsDescribeIslands::catalogue());
+        // charlotte.islands.kit: every kit component (fancy-cms IslandCatalogue::kit()), for a host
+        // that renders with fancy-cms-ui's kitIslands registered; otherwise fancy-cms's built-ins.
+        $this->app->bindIf(IslandCatalogue::class, fn (Application $app) => (bool) $app['config']->get('charlotte.islands.kit', false)
+            ? CmsDescribeIslands::kit() : CmsDescribeIslands::catalogue());
         $this->app->bindIf(RenderedEvidenceSource::class, fn () => new NoRenderedEvidence);
         // Bound, not a singleton: a host may rebind its streams per tenant.
         $this->app->bindIf(DataCatalogue::class, fn () => ArrayDataCatalogue::empty());
@@ -98,6 +101,7 @@ final class CharlotteServiceProvider extends ServiceProvider
             $app->make(IslandCatalogue::class), $app->make(RenderedEvidenceSource::class), $app->make(DataCatalogue::class),
             max(1, (int) $app['config']->get('charlotte.finish.max_not_ready', 3)),
             (bool) $app['config']->get('charlotte.finish.staged_gates', true),
+            max(1, (int) $app['config']->get('charlotte.islands.schema_max_types', 8)),
         ));
         $this->app->bind(SiteWorkspace::class, fn (Application $app) => new SiteWorkspace(
             $app['db']->connection(), $app->make(Workspace::class), $app->make(SessionStore::class), $app->make(SiteRepository::class),

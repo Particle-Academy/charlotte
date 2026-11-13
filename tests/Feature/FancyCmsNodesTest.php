@@ -45,8 +45,15 @@ function applyOps(\Charlotte\CharlotteSession $session, array $ops): array
 test('cms_describe offers fancy-cms\'s built-in nodes by default', function (): void {
     $islands = tool(openSession(), 'cms_describe')['islands'];
 
+    $installed = array_keys(json_decode((string) file_get_contents(dirname(__DIR__, 2).'/vendor/particle-academy/fancy-cms/resources/islands/catalogue.json'), true)['types']);
+
+    // The built-ins keep their full schemas inline (they are few and small); every type is also listed by family.
     expect($islands['source'])->toBe('fancy-cms')
-        ->and(array_column($islands['types'], 'type'))->toBe(['chart', 'kpi', 'table', 'leaderboard', 'input'])
+        ->and(array_column($islands['builtins'], 'type'))->toBe($installed)
+        ->and($installed)->toContain('chart', 'kpi', 'table', 'leaderboard', 'input')
+        ->and(array_keys($islands['families']))->toBe(['fancy-cms'])
+        ->and(array_keys($islands['families']['fancy-cms']))->toBe($installed)
+        ->and($islands['builtins'][0]['props']['type'])->toBe('object')
         ->and($islands['defs'])->toHaveKey('Binding');
 });
 

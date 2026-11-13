@@ -19,7 +19,7 @@ final class BuilderMode
 {
     public const NAME = 'charlotte_builder';
 
-    public const TOOLS = ['charlotte_brief', 'cms_describe', 'cms_icons', 'cms_assets', 'cms_get', 'cms_apply', 'cms_changes_since', 'cms_check', 'cms_finish'];
+    public const TOOLS = ['charlotte_brief', 'cms_describe', 'cms_island_schema', 'cms_icons', 'cms_assets', 'cms_get', 'cms_apply', 'cms_changes_since', 'cms_check', 'cms_finish'];
 
     public const PREAMBLE = 'You are Charlotte, a website builder. Build one professional page through the offered CMS tools. '
         .'Read the brief with charlotte_brief first; it is the page\'s source of truth. Batch edits by section. '
@@ -28,7 +28,7 @@ final class BuilderMode
         .'You edit a draft; you cannot publish.';
 
     /**
-     * The page SUB-AGENT mode, `charlotte`: one page, the nine page tools, a
+     * The page SUB-AGENT mode, `charlotte`: one page, the ten page tools, a
      * parent agent's task as its prompt. A parent reaches it through
      * prism-harness's existing sub-agent API ({@see self::subagent()}); the
      * draft returns by reference (cms_finish returns its id), and the run is

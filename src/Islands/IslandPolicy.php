@@ -8,6 +8,7 @@ use Charlotte\Policy\AssetCatalogue;
 use Charlotte\Policy\AssetPolicy;
 use Charlotte\Policy\Refused;
 use FancyCms\Exceptions\PageSessionException;
+use FancyCms\Render\EchartOption;
 
 /**
  * Island nodes against the host's catalogue, after every write and for every
@@ -30,7 +31,7 @@ final class IslandPolicy
 {
     private const IMAGE_KEYS = ['src', 'srcset', 'sizes', 'poster', 'image', 'url', 'backgroundimage'];
 
-    public const HINT = 'Place islands as {type, island:true, props} with props matching that type\'s schema in cms_describe islands. Use asset handles from cms_assets for images.';
+    public const HINT = 'Place islands as {type, island:true, props} with props matching that type\'s schema from cms_island_schema. Use asset handles from cms_assets for images.';
 
     public static function assert(array $before, array $after, IslandCatalogue $catalogue, AssetCatalogue $assets, ?string $revision = null): void
     {
@@ -68,10 +69,36 @@ final class IslandPolicy
             $props = $node['props'] ?? [];
             self::images($props, $assets, $revision);
             $errors = $catalogue->validate($type, $props);
+            if ($errors === [] && $type === 'echart') {
+                $errors = self::echart($props);
+            }
             if ($errors !== []) {
                 self::refuse(array_map(fn (array $e) => ['path' => $base.'.props'.substr($e['path'], 1)] + $e, $errors), $revision);
             }
         }
+    }
+
+    /**
+     * The `echart` node's option against fancy-cms's own safe-subset validator
+     * (`EchartOption`, shared with fancy-cms-ui through one fixture), never a
+     * copy of it: no functions, markup, links, images or unlisted keys. An
+     * option bound as a whole is checked by fancy-cms once it resolves. An
+     * install without the validator has no `echart` node type either, so
+     * fancy-cms refuses the node before this matters.
+     *
+     * @return list<array{path: string, expected: string, got: string}>
+     */
+    private static function echart(mixed $props): array
+    {
+        $option = is_array($props) ? ($props['option'] ?? null) : null;
+        if (! class_exists(EchartOption::class) || $option === null
+            || (is_array($option) && is_string($option['$bind'] ?? null) && count($option) === 1)) {
+            return [];
+        }
+
+        return array_map(fn (string $at): array => ['path' => '$.option'.substr($at, 1),
+            'expected' => 'an ECharts option in the safe subset: listed keys and series types only; no functions, markup, links, images, rich text or HTML tooltips',
+            'got' => 'a value outside it'], EchartOption::errors($option));
     }
 
     private static function images(mixed $value, AssetCatalogue $assets, ?string $revision): void

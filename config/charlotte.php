@@ -54,6 +54,25 @@ return [
     ],
 
     /*
+    | Islands: the component node types the agent may place.
+    |
+    | kit: true binds EVERY kit component (fancy-cms IslandCatalogue::kit(),
+    | 180 kit islands plus fancy-cms's built-ins, echart included). Only for a
+    | host that renders with fancy-cms-ui's `kitIslands` registered; a host
+    | that binds IslandCatalogue itself is not affected. Off: fancy-cms's
+    | built-ins only.
+    |
+    | schema_max_types: the most types one cms_island_schema call returns.
+    | cms_describe lists every type in one line each; the full schemas come
+    | from that lookup, a few at a time, so no result carries the whole
+    | catalogue (about 300 KB with the kit).
+    */
+    'islands' => [
+        'kit' => (bool) env('CHARLOTTE_KIT_ISLANDS', false),
+        'schema_max_types' => (int) env('CHARLOTTE_ISLAND_SCHEMA_MAX_TYPES', 8),
+    ],
+
+    /*
     | Whole-site sessions (Charlotte::for($user)->tenant($t)->site($key)).
     |
     | reserved_routes: routes YOUR app serves, where a site page would never

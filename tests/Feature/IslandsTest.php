@@ -28,13 +28,17 @@ function validTabs(): array
     return ['tabs' => [['value' => 'monthly', 'label' => 'Monthly', 'body' => ['$19/month']], ['value' => 'yearly', 'label' => 'Yearly']]];
 }
 
-test('cms_describe lists the island catalogue with each type\'s props schema and how to place it', function (): void {
-    $result = tool(openSession(), 'cms_describe');
+test('cms_describe lists the island catalogue by family and how to place it; cms_island_schema gives a type\'s props schema', function (): void {
+    $session = openSession();
+    $result = tool($session, 'cms_describe');
+    $schema = tool($session, 'cms_island_schema', ['types' => ['kit:Tabs']]);
 
-    expect(array_column($result['islands']['types'], 'type'))->toBe(['kit:Tabs', 'kit:Gallery'])
-        ->and($result['islands']['types'][0]['props']['required'])->toBe(['tabs'])
+    expect($result['islands']['families'])->toBe(['kit' => ['kit:Tabs' => 'Tabbed panels of text.', 'kit:Gallery' => $result['islands']['families']['kit']['kit:Gallery']]])
+        ->and($result['islands']['builtins'])->toBe([])
         ->and($result['islands']['source'])->toBe('host')
-        ->and($result['islands']['place'])->toContain('"island":true');
+        ->and($result['islands']['place'])->toContain('"island":true')
+        ->and($result['islands']['place'])->toContain('cms_island_schema')
+        ->and($schema['types'][0]['props']['required'])->toBe(['tabs']);
 });
 
 test('a valid island lands on the draft', function (): void {
@@ -153,7 +157,8 @@ test('with no island catalogue anywhere, cms_describe says so and no island can 
     $describe = tool($session, 'cms_describe');
     $place = tool($session, 'cms_apply', ['ops' => [islandOp('plans', 'kit:Tabs', validTabs())], 'basedOn' => $session->state()['revision']]);
 
-    expect($describe['islands']['types'])->toBe([])
+    expect($describe['islands']['families'])->toBe([])
+        ->and($describe['islands']['count'])->toBe(0)
         ->and($place['isError'])->toBeTrue();
 });
 

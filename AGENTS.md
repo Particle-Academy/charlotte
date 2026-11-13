@@ -15,7 +15,7 @@ read config through the container.
 - `Workspace`: all page mutations and the events they record, each inside one
   DB transaction. Actor `agent` is fixed for tool writes; human writes carry
   the host's id. Page, tenant and actor never come from tool arguments.
-- `Tools\PageTools`: the nine tools and the closed dispatch (`call()`), lifted
+- `Tools\PageTools`: the ten page tools (nine plus `cms_island_schema`) and the closed dispatch (`call()`), lifted
   from flabs `SiteTools` with the same argument bounds. `invalid_state` from
   fancy-cms is rethrown (host corruption); other PageSessionExceptions and
   `Policy\Refused` become `{isError, revision, error:{code}}` results.
@@ -195,6 +195,20 @@ read config through the container.
   subset (no dependency), with `$ref` into the catalogue's `$defs`.
   `NodeTypes::forStored()` adds island types already in a stored history, so
   a narrowed catalogue never makes a draft unreadable.
+  **The kit** (`charlotte.islands.kit`, `CmsDescribeIslands::kit()` /
+  `fromKit()`): fancy-cms `IslandCatalogue::kit()`, bare names as built-ins
+  (`echart` too) and `<package>:<Component>` as host-style islands; source
+  `fancy-cms-kit`; built once per process. It is ~300 KB, so it must never
+  reach the prompt or one tool result: `cms_describe` gives
+  `Islands\IslandIndex::families()` (one line per type, by package) plus the
+  built-ins' full entries, and `cms_island_schema` gives `IslandIndex::schemas()`
+  for named types only, capped by `Workspace::islandSchemaMax()`.
+  `SchemaIslandCatalogue::validate()` CLOSES props at the top level (the kit
+  schemas set no `additionalProperties`; the renderer drops undeclared props).
+  `IslandPolicy` re-runs fancy-cms's `EchartOption` on `echart` when the class
+  exists. `KitIslandsTest` reads `tests/fixtures/fancy-cms-kit-catalogue.json`
+  (fancy-cms 8d1d435's `kit()->toArray()`; regenerate it when the kit
+  catalogue changes) and validates every catalogue example.
 - **Data (report dashboards)**: `Data\DataCatalogue` (default empty
   `ArrayDataCatalogue`; `Charlotte::dataCatalogue()`). `Data\Bindings` finds
   every `$bind` (props at any depth, `repeat.each`), validates paths
@@ -224,7 +238,7 @@ read config through the container.
   resolves only the child mode's tools. Never re-add a Charlotte-side spawn,
   meter or tool filter; `SubagentTest` proves the harness does all three with
   none. `site_page_create` / `site_page_select` retire the child's thread so
-  each page starts fresh. `PageTools(child: true)` = the nine tools, no site
+  each page starts fresh. `PageTools(child: true)` = the ten page tools, no site
   tools, and `cms_finish` returns `{draft: {page, revision}}` without setting
   the site's ready revision.
 

@@ -37,7 +37,8 @@ final class SchemaIslandCatalogue implements IslandCatalogue
      */
     public const NEVER_ISLANDS = ['section', 'stack', 'grid', 'frame', 'shape', 'card', 'text', 'heading', 'richtext', 'link', 'list', 'divider', 'callout', 'code', 'button', 'image', 'repeater', 'icon'];
 
-    private const MAX_TYPES = 200;
+    /** fancy-cms's full kit catalogue is 186 types; this leaves a host room for its own beside it. */
+    private const MAX_TYPES = 512;
 
     /**
      * @param  array<string, array{type: string, description: string, props: array, builtin: bool, hydrate?: string, example?: mixed}>  $entries
@@ -110,7 +111,23 @@ final class SchemaIslandCatalogue implements IslandCatalogue
             return [['path' => '$', 'expected' => 'an island type from the catalogue', 'got' => 'unknown island type']];
         }
 
-        return PropsSchema::validate($this->entries[$type]['props'], $props, '$', $this->defs);
+        return PropsSchema::validate(self::closed($this->entries[$type]['props']), $props, '$', $this->defs);
+    }
+
+    /**
+     * An island's props are CLOSED at the top level: a prop the schema does not
+     * declare is refused, unless the schema says otherwise with its own
+     * `additionalProperties`. The renderer drops an undeclared prop, so one
+     * that got through would be a silent no-op on the page (or a `className`,
+     * `style` or handler the contract forbids).
+     */
+    private static function closed(array $schema): array
+    {
+        if (is_array($schema['properties'] ?? null) && ! array_key_exists('additionalProperties', $schema)) {
+            $schema['additionalProperties'] = false;
+        }
+
+        return $schema;
     }
 
     public function source(): string
@@ -139,7 +156,9 @@ final class SchemaIslandCatalogue implements IslandCatalogue
             $description = is_string($entry['description'] ?? null) ? mb_substr($entry['description'], 0, 500) : '';
             $out[$type] = ['type' => $type, 'description' => $description, 'props' => $schema, 'builtin' => $builtin]
                 + (is_string($entry['hydrate'] ?? null) ? ['hydrate' => $entry['hydrate']] : [])
-                + (array_key_exists('example', $entry) ? ['example' => $entry['example']] : []);
+                + (array_key_exists('example', $entry) ? ['example' => $entry['example']] : [])
+                + (is_string($entry['package'] ?? null) && $entry['package'] !== '' ? ['package' => $entry['package']] : [])
+                + (($entry['slot'] ?? null) === 'children' ? ['slot' => 'children'] : []);
         }
 
         return $out;
