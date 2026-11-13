@@ -1,0 +1,1811 @@
+{
+    "source": "flabs run 514 (test 29), lane 763, charlotte be192a2, finished document",
+    "review": "Gated unreadable_contrast: the hero media panel text (\"Practising since 2009\", the partner names) is white on the near-white hero. The panel background is var(--cms-color-primary), and the theme sets only color.accent, so fancy-cms emits no --cms-color-primary: the declaration is invalid at computed-value time and the panel is transparent over the hero tint #f5f3ef.",
+    "document": {
+        "id": "lane-763",
+        "seq": 74,
+        "meta": {
+            "title": "Harrow & Vale | Employment Law for Employees",
+            "slug": "/",
+            "scrollMode": "smooth",
+            "description": "Harrow & Vale represents employees in unfair dismissal, discrimination and settlement agreement matters. Free 30-minute first consultation.",
+            "seo": {
+                "description": "Harrow & Vale represents employees in unfair dismissal, discrimination and settlement agreement matters. Free 30-minute first consultation."
+            }
+        },
+        "theme": {
+            "color": {
+                "accent": "#7c2d12"
+            },
+            "font": {
+                "display": "Georgia, 'Times New Roman', serif",
+                "body": "system-ui, -apple-system, 'Segoe UI', sans-serif"
+            }
+        },
+        "breakpoints": [
+            "base",
+            "md",
+            "lg"
+        ],
+        "nodes": {
+            "header": {
+                "id": "header",
+                "type": "section",
+                "parent": null,
+                "order": "a0",
+                "props": {
+                    "as": "header"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "header-bar": {
+                "id": "header-bar",
+                "type": "stack",
+                "parent": "header",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "align": "start"
+                    },
+                    "md": {
+                        "direction": "row",
+                        "justify": "between",
+                        "align": "center"
+                    }
+                },
+                "layout": "stack"
+            },
+            "site-nav": {
+                "id": "site-nav",
+                "type": "stack",
+                "parent": "header-bar",
+                "order": "a1",
+                "props": {
+                    "as": "nav"
+                },
+                "style": {
+                    "base": {
+                        "direction": "row",
+                        "wrap": true,
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "align": "center"
+                    },
+                    "md": {
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "stack"
+            },
+            "hero": {
+                "id": "hero",
+                "type": "section",
+                "parent": null,
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 48,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-tint, #f5f3ef)"
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 72,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    },
+                    "lg": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-grid": {
+                "id": "hero-grid",
+                "type": "grid",
+                "parent": "hero",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "columns": 1,
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        },
+                        "align": "center"
+                    },
+                    "lg": {
+                        "columns": 2,
+                        "gap": {
+                            "value": 48,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "grid"
+            },
+            "hero-copy": {
+                "id": "hero-copy",
+                "type": "stack",
+                "parent": "hero-grid",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "gap": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "align": "start"
+                    }
+                },
+                "layout": "stack"
+            },
+            "hero-actions": {
+                "id": "hero-actions",
+                "type": "stack",
+                "parent": "hero-copy",
+                "order": "a5",
+                "props": [],
+                "style": {
+                    "base": {
+                        "direction": "row",
+                        "wrap": true,
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "align": "center"
+                    }
+                },
+                "layout": "stack"
+            },
+            "hero-media": {
+                "id": "hero-media",
+                "type": "stack",
+                "parent": "hero-grid",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "overflow": "hidden"
+                    }
+                },
+                "layout": "stack"
+            },
+            "features": {
+                "id": "features",
+                "type": "section",
+                "parent": null,
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 48,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 72,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    },
+                    "lg": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "features-inner": {
+                "id": "features-inner",
+                "type": "stack",
+                "parent": "features",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "gap": {
+                            "value": 40,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "stack"
+            },
+            "features-head": {
+                "id": "features-head",
+                "type": "stack",
+                "parent": "features-inner",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "maxWidth": {
+                            "value": 680,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "stack"
+            },
+            "features-grid": {
+                "id": "features-grid",
+                "type": "grid",
+                "parent": "features-inner",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "columns": 1,
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "columns": 3
+                    },
+                    "lg": {
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "grid"
+            },
+            "details": {
+                "id": "details",
+                "type": "section",
+                "parent": null,
+                "order": "a3",
+                "props": [],
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 48,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-tint)"
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 72,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    },
+                    "lg": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "details-inner": {
+                "id": "details-inner",
+                "type": "stack",
+                "parent": "details",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "gap": {
+                            "value": 40,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "stack"
+            },
+            "details-head": {
+                "id": "details-head",
+                "type": "stack",
+                "parent": "details-inner",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "maxWidth": {
+                            "value": 680,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "stack"
+            },
+            "details-grid": {
+                "id": "details-grid",
+                "type": "grid",
+                "parent": "details-inner",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "columns": 1,
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "columns": 2
+                    },
+                    "lg": {
+                        "gap": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "grid"
+            },
+            "trust": {
+                "id": "trust",
+                "type": "section",
+                "parent": null,
+                "order": "a4",
+                "props": [],
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 48,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "trust-inner": {
+                "id": "trust-inner",
+                "type": "stack",
+                "parent": "trust",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 720,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "align": "start",
+                        "textAlign": "left"
+                    }
+                },
+                "layout": "stack"
+            },
+            "cta": {
+                "id": "cta",
+                "type": "section",
+                "parent": null,
+                "order": "a5",
+                "props": [],
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 48,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "background": "var(--cms-color-primary, #1c3d5a)",
+                        "color": "#ffffff"
+                    },
+                    "md": {
+                        "paddingY": {
+                            "value": 72,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    },
+                    "lg": {
+                        "paddingY": {
+                            "value": 96,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "cta-inner": {
+                "id": "cta-inner",
+                "type": "stack",
+                "parent": "cta",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 720,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "align": "center",
+                        "textAlign": "center"
+                    }
+                },
+                "layout": "stack"
+            },
+            "footer": {
+                "id": "footer",
+                "type": "section",
+                "parent": null,
+                "order": "a6",
+                "props": {
+                    "as": "footer"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 40,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "paddingX": {
+                            "value": 32,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-inner": {
+                "id": "footer-inner",
+                "type": "stack",
+                "parent": "footer",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "maxWidth": {
+                            "value": 1120,
+                            "unit": "px"
+                        },
+                        "marginX": "auto",
+                        "direction": "column",
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "align": "start"
+                    },
+                    "md": {
+                        "direction": "row",
+                        "justify": "between",
+                        "align": "center"
+                    }
+                },
+                "layout": "stack"
+            },
+            "footer-nav": {
+                "id": "footer-nav",
+                "type": "stack",
+                "parent": "footer-inner",
+                "order": "a1",
+                "props": {
+                    "as": "nav"
+                },
+                "style": {
+                    "base": {
+                        "direction": "row",
+                        "wrap": true,
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    },
+                    "md": {
+                        "gap": {
+                            "value": 24,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "stack"
+            },
+            "brand": {
+                "id": "brand",
+                "type": "text",
+                "parent": "header-bar",
+                "order": "a0",
+                "props": {
+                    "content": "Harrow & Vale"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 22,
+                            "unit": "px"
+                        },
+                        "fontWeight": 700,
+                        "fontFamily": "var(--cms-font-display)",
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "nav-services": {
+                "id": "nav-services",
+                "type": "link",
+                "parent": "site-nav",
+                "order": "a0",
+                "props": {
+                    "content": "Services",
+                    "href": "#services"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.5,
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "nav-about": {
+                "id": "nav-about",
+                "type": "link",
+                "parent": "site-nav",
+                "order": "a1",
+                "props": {
+                    "content": "About",
+                    "href": "#about"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.5,
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "nav-contact": {
+                "id": "nav-contact",
+                "type": "link",
+                "parent": "site-nav",
+                "order": "a2",
+                "props": {
+                    "content": "Contact",
+                    "href": "#contact"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.5,
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-ink)"
+                    }
+                }
+            },
+            "nav-book": {
+                "id": "nav-book",
+                "type": "button",
+                "parent": "site-nav",
+                "order": "a3",
+                "props": {
+                    "label": "Book a consultation",
+                    "href": "https://book.example.com/harrow-vale",
+                    "variant": "primary"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 15,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-eyebrow": {
+                "id": "hero-eyebrow",
+                "type": "text",
+                "parent": "hero-copy",
+                "order": "a0",
+                "props": {
+                    "content": "Employment law for employees"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.4,
+                        "fontWeight": 600,
+                        "textTransform": "uppercase",
+                        "letterSpacing": {
+                            "value": 1,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-accent)"
+                    }
+                }
+            },
+            "hero-h1": {
+                "id": "hero-h1",
+                "type": "heading",
+                "parent": "hero-copy",
+                "order": "a1",
+                "props": {
+                    "content": "When your employer gets it wrong, you need someone on your side",
+                    "level": 1
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 40,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.1,
+                        "fontWeight": 700,
+                        "letterSpacing": {
+                            "value": -0.5,
+                            "unit": "px"
+                        },
+                        "fontFamily": "var(--cms-font-display)",
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 52,
+                            "unit": "px"
+                        }
+                    },
+                    "lg": {
+                        "fontSize": {
+                            "value": 60,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-lead": {
+                "id": "hero-lead",
+                "type": "text",
+                "parent": "hero-copy",
+                "order": "a2",
+                "props": {
+                    "content": "Harrow & Vale is a four-lawyer firm representing employees, not employers, in unfair dismissal, discrimination and settlement agreement matters. We've been practising since 2009."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 18,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-btn-primary": {
+                "id": "hero-btn-primary",
+                "type": "button",
+                "parent": "hero-actions",
+                "order": "a0",
+                "props": {
+                    "label": "Book a free consultation",
+                    "href": "https://book.example.com/harrow-vale",
+                    "variant": "primary"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "hero-media-panel": {
+                "id": "hero-media-panel",
+                "type": "frame",
+                "parent": "hero-media",
+                "order": "a0",
+                "props": {
+                    "decorative": false
+                },
+                "style": {
+                    "base": {
+                        "background": "var(--cms-color-primary)",
+                        "padding": {
+                            "value": 40,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "minHeight": {
+                            "value": 320,
+                            "unit": "px"
+                        },
+                        "align": "center",
+                        "justify": "center"
+                    }
+                },
+                "layout": "stack"
+            },
+            "hero-media-stack": {
+                "id": "hero-media-stack",
+                "type": "stack",
+                "parent": "hero-media-panel",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "align": "center",
+                        "gap": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "textAlign": "center"
+                    }
+                },
+                "layout": "stack"
+            },
+            "hero-media-icon": {
+                "id": "hero-media-icon",
+                "type": "icon",
+                "parent": "hero-media-stack",
+                "order": "a0",
+                "props": {
+                    "name": "shield-check",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 64,
+                            "unit": "px"
+                        },
+                        "color": "#ffffff"
+                    }
+                }
+            },
+            "hero-media-fact": {
+                "id": "hero-media-fact",
+                "type": "text",
+                "parent": "hero-media-stack",
+                "order": "a1",
+                "props": {
+                    "content": "Practising since 2009"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "fontWeight": 700,
+                        "color": "#ffffff",
+                        "fontFamily": "var(--cms-font-display)"
+                    }
+                }
+            },
+            "hero-media-sub": {
+                "id": "hero-media-sub",
+                "type": "text",
+                "parent": "hero-media-stack",
+                "order": "a2",
+                "props": {
+                    "content": "Dana Harrow & Ruth Vale, Partners"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 15,
+                            "unit": "px"
+                        },
+                        "color": "#ffffff",
+                        "opacity": 0.9
+                    }
+                }
+            },
+            "footer-brand": {
+                "id": "footer-brand",
+                "type": "text",
+                "parent": "footer-inner",
+                "order": "a0",
+                "props": {
+                    "content": "Harrow & Vale"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 18,
+                            "unit": "px"
+                        },
+                        "fontWeight": 700,
+                        "fontFamily": "var(--cms-font-display)",
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "footer-services": {
+                "id": "footer-services",
+                "type": "link",
+                "parent": "footer-nav",
+                "order": "a0",
+                "props": {
+                    "content": "Services",
+                    "href": "#services"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.5,
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-about": {
+                "id": "footer-about",
+                "type": "link",
+                "parent": "footer-nav",
+                "order": "a1",
+                "props": {
+                    "content": "About",
+                    "href": "#about"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.5,
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "footer-contact-link": {
+                "id": "footer-contact-link",
+                "type": "link",
+                "parent": "footer-nav",
+                "order": "a2",
+                "props": {
+                    "content": "Contact",
+                    "href": "#contact"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.5,
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "features-eyebrow": {
+                "id": "features-eyebrow",
+                "type": "text",
+                "parent": "features-head",
+                "order": "a0",
+                "props": {
+                    "content": "What we handle"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.4,
+                        "fontWeight": 600,
+                        "textTransform": "uppercase",
+                        "letterSpacing": {
+                            "value": 1,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-accent)"
+                    }
+                }
+            },
+            "features-h2": {
+                "id": "features-h2",
+                "type": "heading",
+                "parent": "features-head",
+                "order": "a1",
+                "props": {
+                    "content": "Employment law, from the employee's side",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.2,
+                        "fontWeight": 700,
+                        "fontFamily": "var(--cms-font-display)",
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 34,
+                            "unit": "px"
+                        }
+                    },
+                    "lg": {
+                        "fontSize": {
+                            "value": 40,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "card-dismissal": {
+                "id": "card-dismissal",
+                "type": "card",
+                "parent": "features-grid",
+                "order": "a0",
+                "props": {
+                    "anchor": "services"
+                },
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)"
+                    },
+                    "md": {
+                        "padding": {
+                            "value": 28,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "stack"
+            },
+            "card-dismissal-icon": {
+                "id": "card-dismissal-icon",
+                "type": "icon",
+                "parent": "card-dismissal",
+                "order": "a0",
+                "props": {
+                    "name": "shield-ban",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 32,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "card-dismissal-h3": {
+                "id": "card-dismissal-h3",
+                "type": "heading",
+                "parent": "card-dismissal",
+                "order": "a1",
+                "props": {
+                    "content": "Unfair dismissal",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.3,
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 22,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "card-dismissal-body": {
+                "id": "card-dismissal-body",
+                "type": "text",
+                "parent": "card-dismissal",
+                "order": "a2",
+                "props": {
+                    "content": "Advice and representation for employees who have been dismissed unfairly."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "card-discrimination": {
+                "id": "card-discrimination",
+                "type": "card",
+                "parent": "features-grid",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)"
+                    },
+                    "md": {
+                        "padding": {
+                            "value": 28,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "stack"
+            },
+            "card-discrimination-icon": {
+                "id": "card-discrimination-icon",
+                "type": "icon",
+                "parent": "card-discrimination",
+                "order": "a0",
+                "props": {
+                    "name": "shield-alert",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 32,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "card-discrimination-h3": {
+                "id": "card-discrimination-h3",
+                "type": "heading",
+                "parent": "card-discrimination",
+                "order": "a1",
+                "props": {
+                    "content": "Discrimination",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.3,
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 22,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "card-discrimination-body": {
+                "id": "card-discrimination-body",
+                "type": "text",
+                "parent": "card-discrimination",
+                "order": "a2",
+                "props": {
+                    "content": "Support for employees facing discrimination at work."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "card-settlement": {
+                "id": "card-settlement",
+                "type": "card",
+                "parent": "features-grid",
+                "order": "a2",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)"
+                    },
+                    "md": {
+                        "padding": {
+                            "value": 28,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "stack"
+            },
+            "card-settlement-icon": {
+                "id": "card-settlement-icon",
+                "type": "icon",
+                "parent": "card-settlement",
+                "order": "a0",
+                "props": {
+                    "name": "file-check",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 32,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "card-settlement-h3": {
+                "id": "card-settlement-h3",
+                "type": "heading",
+                "parent": "card-settlement",
+                "order": "a1",
+                "props": {
+                    "content": "Settlement agreements",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.3,
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 22,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "card-settlement-body": {
+                "id": "card-settlement-body",
+                "type": "text",
+                "parent": "card-settlement",
+                "order": "a2",
+                "props": {
+                    "content": "Review and negotiation of settlement agreements on your behalf."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "details-eyebrow": {
+                "id": "details-eyebrow",
+                "type": "text",
+                "parent": "details-head",
+                "order": "a0",
+                "props": {
+                    "content": "About Harrow & Vale"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.4,
+                        "fontWeight": 600,
+                        "textTransform": "uppercase",
+                        "letterSpacing": {
+                            "value": 1,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-accent)"
+                    }
+                }
+            },
+            "details-h2": {
+                "id": "details-h2",
+                "type": "heading",
+                "parent": "details-head",
+                "order": "a1",
+                "props": {
+                    "content": "A straightforward first step",
+                    "level": 2,
+                    "anchor": "about"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.2,
+                        "fontWeight": 700,
+                        "fontFamily": "var(--cms-font-display)",
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 34,
+                            "unit": "px"
+                        }
+                    },
+                    "lg": {
+                        "fontSize": {
+                            "value": 40,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "card-consult": {
+                "id": "card-consult",
+                "type": "card",
+                "parent": "details-grid",
+                "order": "a0",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)",
+                        "background": "#ffffff"
+                    },
+                    "md": {
+                        "padding": {
+                            "value": 28,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "stack"
+            },
+            "card-consult-icon": {
+                "id": "card-consult-icon",
+                "type": "icon",
+                "parent": "card-consult",
+                "order": "a0",
+                "props": {
+                    "name": "calendar-check",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 32,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "card-consult-h3": {
+                "id": "card-consult-h3",
+                "type": "heading",
+                "parent": "card-consult",
+                "order": "a1",
+                "props": {
+                    "content": "Your first consultation",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.3,
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 22,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "card-consult-list": {
+                "id": "card-consult-list",
+                "type": "list",
+                "parent": "card-consult",
+                "order": "a2",
+                "props": {
+                    "items": [
+                        "30 minutes",
+                        "Free of charge",
+                        "By phone or video"
+                    ],
+                    "ordered": false
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "card-team": {
+                "id": "card-team",
+                "type": "card",
+                "parent": "details-grid",
+                "order": "a1",
+                "props": [],
+                "style": {
+                    "base": {
+                        "padding": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "gap": {
+                            "value": 12,
+                            "unit": "px"
+                        },
+                        "border": "1px solid var(--cms-color-line)",
+                        "background": "#ffffff"
+                    },
+                    "md": {
+                        "padding": {
+                            "value": 28,
+                            "unit": "px"
+                        }
+                    }
+                },
+                "layout": "stack"
+            },
+            "card-team-icon": {
+                "id": "card-team-icon",
+                "type": "icon",
+                "parent": "card-team",
+                "order": "a0",
+                "props": {
+                    "name": "handshake",
+                    "decorative": true
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 32,
+                            "unit": "px"
+                        },
+                        "color": "var(--cms-color-primary)"
+                    }
+                }
+            },
+            "card-team-h3": {
+                "id": "card-team-h3",
+                "type": "heading",
+                "parent": "card-team",
+                "order": "a1",
+                "props": {
+                    "content": "Our firm",
+                    "level": 3
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 20,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.3,
+                        "fontWeight": 600,
+                        "color": "var(--cms-color-ink)"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 22,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "card-team-body": {
+                "id": "card-team-body",
+                "type": "text",
+                "parent": "card-team",
+                "order": "a2",
+                "props": {
+                    "content": "A four-lawyer firm practising since 2009, led by partners Dana Harrow and Ruth Vale."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 17,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "trust-text": {
+                "id": "trust-text",
+                "type": "text",
+                "parent": "trust-inner",
+                "order": "a0",
+                "props": {
+                    "content": "This page is general information, not legal advice.",
+                    "anchor": "contact"
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.5,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            },
+            "cta-h2": {
+                "id": "cta-h2",
+                "type": "heading",
+                "parent": "cta-inner",
+                "order": "a0",
+                "props": {
+                    "content": "Speak with us about your situation",
+                    "level": 2
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 28,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.2,
+                        "fontWeight": 700,
+                        "fontFamily": "var(--cms-font-display)",
+                        "color": "#ffffff"
+                    },
+                    "md": {
+                        "fontSize": {
+                            "value": 34,
+                            "unit": "px"
+                        }
+                    }
+                }
+            },
+            "cta-body": {
+                "id": "cta-body",
+                "type": "text",
+                "parent": "cta-inner",
+                "order": "a1",
+                "props": {
+                    "content": "Book a free, 30-minute first consultation by phone or video."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 18,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.6,
+                        "color": "#ffffff"
+                    }
+                }
+            },
+            "cta-btn": {
+                "id": "cta-btn",
+                "type": "button",
+                "parent": "cta-inner",
+                "order": "a2",
+                "props": {
+                    "label": "Book a free consultation",
+                    "href": "https://book.example.com/harrow-vale",
+                    "variant": "ghost"
+                },
+                "style": {
+                    "base": {
+                        "paddingY": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "paddingX": {
+                            "value": 24,
+                            "unit": "px"
+                        },
+                        "fontSize": {
+                            "value": 16,
+                            "unit": "px"
+                        },
+                        "radius": {
+                            "value": 8,
+                            "unit": "px"
+                        },
+                        "border": "2px solid #ffffff",
+                        "color": "#ffffff"
+                    }
+                }
+            },
+            "footer-disclaimer": {
+                "id": "footer-disclaimer",
+                "type": "text",
+                "parent": "footer-inner",
+                "order": "a2",
+                "props": {
+                    "content": "This page is general information, not legal advice."
+                },
+                "style": {
+                    "base": {
+                        "fontSize": {
+                            "value": 14,
+                            "unit": "px"
+                        },
+                        "lineHeight": 1.5,
+                        "color": "var(--cms-color-muted)"
+                    }
+                }
+            }
+        }
+    }
+}

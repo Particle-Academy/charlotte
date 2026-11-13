@@ -38,6 +38,12 @@ read config through the container.
 - `Checks\PageChecks` is the lab's file with `facts()`, `copy()`,
   `externalOrigin()` and `isSafeHref()` added; the checks themselves are
   unchanged and `tests/Unit/PageChecksTest.php` keeps the lab's assertions.
+  One exception: contrast resolves theme tokens as fancy-cms's CssEmitter
+  emits them (`themeTokens()`, a twin of its private `themeDecls()`;
+  `ThemeContrastTest` holds it to the emitter's real `:root` output). A
+  `var(--cms-…)` the theme never sets, with no fallback, is `unset` in the
+  browser, so the ancestor's colour/background decides (flabs run 514). Such
+  tokens are also reported as `theme_token_unset` warnings.
 - **Site sessions** (`->site($key)`, `Charlotte::openSite`): `SessionRecord::$site`
   is set and `page` is the SELECTED document's key. `Site\Site` is the
   structure (pages: id, kind `page|not_found`, title, route; regions

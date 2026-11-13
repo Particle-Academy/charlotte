@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Charlotte\Checks;
 
+use FancyCms\Render\CssEmitter;
+use FancyCms\Render\JsValue;
 use stdClass;
 
 /**
@@ -18,11 +20,21 @@ use stdClass;
  *
  * A defect is `['code', 'severity', 'message', 'node'?, ...]`:
  * - `error`: the page fails the brief's structural bar.
+ * - `warning`: `theme_token_unset`, a token the nodes use that the theme
+ *   never sets (fancy-cms then emits nothing for it).
  * - `info`: the check could not be made. Reported so that "not checked" is
  *   never read as "passed".
+ *
+ * Contrast resolves theme tokens exactly as fancy-cms's CssEmitter does
+ * ({@see themeTokens()}): an unset token with no fallback is `unset` in the
+ * browser, so the ancestor decides, never "unrecognised" (flabs run 514).
  */
 final class PageChecks
 {
+    private const UNSET = 'unset';
+
+    private const TRANSPARENT = 'transparent';
+
     public const TITLE_MAX = 60;
 
     public const DESCRIPTION_MAX = 155;
@@ -54,7 +66,7 @@ final class PageChecks
 
         $defects = [];
         $order = self::documentOrder($nodes);
-        $theme = is_array($doc['theme'] ?? null) ? $doc['theme'] : [];
+        $tokens = self::themeTokens($doc['theme'] ?? []);
 
         // Anchors the page declares (fancy-cms-ui renders `props.anchor` as the id).
         $anchors = [];
@@ -115,9 +127,11 @@ final class PageChecks
             }
 
             if (in_array($type, self::TEXT_TYPES, true)) {
-                $defects = [...$defects, ...self::contrast($nodes, $id, $theme)];
+                $defects = [...$defects, ...self::contrast($nodes, $id, $tokens)];
             }
         }
+
+        $defects = [...$defects, ...self::unsetTokens($nodes, $order, $tokens)];
 
         $meta = is_array($doc['meta'] ?? null) ? $doc['meta'] : [];
         $title = trim((string) ($meta['title'] ?? ''));
@@ -302,13 +316,10 @@ final class PageChecks
     // ── contrast (WCAG 2.x relative luminance) ──────────────────────────────
 
     /** @return list<array<string,mixed>> */
-    private static function contrast(array $nodes, string $id, array $theme): array
+    private static function contrast(array $nodes, string $id, array $tokens): array
     {
-        $fg = self::inherited($nodes, $id, 'color');
-        $bg = self::inherited($nodes, $id, 'background');
-
-        $fgRgb = $fg === null ? [0, 0, 0] : self::rgb($fg, $theme);       // browser default ink
-        $bgRgb = $bg === null ? [255, 255, 255] : self::rgb($bg, $theme); // browser default canvas
+        $fgRgb = self::effectiveColour($nodes, $id, 'color', $tokens, [0, 0, 0]);             // browser default ink
+        $bgRgb = self::effectiveColour($nodes, $id, 'background', $tokens, [255, 255, 255]); // browser default canvas
 
         if ($fgRgb === null || $bgRgb === null) {
             return [self::defect('contrast_unchecked', 'info', 'Contrast could not be computed (a gradient, image, transparent or unrecognised colour).', $id)];
@@ -323,19 +334,41 @@ final class PageChecks
             : [];
     }
 
-    /** The nearest value of a style property on the node or an ancestor, at base. */
-    private static function inherited(array $nodes, string $id, string $prop): ?string
+    /**
+     * The colour a property ends up with at base, walking the node and its
+     * ancestors the way the browser does with what fancy-cms emits:
+     * - a value the emitter would drop (CssEmitter::safeCssValue) is absent;
+     * - a value that resolves to UNSET (a `var(--cms-…)` the theme never set,
+     *   with no fallback) is invalid at computed-value time, so the property is
+     *   `unset`: `color` inherits and `background` is transparent. Either way
+     *   the ancestor decides, so the walk continues. `transparent` likewise;
+     * - nothing on any ancestor is the browser default.
+     * Null when the colour cannot be known (gradient, image, partial alpha,
+     * an unknown name or a non-theme custom property).
+     *
+     * @param  array<string,string>  $tokens
+     * @param  array{0:int,1:int,2:int}  $default
+     * @return array{0:int,1:int,2:int}|null
+     */
+    private static function effectiveColour(array $nodes, string $id, string $prop, array $tokens, array $default): ?array
     {
         $guard = 0;
         while ($id !== '' && isset($nodes[$id]) && $guard++ < 256) {
             $value = $nodes[$id]['style']['base'][$prop] ?? null;
-            if (is_string($value) && trim($value) !== '') {
-                return trim($value);
+            if (is_string($value) && trim($value) !== '' && CssEmitter::safeCssValue($value) !== null) {
+                $resolved = self::resolve($value, $tokens);
+                if ($resolved === self::TRANSPARENT) {
+                    if ($prop !== 'background') {
+                        return null; // transparent text: nothing to measure
+                    }
+                } elseif ($resolved !== self::UNSET) {
+                    return $resolved;
+                }
             }
             $id = (string) ($nodes[$id]['parent'] ?? '');
         }
 
-        return null;
+        return $default;
     }
 
     private static function isLarge(array $node): bool
@@ -356,19 +389,160 @@ final class PageChecks
     }
 
     /**
-     * A colour as [r,g,b], resolving `var(--cms-…)` through the theme, or null
-     * when it cannot be known: gradients, url(), transparency, unknown names.
+     * The `--cms-*` custom properties fancy-cms's CssEmitter writes into
+     * `:root` for a theme, keyed without the `--cms-` prefix: a twin of its
+     * private `themeDecls()` (no font aliases; colours never read them).
+     * Only a token the theme SETS is emitted, nothing has a default, a later
+     * key that flattens to the same name wins, and a value the emitter judges
+     * unsafe is dropped. `ThemeContrastTest` holds this to the emitter's real
+     * output, so a change in fancy-cms fails a test rather than a page.
      *
-     * @return array{0:int,1:int,2:int}|null
+     * @return array<string,string>
      */
-    private static function rgb(string $value, array $theme, int $depth = 0): ?array
+    public static function themeTokens(mixed $theme): array
     {
-        $value = strtolower(trim($value));
+        if (! is_array($theme) && ! $theme instanceof stdClass) {
+            return [];
+        }
+        $tokens = [];
+        $walk = static function (mixed $value, array $path, int $depth) use (&$walk, &$tokens): void {
+            if ($depth > 64) {
+                return;
+            }
+            if (is_string($value) || ((is_int($value) || is_float($value)) && is_finite((float) $value))) {
+                $parts = [];
+                foreach ($path as $p) {
+                    $key = preg_replace('/[^a-z0-9-]/', '', strtolower(str_replace(["\u{0130}", "\u{212A}"], ['i', 'k'], (string) $p)));
+                    if ($key !== '' && $key !== null) {
+                        $parts[] = $key;
+                    }
+                }
+                $safe = CssEmitter::safeCssValue(JsValue::string($value));
+                if ($parts !== [] && $safe !== null) {
+                    $tokens[implode('-', $parts)] = $safe;
+                }
+            } elseif ($value instanceof stdClass || (is_array($value) && ! array_is_list($value))) {
+                foreach (JsValue::entries($value) as $key => $child) {
+                    $walk($child, [...$path, $key], $depth + 1);
+                }
+            }
+        };
+        foreach (JsValue::entries($theme) as $key => $value) {
+            if ($key !== 'name') {
+                $walk($value, [$key], 0);
+            }
+        }
 
-        if ($depth < 4 && preg_match('/^var\(\s*--cms-([a-z0-9-]+)\s*(?:,\s*(.+))?\)$/', $value, $m) === 1) {
-            $token = self::token($theme, $m[1]);
+        return $tokens;
+    }
 
-            return $token !== null ? self::rgb($token, $theme, $depth + 1) : (isset($m[2]) ? self::rgb($m[2], $theme, $depth + 1) : null);
+    /**
+     * Resolve a style value the way the browser resolves what fancy-cms
+     * emitted: [r,g,b]; UNSET when it is invalid at computed-value time (a
+     * `var(--cms-…)` the theme never set, with no fallback); TRANSPARENT; or
+     * null when it cannot be known (gradient, url(), partial alpha, unknown
+     * names, a custom property that is not the theme's).
+     *
+     * @param  array<string,string>  $tokens  from themeTokens()
+     * @param  list<string>  $seen  tokens being resolved (a cycle is invalid)
+     * @return array{0:int,1:int,2:int}|string|null
+     */
+    private static function resolve(string $value, array $tokens, int $depth = 0, array $seen = []): array|string|null
+    {
+        $value = trim($value);
+        if ($depth > 8) {
+            return null;
+        }
+
+        // `var` is case-insensitive; the custom property name is not.
+        if (preg_match('/^var\(\s*--([A-Za-z0-9_-]+)\s*(?:,(.*))?\)$/is', $value, $m) === 1) {
+            $fallback = isset($m[2]) && trim($m[2]) !== '' ? $m[2] : null;
+            if (! str_starts_with($m[1], 'cms-') || self::emitterInternal($m[1])) {
+                return null; // the host's own property, or one only some fancy-cms selectors define
+            }
+            $name = substr($m[1], 4);
+            if (array_key_exists($name, $tokens) && ! in_array($name, $seen, true)) {
+                $resolved = self::resolve($tokens[$name], $tokens, $depth + 1, [...$seen, $name]);
+                if ($resolved !== self::UNSET) {
+                    return $resolved;
+                }
+                // The token itself is invalid (it names an unset token): var() takes its fallback.
+            }
+
+            return $fallback === null ? self::UNSET : self::resolve($fallback, $tokens, $depth + 1, $seen);
+        }
+
+        return self::rgb(strtolower($value));
+    }
+
+    /** `--cms-ig-*` and `--cms-chart-*` are set by fancy-cms's infographic CSS on its own selectors, not by the theme. */
+    private static function emitterInternal(string $property): bool
+    {
+        return str_starts_with($property, 'cms-ig-') || str_starts_with($property, 'cms-chart-');
+    }
+
+    /**
+     * A warning per `var(--cms-…)` the nodes use with no fallback that the
+     * theme never sets: fancy-cms emits nothing for it, so the property is
+     * unset (a background goes transparent, a colour inherits). Run 514: the
+     * theme set `accent` and not `primary`, and a panel on `primary` vanished.
+     *
+     * @param  list<string>  $order
+     * @param  array<string,string>  $tokens
+     * @return list<array<string,mixed>>
+     */
+    private static function unsetTokens(array $nodes, array $order, array $tokens): array
+    {
+        $found = [];
+        foreach ($order as $id) {
+            $style = $nodes[$id]['style'] ?? null;
+            if (! is_array($style)) {
+                continue;
+            }
+            foreach ($style as $values) {
+                if (! is_array($values)) {
+                    continue;
+                }
+                foreach ($values as $value) {
+                    if (! is_string($value) || preg_match_all('/var\(\s*--(cms-[A-Za-z0-9_-]+)\s*\)/i', $value, $m) < 1) {
+                        continue;
+                    }
+                    foreach ($m[1] as $property) {
+                        $name = substr($property, 4);
+                        if (self::emitterInternal($property) || array_key_exists($name, $tokens)) {
+                            continue;
+                        }
+                        $found[$name] ??= ['node' => $id, 'nodes' => []];
+                        $found[$name]['nodes'][$id] = true;
+                    }
+                }
+            }
+        }
+
+        $defects = [];
+        foreach (array_slice($found, 0, 20, true) as $name => $use) {
+            $message = "The page uses var(--cms-{$name}) with no fallback, and the theme never sets it, so fancy-cms emits nothing for it: "
+                .'the property is unset (a background goes transparent, a colour is inherited). Set it in the theme or give the var() a fallback.';
+            if ($name === 'color-primary' && array_key_exists('color-accent', $tokens)) {
+                $message .= ' The theme sets color.accent but not color.primary; accent does not stand in for primary.';
+            }
+            $defects[] = self::defect('theme_token_unset', 'warning', $message, $use['node'])
+                + ['token' => (string) $name, 'nodes' => count($use['nodes'])];
+        }
+
+        return $defects;
+    }
+
+    /**
+     * A literal colour as [r,g,b]; TRANSPARENT; or null when it cannot be
+     * known: gradients, url(), partial alpha, unknown names.
+     *
+     * @return array{0:int,1:int,2:int}|string|null
+     */
+    private static function rgb(string $value): array|string|null
+    {
+        if ($value === 'transparent') {
+            return self::TRANSPARENT;
         }
         if (preg_match('/^#([0-9a-f]{3})$/', $value, $m) === 1) {
             return [hexdec($m[1][0].$m[1][0]), hexdec($m[1][1].$m[1][1]), hexdec($m[1][2].$m[1][2])];
@@ -389,42 +563,6 @@ final class PageChecks
             'black' => [0, 0, 0],
             default => null,
         };
-    }
-
-    /** `color-primary` -> theme['color']['primary'], matching the emitter's flattening. */
-    private static function token(array $theme, string $key): ?string
-    {
-        $walk = function (mixed $value, string $path) use (&$walk, $key): ?string {
-            if ($value instanceof stdClass) {
-                $value = (array) $value;
-            }
-            if (is_string($value) || is_int($value) || is_float($value)) {
-                return $path === $key ? (string) $value : null;
-            }
-            if (is_array($value) && ! array_is_list($value)) {
-                foreach ($value as $k => $v) {
-                    $part = preg_replace('/[^a-z0-9-]/', '', strtolower((string) $k)) ?? '';
-                    $found = $walk($v, $path === '' ? $part : ($part === '' ? $path : $path.'-'.$part));
-                    if ($found !== null) {
-                        return $found;
-                    }
-                }
-            }
-
-            return null;
-        };
-
-        foreach ($theme as $k => $v) {
-            if ($k === 'name') {
-                continue;
-            }
-            $found = $walk($v, preg_replace('/[^a-z0-9-]/', '', strtolower((string) $k)) ?? '');
-            if ($found !== null) {
-                return $found;
-            }
-        }
-
-        return null;
     }
 
     private static function ratio(array $a, array $b): float

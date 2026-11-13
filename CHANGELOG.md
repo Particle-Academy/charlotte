@@ -12,6 +12,34 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `theme_token_unset` (warning): a `var(--cms-…)` that nodes use with no
+  fallback and the theme never sets, once per token with the first node and a
+  count. When the token is `color-primary` and the theme sets `color.accent`,
+  the message says accent does not stand in for primary. A warning only; it
+  refuses nothing. `PageChecks::themeTokens()` is public: the `--cms-*` tokens
+  fancy-cms emits for a theme.
+
+### Fixed
+
+- **The document contrast check passed unreadable text when a theme token was
+  unset** (flabs run 514). The theme set only `accent`; a hero panel on
+  `var(--cms-color-primary)` with white text was reported `contrast_unchecked`
+  (info) while the reviewer gated it `unreadable_contrast`. fancy-cms emits a
+  custom property only for a token the theme sets, so in the browser that
+  declaration is invalid at computed-value time and the property is `unset`:
+  the panel was transparent over the hero's `#f5f3ef`. Contrast now resolves
+  tokens exactly as fancy-cms's `CssEmitter` does (same flattening, later key
+  wins, unsafe values dropped, held to the emitter's real output by a test),
+  and an unset token with no fallback lets the ancestor decide, as `unset`
+  does: a colour inherits, a background is transparent. An explicit
+  `transparent` background is now see-through too, rather than unchecked.
+  Custom property names are matched case-sensitively, as in CSS. A replay of
+  run 514's document now fails `contrast` on the two panel texts (1.11:1).
+  **Upgrading:** nothing to do. A page that leaned on an unset token may now
+  report `contrast` errors it always had; `contrast` is not a finish gate.
+
 ## [0.4.0] - 2026-11-12
 
 Whole sites, kit islands and rendered contrast (lab plan
