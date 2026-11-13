@@ -8,8 +8,12 @@ use Charlotte\SiteWorkspace;
 
 /**
  * The responsive starting point the agent builds from, as fancy-cms data:
- * a page skeleton of ops, a type scale and a spacing scale, using only
- * fancy-cms's own StyleProps and breakpoints (base, md 768, lg 1024). No CSS.
+ * a page skeleton of ops (its section spacing grows at md and lg), a type
+ * scale, link and button styles that clear the 44 px tap target, and grid
+ * column counts by item count, using only fancy-cms's own StyleProps and
+ * breakpoints (base, md 768, lg 1024). No CSS. Runs 504-512 found the 0.4
+ * skeleton's features grid (2 columns at md) itself made the 2+1 orphan
+ * every page shipped.
  *
  * Every page the flabs Charlotte benchmark built (runs 423-463) started from
  * nothing and ended "bare default": no container had a `layout`, so nothing
@@ -56,21 +60,32 @@ final class Starter
         'md' => ['padding' => ['value' => 28, 'unit' => 'px']],
     ];
 
-    private const CONTAINER = ['maxWidth' => ['value' => 1120, 'unit' => 'px'], 'marginX' => 'auto'];
+    /**
+     * A nav or footer link: 16 x 1.5 + 2 x 12 = 48 px tall, clear of the
+     * 44 px `tap_target` gate (unstyled links measured 19-21 px, runs 504-512).
+     */
+    public const NAV_LINK = ['base' => ['paddingY' => ['value' => 12, 'unit' => 'px'], 'lineHeight' => 1.5, 'fontSize' => ['value' => 16, 'unit' => 'px']]];
 
-    public const SPACING = [
-        'scale' => [4, 8, 12, 16, 24, 32, 48, 64, 96],
-        'section' => self::SECTION,
-        'textColumn' => ['base' => ['maxWidth' => ['value' => 680, 'unit' => 'px']]],
-    ];
+    /** A button: 16 x 1.2 + 2 x 14 + 2 px border = 49 px tall (fancy-cms's default is 41). */
+    public const BUTTON = ['base' => ['paddingY' => ['value' => 14, 'unit' => 'px'], 'paddingX' => ['value' => 24, 'unit' => 'px']]];
+
+    /**
+     * Grid columns [base, md, lg] by item count, so the last row is full
+     * (`grid_orphan`). The features grid ships set for 3.
+     */
+    public const COLUMNS = ['2' => [1, 2, 2], '3' => [1, 3, 3], '4' => [1, 2, 4], '6' => [1, 2, 3]];
+
+    private const CONTAINER = ['maxWidth' => ['value' => 1120, 'unit' => 'px'], 'marginX' => 'auto'];
 
     /** The starter as data: what {@see self::promptSection()} carries as JSON. */
     public static function describe(): array
     {
         return [
             'typeScale' => self::TYPE_SCALE,
-            'spacing' => self::SPACING,
             'card' => self::CARD,
+            'navLink' => self::NAV_LINK,
+            'button' => self::BUTTON,
+            'columns' => self::COLUMNS,
             'skeleton' => ['header' => self::skeleton('header'), 'page' => self::skeleton('page'), 'footer' => self::skeleton('footer')],
         ];
     }
@@ -84,12 +99,12 @@ final class Starter
     public static function promptSection(): string
     {
         return "## Starter\n\n"
-            .'Build from this. Apply `starter.skeleton.header`, `.page` and `.footer` in your first `cms_apply` (on a site: `.page` on each page, '
-            .'`.header` in `@header`, `.footer` in `@footer`). Then insert copy: the brand into `header-bar`, nav links into `site-nav` '
-            .'(on a site, `site_nav_set` fills it), the h1, lead and buttons into `hero-copy`, the image into `hero-media`, a heading into '
-            .'`features-head`, one card per item into `features-grid` (type card, layout stack, style `starter.card`), the closing call to '
-            .'action into `cta-inner`, footer links into `footer-nav`. Rename, repeat or remove sections to fit the brief. Copy a '
-            .'`starter.typeScale` entry as a text or heading node\'s style. Every stack and grid needs its layout.'
+            .'Apply `starter.skeleton.header`, `.page` and `.footer` in your first `cms_apply` (on a site: `.page` per page, `.header` in `@header`, '
+            .'`.footer` in `@footer`) with `set_theme` for your palette. Then fill: brand in `header-bar`; links in `site-nav` (`site_nav_set` on a site); '
+            .'eyebrow, h1, lead in `hero-copy`; buttons in `hero-actions`; image or shape composition in `hero-media`; heading in `features-head`; one card '
+            .'per item in `features-grid` (style `starter.card`, md/lg `columns` from `starter.columns` by item count); closing call to action in '
+            .'`cta-inner` (white on primary: buttons variant "ghost"); links in `footer-nav`. Links take `starter.navLink`, buttons `starter.button`, '
+            .'text a `starter.typeScale` entry. Rename, repeat or remove sections to fit the brief.'
             ."\n\n```json\n"
             .json_encode(self::describe(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
             ."\n```\n";
@@ -115,17 +130,19 @@ final class Starter
                     'md' => ['gap' => $px(24)]], 'stack'),
             ],
             'page' => [
-                self::node('hero', 'section', null, 'a1', [], self::SECTION),
+                // The hero sits on the brand tint, a contrast block against the plain features section.
+                self::node('hero', 'section', null, 'a1', [], array_replace_recursive(self::SECTION, ['base' => ['background' => 'var(--cms-color-tint, #f5f3ef)']])),
                 self::node('hero-grid', 'grid', 'hero', 'a0', [], ['base' => self::CONTAINER + ['columns' => 1, 'gap' => $px(32), 'align' => 'center'],
                     'lg' => ['columns' => 2, 'gap' => $px(48)]], 'grid'),
                 self::node('hero-copy', 'stack', 'hero-grid', 'a0', [], ['base' => ['gap' => $px(20), 'align' => 'start']], 'stack'),
-                self::node('hero-media', 'stack', 'hero-grid', 'a1', [], ['base' => ['gap' => $px(12)]], 'stack'),
+                self::node('hero-actions', 'stack', 'hero-copy', 'a5', [], ['base' => ['direction' => 'row', 'wrap' => true, 'gap' => $px(12), 'align' => 'center']], 'stack'),
+                self::node('hero-media', 'stack', 'hero-grid', 'a1', [], ['base' => ['gap' => $px(12), 'radius' => $px(16), 'overflow' => 'hidden']], 'stack'),
                 self::node('features', 'section', null, 'a2', [], self::SECTION),
                 self::node('features-inner', 'stack', 'features', 'a0', [], ['base' => self::CONTAINER + ['gap' => $px(32)], 'md' => ['gap' => $px(40)]], 'stack'),
                 self::node('features-head', 'stack', 'features-inner', 'a0', [], ['base' => ['gap' => $px(12), 'maxWidth' => $px(680)]], 'stack'),
                 self::node('features-grid', 'grid', 'features-inner', 'a1', [], ['base' => ['columns' => 1, 'gap' => $px(24)],
-                    'md' => ['columns' => 2], 'lg' => ['columns' => 3, 'gap' => $px(32)]], 'grid'),
-                self::node('cta', 'section', null, 'a3', [], self::SECTION),
+                    'md' => ['columns' => 3], 'lg' => ['gap' => $px(32)]], 'grid'),
+                self::node('cta', 'section', null, 'a3', [], array_replace_recursive(self::SECTION, ['base' => ['background' => 'var(--cms-color-primary, #7c3aed)', 'color' => '#ffffff']])),
                 self::node('cta-inner', 'stack', 'cta', 'a0', [], ['base' => ['maxWidth' => $px(720), 'marginX' => 'auto', 'gap' => $px(16), 'align' => 'center', 'textAlign' => 'center']], 'stack'),
             ],
             'footer' => [

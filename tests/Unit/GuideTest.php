@@ -37,6 +37,18 @@ test('Charlotte\'s guide teaches responsive composition, the starter and what cm
     }
 });
 
+test('Charlotte\'s guide teaches the design gates and a brand character drawn from the brief (runs 504-512)', function (): void {
+    $text = PublishedGuide::charlotteGuide();
+
+    foreach (['grid_orphan', 'hero_thin', 'tap_target', 'bare_list', 'starter.navLink', 'starter.button', 'starter.columns',
+        'set_theme', 'tint', 'Type pairing', 'motif', 'supplied image', 'small floating icon', '"t":"set_theme"'] as $lesson) {
+        expect(str_contains($text, $lesson))->toBeTrue("Missing lesson: {$lesson}");
+    }
+    // The worked example is real ops: every line parses as JSON with an op name.
+    $ops = guideDesignExample();
+    expect($ops)->toBeArray()->and(array_column($ops, 't'))->toBe(['set_theme', 'set_style', 'insert_node', 'insert_node']);
+});
+
 test('Charlotte\'s guide covers whole sites, islands and the rendered contrast check', function (): void {
     $text = strtolower(PublishedGuide::charlotteGuide());
 

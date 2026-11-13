@@ -25,9 +25,9 @@ the same page at the same time, and may be reading every step you take.
 1. Call `charlotte_brief`. It is the page's source of truth.
 2. Call `cms_describe` for the exact operations, elements and styles.
 3. Call `cms_assets` for the images you may use.
-4. First `cms_apply`: the theme, the meta, and `starter.skeleton` (header,
-   page, footer) from the Starter at the end of this guide. Then fill it
-   section by section.
+4. First `cms_apply`: the theme (your palette, see Design below), the meta,
+   and `starter.skeleton` (header, page, footer) from the Starter at the end
+   of this guide. Then fill it section by section.
 5. Call `cms_check` and fix what it reports.
 6. Call `cms_finish` with the revision you checked. It marks the draft ready
    for the person's review; it does not publish. While a gate below fails it
@@ -48,10 +48,9 @@ you are building several pages that share one header and one footer.
    an id such as `pricing`, a title, kind `page` and a route such as
    `/pricing`. The home page takes `/`. Create one page of kind `not_found`
    with route `""`: the 404 page. Give it an h1 and a link to `/`.
-3. Never use a reserved route. The host serves its own pages there (sign-in,
-   registration, password reset), so a site page at `/register` would never
-   be seen; use `/registration` or `/signup` instead. A reserved route is
-   refused with `route_reserved`.
+3. Never use a reserved route: the host serves its own pages there (sign-in,
+   registration), so use `/signup`, not `/register`. It is refused with
+   `route_reserved`.
 4. The `cms_*` tools act on the selected page or region. Select with
    `site_page_select`; `site_page_create` selects the page it creates.
 5. Build the shared regions ONCE: select `@header`, apply
@@ -78,9 +77,8 @@ empty, the host renders none: build with the native elements. Images in
 island props are `asset` handles from `cms_assets`, never URLs. Facts in
 island props are held to the same content truth as any other copy.
 
-`cms_check` reports `contrast.source`. `rendered` means a browser measured
-the rendered page, islands included; `document` means contrast was judged
-from styles alone, which cannot see inside an island.
+`cms_check`'s `contrast.source` is `rendered` (a browser measured it, islands
+included) or `document` (styles alone, blind inside islands).
 
 ## Content truth
 
@@ -124,7 +122,8 @@ an early-bird end date does not give the full price a start date.
 - Text at least 14px, including captions and helper text.
 - Contrast at least 4.5:1 for body text and 3:1 for large text, against the
   real background. A primary button is white text on the primary colour.
-- Tap targets at least 44px on mobile: give buttons `paddingY` 12.
+- Every link and button at least 44px tall: style `starter.navLink` and
+  `starter.button`. An unstyled link is about 19px.
 - Repeated calls to action need distinct labels.
 - Use `props.as` `header`, `nav`, `main` and `footer` on the matching
   sections, and `props.anchor` for in-page navigation.
@@ -139,31 +138,24 @@ stack `"layout": "stack"` and every grid `"layout": "grid"` in its insert_node.
 
 - Breakpoints are `base`, `md` (768) and `lg` (1024). A style applies from its
   breakpoint upward. Check the page at 375, 768 and 1280: no overflow at any.
-- A section is a plain block with the section spacing (`starter.spacing.section`)
-  holding one container: `maxWidth` 1120, `marginX` "auto".
+- A section is a plain block with the starter's section spacing holding one
+  container: `maxWidth` 1120, `marginX` "auto".
 - Every content section changes at `md` or `lg`, and the page has real columns
   at both: repeated items in a grid, a hero as two columns (copy, image) at `lg`.
-- Choose counts with no orphan on the last row: 2 items 1 then 2; 3 items 1
-  then 3 at `md`; 4 items 1, 2, then 4 at `lg`; 6 items 1, 2, then 3.
+- No orphan: a grid's columns divide its items at every breakpoint
+  (`starter.columns`). Five items: a featured card above a grid of four.
 - Links and buttons side by side sit in a row stack with a gap, never loose.
 - Type from `starter.typeScale`: `display` for the h1, `h2` for section titles,
   `h3` in cards, `lead` under the h1, `body`, `small` (never under 14px).
-- Leave about 10% slack on headline measure.
-
-A grid of plans, then a nav:
-
-```json
-{"t":"insert_node","node":{"id":"plans-grid","type":"grid","layout":"grid","parent":"plans-inner","order":"a1","props":{},
- "style":{"base":{"columns":1,"gap":{"value":24,"unit":"px"}},"md":{"columns":3}}}}
-{"t":"insert_node","node":{"id":"nav","type":"stack","layout":"stack","parent":"header-bar","order":"a1","props":{"as":"nav"},
- "style":{"base":{"direction":"row","wrap":true,"gap":{"value":16,"unit":"px"}}}}}
-```
 
 ## What cms_finish refuses
 
 `cms_finish` returns `not_ready` while any of these errors remains:
 
-- `layout_missing`, `link_spacing`, `responsive_layout`: above.
+- `layout_missing`, `link_spacing`, `responsive_layout`, `grid_orphan`,
+  `tap_target`: above.
+- `hero_thin`: the h1's section needs a lead plus a button or a visual.
+- `bare_list`: 4 or more list items as rows or cards, never plain bullets.
 - `meta_description`: `{"t":"set_meta","patch":{"seo":{"description":"…"}}}`,
   one sentence under 155 characters. `meta.description` is not read.
 - `required_image_missing`: a required image is not on the page.
@@ -171,11 +163,36 @@ A grid of plans, then a nav:
 
 Other errors (headings, contrast, links) are reported too: fix them as well.
 
-## Design that reviewers rewarded
+## Design: a brand, not a template
 
-- A balanced desktop hero: a headline of about three lines, an image matching
-  the text block's height, and clear space above the call to action.
-- A designed proof band: align the stat and the quote, and give the quote real
-  typographic treatment with its attribution.
-- A real footer (`props.as: "footer"`) linking to the page's own sections.
-- Specific, not template-generic: the brief's own words, images and colour.
+Reviewers fail "a generic template with an accent colour". Before the first
+write, derive a brand character from the brief, then hold to it:
+
+- **Palette:** a primary from the brief's colour or trade, a pale `tint` of it
+  for contrast blocks, one accent, `ink`, `muted` and `line`. Put them in
+  `set_theme` and use `var(--cms-color-…)`.
+- **Type pairing:** a display face for headings that suits the trade (a serif
+  for a bakery or a law firm, a geometric sans for software) and a plain body
+  face, as `fontFamily` stacks of system fonts.
+- **One signature motif,** repeated two or three times: pill shapes, a thick
+  rule beside quotes, a stamp-like badge, an offset tint panel.
+- **Imagery:** place every supplied image that fits (hero, then cards or a
+  split section). With none, compose the hero visual on a tint panel: a large
+  icon in a shape, a key fact in `display` type. Never one small floating icon.
+- **Rhythm and hierarchy:** alternate plain and tint sections and end on a
+  primary contrast block. Give each section one dominant fact. Hours, menus
+  and prices are label-and-value rows, not bullets.
+
+For a warm, hand-made bakery:
+
+```json
+{"t":"set_theme","patch":{"color":{"primary":"#9a3412","tint":"#fdf1e7","accent":"#4d7c0f","ink":"#292524","muted":"#57534e","line":"#ead7c3"}}}
+{"t":"set_style","id":"title","breakpoint":"base","patch":{"fontFamily":"Georgia, Cambria, serif","color":"var(--cms-color-primary)"}}
+{"t":"insert_node","node":{"id":"hero-stamp","type":"shape","layout":"stack","parent":"hero-media","order":"a0","props":{},
+ "style":{"base":{"background":"var(--cms-color-primary)","color":"#ffffff","radius":{"value":999,"unit":"px"},"padding":{"value":40,"unit":"px"},"align":"center","gap":{"value":8,"unit":"px"}}}}}
+{"t":"insert_node","node":{"id":"hours-mon","type":"stack","layout":"stack","parent":"hours-rows","order":"a0","props":{},
+ "style":{"base":{"direction":"row","justify":"between","paddingY":{"value":12,"unit":"px"},"boxShadow":"inset 0 -1px 0 var(--cms-color-line)"}}}}
+```
+
+The stamp holds an icon and a short line from the brief; each hours row holds
+the day and its time as two text nodes.

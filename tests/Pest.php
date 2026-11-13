@@ -139,6 +139,20 @@ function sectionOps(string $id = 'hero', string $order = 'a0', string $heading =
     ];
 }
 
+/**
+ * The ops in the guide's worked design example. Line endings are normalised
+ * first: a Windows checkout has the guide with CRLF.
+ */
+function guideDesignExample(): ?array
+{
+    $text = str_replace("\r\n", "\n", \Charlotte\Guide\PublishedGuide::charlotteGuide());
+    if (preg_match('/For a warm, hand-made bakery:\s*```json\n(.*?)\n```/s', $text, $m) !== 1) {
+        return null;
+    }
+
+    return json_decode('['.preg_replace('/\}\n\{"t"/', '},{"t"', str_replace("\n ", '', $m[1])).']', true, 64, JSON_THROW_ON_ERROR);
+}
+
 /** One text node under a parent. */
 function textOp(string $id, string $parent, string $content, string $order = 'a1'): array
 {
@@ -159,8 +173,9 @@ function eventsOf(CharlotteSession $session, string $type): array
 
 /**
  * A page that clears every cms_finish gate: a meta description, stacks and
- * grids with their layout, a section spacing scale, and a grid of 1, 2 at md
- * and 3 at lg. Its copy carries briefArray()'s facts and nothing else.
+ * grids with their layout, a section spacing scale, a hero with copy and a
+ * 44 px button, and a grid of two cards, 1 then 2 at md (no orphan, no
+ * empty cell). Its copy carries briefArray()'s facts and nothing else.
  */
 function finishablePageOps(string $heading = 'Acme Ledger', string $prefix = ''): array
 {
@@ -175,8 +190,10 @@ function finishablePageOps(string $heading = 'Acme Ledger', string $prefix = '')
         ['t' => 'set_meta', 'patch' => ['title' => $heading, 'seo' => ['description' => 'Bookkeeping for food trucks.']]],
         $node('hero', 'section', null, 'a0', [], $section, 'stack'),
         $node('hero-h', 'heading', 'hero', 'a0', ['content' => $heading, 'level' => 1]),
-        $node('plans', 'section', null, 'a1', [], $section, 'stack'),
-        $node('plans-grid', 'grid', 'plans', 'a0', [], ['base' => ['columns' => 1, 'gap' => $px(24)], 'md' => ['columns' => 2], 'lg' => ['columns' => 3]], 'grid'),
+        $node('hero-t', 'text', 'hero', 'a1', ['content' => 'Bookkeeping for food trucks.']),
+        $node('hero-b', 'button', 'hero', 'a2', ['label' => 'See the plans', 'href' => '#plans'], ['base' => ['paddingY' => $px(14)]]),
+        $node('plans', 'section', null, 'a1', ['anchor' => 'plans'], $section, 'stack'),
+        $node('plans-grid', 'grid', 'plans', 'a0', [], ['base' => ['columns' => 1, 'gap' => $px(24)], 'md' => ['columns' => 2]], 'grid'),
         $node('plan-a', 'card', 'plans-grid', 'a0', [], ['base' => ['gap' => $px(12)]], 'stack'),
         $node('plan-a-t', 'text', 'plan-a', 'a0', ['content' => 'Starter plan: $19/month']),
         $node('plan-b', 'card', 'plans-grid', 'a1', [], ['base' => ['gap' => $px(12)]], 'stack'),

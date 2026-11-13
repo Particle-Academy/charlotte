@@ -33,11 +33,12 @@ use Charlotte\Brief\Brief;
 final class QualityChecks
 {
     /**
-     * Content width at the narrowest viewport of each breakpoint (768 and
-     * 1024) less 32 px of section padding a side: where a columnMin grid is
-     * judged, conservatively.
+     * Content width at the narrowest viewport of each breakpoint (375, 768
+     * and 1024) less the section padding a side (20 at base, 32 above):
+     * where a columnMin grid is judged, conservatively. The walking and style
+     * helpers below are public because {@see DesignChecks} shares them.
      */
-    public const WIDTHS = ['md' => 704, 'lg' => 960];
+    public const WIDTHS = ['base' => 335, 'md' => 704, 'lg' => 960];
 
     public const PX = ['md' => 768, 'lg' => 1024];
 
@@ -323,7 +324,7 @@ final class QualityChecks
     }
 
     /** The content width a node has at a breakpoint: the breakpoint's width, capped by its own or an ancestor's px maxWidth. */
-    private static function width(array $nodes, string $id, string $bp): float
+    public static function width(array $nodes, string $id, string $bp): float
     {
         $width = (float) self::WIDTHS[$bp];
         $guard = 0;
@@ -339,7 +340,7 @@ final class QualityChecks
     }
 
     /** A node's style at a breakpoint: base, overlaid by md and then lg up to it. */
-    private static function effective(array $node, string $bp): array
+    public static function effective(array $node, string $bp): array
     {
         $style = [];
         foreach (['base', 'md', 'lg'] as $step) {
@@ -355,14 +356,14 @@ final class QualityChecks
     }
 
     /** A Length's numeric value in px terms; 0 for anything else (a percentage gap is not counted). */
-    private static function length(mixed $value): float
+    public static function length(mixed $value): float
     {
         return is_array($value) && in_array($value['unit'] ?? null, ['px', 'rem'], true) && (is_int($value['value'] ?? null) || is_float($value['value'] ?? null))
             ? (float) $value['value'] * (($value['unit'] === 'rem') ? 16 : 1)
             : 0.0;
     }
 
-    private static function isChrome(array $node): bool
+    public static function isChrome(array $node): bool
     {
         return in_array($node['props']['as'] ?? null, self::CHROME, true);
     }
@@ -375,7 +376,7 @@ final class QualityChecks
      *
      * @return array{0: list<string>, 1: array<string, list<string>>}
      */
-    private static function tree(array $nodes): array
+    public static function tree(array $nodes): array
     {
         $children = [];
         foreach ($nodes as $id => $node) {
@@ -398,7 +399,7 @@ final class QualityChecks
      *
      * @return list<string>
      */
-    private static function subtree(string $root, array $children, ?array $skipChrome = null, bool $includeSelf = true): array
+    public static function subtree(string $root, array $children, ?array $skipChrome = null, bool $includeSelf = true): array
     {
         $out = $includeSelf ? [$root] : [];
         $seen = [$root => true];

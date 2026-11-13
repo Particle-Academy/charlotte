@@ -393,7 +393,7 @@ final class SiteWorkspace
             return Checks::REGION_SKIP;
         }
 
-        return ($site->page($id)['kind'] ?? null) === 'not_found' ? [...Checks::SITE_WIDE, 'responsive_layout'] : Checks::SITE_WIDE;
+        return ($site->page($id)['kind'] ?? null) === 'not_found' ? [...Checks::SITE_WIDE, 'responsive_layout', 'hero_thin', 'hero_visual'] : Checks::SITE_WIDE;
     }
 
     private function fresh(SessionRecord $session): SessionRecord

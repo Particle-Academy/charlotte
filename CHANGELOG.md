@@ -33,7 +33,9 @@ declare those streams. And a **literal number in a data prop** (`value`,
 default"). It returns `isError` with code `not_ready` and the failing defects,
 and marks nothing ready, while any of these errors remains: `layout_missing`,
 `link_spacing`, `responsive_layout`, `required_image_missing`,
-`meta_description`, `unsupported_claim`. Every other error is still only
+`meta_description`, `unsupported_claim`, and the design gates `grid_orphan`,
+`hero_thin`, `tap_target` and `bare_list` (flabs runs 504-512: every page
+passed structure and failed "professional" on those faults). Every other error is still only
 reported, as before. **What to do:** nothing in a host, unless your own tests
 finish deliberately bare pages; those now get `not_ready`. An agent reads the
 defects and fixes them. And **`unsupported_claim` is now an ERROR** for every
@@ -244,15 +246,31 @@ instead of resolving it from the container need to change.
   system prompt as the guide's closing "Starter" section (so it is in the
   guide hash and the cacheable prompt, and read as instructions rather than as
   tool-result data): a skeleton of ops (`header`, `page`, `footer`: header row with a
-  wrapping nav, a two-column hero at lg, a grid of 1, 2 at md and 3 at lg, a
-  CTA band, a footer row), a type scale (display, h2, h3, lead, body, small,
-  eyebrow per breakpoint), the section spacing scale and a card style. All
-  fancy-cms StyleProps, no CSS; fancy-cms's CssEmitter renders it as real flex
-  and grid layouts (tested). The skeleton's nav is `site-nav`, so on a site
-  `site_nav_set` fills it.
+  wrapping nav, a hero on the brand tint with a `hero-actions` button row and
+  a two-column layout at lg, a features grid of 1 then 3 from md, a CTA band
+  in white on the primary colour, a footer row), a type scale (display, h2,
+  h3, lead, body, small, eyebrow per breakpoint), a card style, `navLink` and
+  `button` styles that clear the 44 px tap target, and `columns`, grid column
+  counts by item count. All fancy-cms StyleProps, no CSS; fancy-cms's
+  CssEmitter renders it as real flex and grid layouts (tested). The
+  skeleton's nav is `site-nav`, so on a site `site_nav_set` fills it. (Runs
+  504-512 showed the first skeleton's 2-column features grid at md was itself
+  the 2+1 orphan every page shipped.)
+- **Design gates** (`Checks\DesignChecks`, flabs runs 504-512), each locatable
+  by `node` and `rule`: `grid_orphan` (a grid's columns at base, md or lg do
+  not divide its visible items, or exceed them; names the breakpoint and the
+  count to use), `hero_thin` (the section holding the h1 lacks supporting copy,
+  or both a call to action and a visual), `tap_target` (a link or button under
+  44 px tall at a breakpoint, computed from font size, line height, padding
+  and fancy-cms's button defaults; it agrees with the 19-21 px the lab
+  measured), `bare_list` (a list of 4 or more items). And a `hero_visual`
+  WARNING, not a gate: a hero with no image, frame, shape or island (a lone
+  icon does not count). Regions and the 404 page skip the hero checks.
 - The guide teaches responsive composition (why `layout` matters, columns per
-  breakpoint, no orphan cards, the type scale), the starter, and what
-  `cms_finish` refuses, with two worked examples.
+  breakpoint, no orphan cards, the type scale), the starter, what
+  `cms_finish` refuses, and a brand character drawn from the brief (palette
+  with a tint, type pairing, one signature motif, supplied images or a shape
+  composition, section rhythm), with one worked example that the tests apply.
 
 ### Changed
 

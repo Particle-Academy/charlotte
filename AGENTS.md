@@ -71,6 +71,14 @@ read config through the container.
   stack or grid without it is a block (flabs runs 423-463).
   `Checks::locate()` gives every gate defect a `node` (else `page:<doc id>`)
   and `rule` (`Checks::RULES`).
+  `Checks\DesignChecks` adds `grid_orphan`, `hero_thin`, `tap_target` and
+  `bare_list` (gates) and `hero_visual` (warning), from runs 504-512. It
+  reuses QualityChecks' public walking/style helpers (`tree`, `subtree`,
+  `effective`, `length`, `width`, `isChrome`). `tap_target` models fancy-cms's
+  BASE_CSS (button: 10 px padding, line-height 1.2, 1 px border; link:
+  inline, so `minHeight` counts only under a stack/grid parent); if fancy-cms
+  changes those defaults, change `DesignChecks::BUTTON`. Regions and the 404
+  page skip `hero_thin`/`hero_visual`.
 - **The not_ready limit**: `charlotte_sessions.finish_refusals` counts
   consecutive refusals (`Workspace::refuseFinish()`, `limited()`). At
   `charlotte.finish.max_not_ready` the code is `not_ready_limit`; `PageTools`
@@ -90,6 +98,10 @@ read config through the container.
   id is `SiteWorkspace::NAV_ID` so `site_nav_set` fills it. `FinishGateTest`
   proves the skeleton clears the gates once filled and that fancy-cms's
   CssEmitter renders it as flex and grid, and caps the section under 7000 bytes.
+  The features grid ships at 3 columns from md, for 3 cards (`Starter::COLUMNS`
+  gives other counts); 2 at md was the 2+1 orphan of runs 504-512. The guide's
+  worked design example is applied on the skeleton by a test
+  (`guideDesignExample()` in tests/Pest.php), so it must stay valid ops.
 - `Checks\SiteChecks`: broken links, anchors, orphans, unrouted pages, home,
   404, nav consistency, region h1/anchors, duplicate titles, and
   `missing_required_fact` across the whole site.

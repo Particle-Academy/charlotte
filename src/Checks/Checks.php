@@ -27,17 +27,19 @@ final class Checks
 {
     /** Codes that make no sense on a shared region (it is not a page). */
     public const REGION_SKIP = ['h1_count', 'meta_title', 'meta_description', 'anchor_target', 'missing_required_fact',
-        'responsive_layout', 'required_image_missing', 'required_image_unavailable'];
+        'responsive_layout', 'required_image_missing', 'required_image_unavailable', 'hero_thin', 'hero_visual'];
 
     /** What a site judges across all its documents rather than per page. */
     public const SITE_WIDE = ['missing_required_fact', 'required_image_missing', 'required_image_unavailable'];
 
     /**
      * The codes that, at `error` severity, make cms_finish refuse: what the
-     * lab's reviewer scored a page down or to 0 for (runs 423-463). Every
-     * other error is still reported and still lets the draft be marked ready.
+     * lab's reviewer scored a page down or to 0 for (runs 423-463, then the
+     * design gates from runs 504-512). Every other error is still reported
+     * and still lets the draft be marked ready.
      */
-    public const FINISH_GATES = ['layout_missing', 'link_spacing', 'responsive_layout', 'required_image_missing', 'meta_description', 'unsupported_claim'];
+    public const FINISH_GATES = ['layout_missing', 'link_spacing', 'responsive_layout', 'required_image_missing', 'meta_description', 'unsupported_claim',
+        'grid_orphan', 'hero_thin', 'tap_target', 'bare_list'];
 
     /** The rule each gate holds a page to, as every gate defect states it. */
     public const RULES = [
@@ -47,6 +49,10 @@ final class Checks
         'required_image_missing' => 'Every image the brief requires is placed as an image node (props.asset).',
         'meta_description' => 'meta.seo.description is set, at most 155 characters.',
         'unsupported_claim' => 'Every price, count, percentage, phone, email, date and year on the page appears in the brief.',
+        'grid_orphan' => 'A grid\'s column count at each breakpoint divides its visible items and is never more than them: no short last row, no empty cells.',
+        'hero_thin' => 'The section holding the h1 has supporting copy plus a call to action or a visual (image, frame, shape or island).',
+        'tap_target' => 'Every link and button is at least 44 px tall at every breakpoint (font size x line height + vertical padding).',
+        'bare_list' => 'A list of 4 or more items is a styled list (a stack of rows) or cards, never plain bullets.',
     ];
 
     /**
@@ -89,7 +95,7 @@ final class Checks
         array $alsoAccept = [], array $skip = [], ?string $unavailable = null, ?DataCatalogue $data = null, array $assets = []): array
     {
         $facts = PageChecks::facts($doc);
-        $defects = [...PageChecks::check($doc), ...FactChecks::check($doc, $brief), ...QualityChecks::check($doc, $brief, $assets)];
+        $defects = [...PageChecks::check($doc), ...FactChecks::check($doc, $brief), ...QualityChecks::check($doc, $brief, $assets), ...DesignChecks::check($doc)];
         if ($data !== null) {
             foreach (Bindings::validate($doc, $data) as $error) {
                 $defects[] = ['code' => 'invalid_binding', 'severity' => 'error', 'path' => $error['path'], 'expected' => $error['expected'], 'got' => $error['got'],

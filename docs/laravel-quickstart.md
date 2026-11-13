@@ -110,8 +110,10 @@ a working chat on nothing but `fetch`.
   `$session->reject(...)` discards it.
 - `cms_finish` runs the checks (`checks.result`) and marks the draft ready
   (`draft.ready`), or refuses with `not_ready` while a finish gate fails
-  (layout, link spacing, responsive layout, a required image, the meta
-  description, an unsupported figure or date). It does not publish.
+  (layout, link spacing, responsive layout, an orphaned grid row, a thin
+  hero, a tap target under 44 px, a plain list of 4 or more items, a
+  required image, the meta description, an unsupported figure or date). It
+  does not publish.
 - Publishing is yours alone: `$session->publish($revision, $userId)` copies the
   draft at the revision the person reviewed. Render it with fancy-cms's
   `PageRenderer`, read from `PageRepository::published()`.
