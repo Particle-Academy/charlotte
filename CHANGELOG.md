@@ -49,7 +49,8 @@ stacks must add the layout.
 
 **Upgrading, also:** run the second new migration
 (`2026_11_12_000000_add_charlotte_finish_refusals`: an unsigned
-`charlotte_sessions.finish_refusals`, default 0).
+`charlotte_sessions.finish_refusals`, default 0, and a nullable
+`finish_refusals_run`).
 
 **Upgrading:** run the new migration (`2026_11_11_000000_add_charlotte_sites`:
 a `charlotte_sites` table, nullable `charlotte_sessions.site_key` and
@@ -225,15 +226,17 @@ instead of resolving it from the container need to change.
   meta) and `rule` (the rule it breaks, `Checks::RULES`). A page-wide
   `responsive_layout` names the container to change.
 - **The not_ready limit.** Charlotte counts consecutive `not_ready` results
-  per session (`charlotte_sessions.finish_refusals`). At
+  (`charlotte_sessions.finish_refusals`): per harness run for a page
+  sub-agent (`finish_refusals_run`), so two successive children on the same
+  page each get the full allowance, and session-wide for a top-level turn. At
   `charlotte.finish.max_not_ready` (default 3, minimum 1) `cms_finish` returns
   `not_ready_limit` with the remaining `defects`, `refusals`, `limit` and, for
   a page sub-agent, its `draft` reference; `cms_apply` and `site_nav_set` are
   refused `not_ready_limit` too, and a turn at the limit is not continued
   after an output-limit stop. The agent stops and hands the defects back
   instead of retrying. The count starts again on a successful finish, a new
-  message, a page created or selected, or a delegation bound. On a site the
-  orchestrator re-selects a page before handing it back to a new sub-agent.
+  message, a page created or selected, or a delegation bound; a new child run
+  always starts from zero.
 - **Cache tokens in telemetry.** `usage.observed` carries `cacheReadTokens`
   and `cacheWriteTokens` from Prism's usage (null when the provider does not
   report them), so prompt caching (prism#29) shows when it starts working.

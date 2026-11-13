@@ -45,7 +45,7 @@ final class Turns
             $event = $this->workspace->record($session->id, EventTypes::MESSAGE_CREATED, ['kind' => 'human', 'id' => $by],
                 ['messageId' => 'm_'.Ulid::generate(), 'role' => 'user', 'text' => $text]);
             // A new turn is new work: count cms_finish refusals from zero.
-            $this->workspace->status($session, 'queued', ['stop_requested_at' => null, 'finish_refusals' => 0]);
+            $this->workspace->status($session, 'queued', ['stop_requested_at' => null, 'finish_refusals' => 0, 'finish_refusals_run' => null]);
 
             return $event->seq;
         });

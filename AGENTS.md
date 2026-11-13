@@ -75,11 +75,14 @@ read config through the container.
   consecutive refusals (`Workspace::refuseFinish()`, `limited()`). At
   `charlotte.finish.max_not_ready` the code is `not_ready_limit`; `PageTools`
   then refuses `cms_apply`/`site_nav_set`, and `TurnRunner` does not continue
-  a `length` stop. Reset on: successful finish, `Turns::send`, site page
-  create/select and `PageSubagents::bind()`. The harness spawns site children
-  itself, so there is no per-spawn hook: the site preamble tells the
-  orchestrator to re-select a page before handing it back. Any new "new work"
-  entry point must reset it too, or an agent stays stopped.
+  a `length` stop. A page SUB-AGENT's count is keyed by its harness run
+  (`finish_refusals_run`; `PageTools` reads the child session's current run
+  id at call time), so every child run starts from zero with no spawn hook.
+  A top-level turn counts session-wide (run null): its continuations are new
+  runs and must not refresh the allowance. Session-wide resets: successful
+  finish, `Turns::send`, site page create/select, `PageSubagents::bind()`.
+  Never build on a child result's `usage.steps`: it reports the tree total
+  (prism-harness G-264).
 - `Design\Starter`: the responsive skeleton/type/spacing data, in the guide
   as its closing section (`Starter::promptSection()`, appended by
   `PublishedGuide`), so it is in every mode prompt and the guide hash, NOT in

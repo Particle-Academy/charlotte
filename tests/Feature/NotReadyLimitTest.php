@@ -133,6 +133,32 @@ test('a page sub-agent at the limit gets its draft reference to return, and sele
         ->and($fresh['error'])->toMatchArray(['code' => 'not_ready', 'refusals' => 1]);
 });
 
+test('two successive page children on the same page each get a fresh allowance: the count is per child run', function (): void {
+    $finish = fn (array $calls) => ['basedOn' => json_decode(end($calls)['result'], true)['revision']];
+    $child = [
+        ['tools' => [['name' => 'cms_get', 'args' => []]]],
+        ['tools' => [['name' => 'cms_finish', 'args' => $finish]]],
+        ['tools' => [['name' => 'cms_finish', 'args' => $finish]]],
+        ['tools' => [['name' => 'cms_finish', 'args' => $finish]]],
+        ['text' => 'Stopped with defects.'],
+    ];
+    $provider = new ScriptedProvider([[
+        ['tools' => [['name' => 'site_page_create', 'args' => ['page' => 'home', 'title' => 'Acme Ledger', 'kind' => 'page', 'route' => '/']]]],
+        // Two children on the same selected page, with no site_page_select between them.
+        ['tools' => [['name' => \Charlotte\Guide\BuilderMode::SITE_SUBAGENT, 'args' => ['task' => 'Build the home page.']]]],
+        ['tools' => [['name' => \Charlotte\Guide\BuilderMode::SITE_SUBAGENT, 'args' => ['task' => 'Try the home page again.']]]],
+        ['text' => 'Done.'],
+    ], $child, $child]);
+    charlotteApp(['charlotte.autonomy' => 'full'], $provider);
+    $site = openSite();
+
+    $site->send('Build.', 'user-7');
+
+    $finishes = array_map(fn (array $c) => json_decode($c['result'], true)['error'], array_values(array_filter($provider->calls, fn (array $c) => $c['name'] === 'cms_finish')));
+    expect(array_column($finishes, 'code'))->toBe(['not_ready', 'not_ready', 'not_ready_limit', 'not_ready', 'not_ready', 'not_ready_limit'])
+        ->and(array_column($finishes, 'refusals'))->toBe([1, 2, 3, 1, 2, 3]);
+});
+
 test('a turn at the limit is not continued after an output-limit stop', function (): void {
     $finish = fn (array $calls) => ['basedOn' => json_decode(end($calls)['result'], true)['revision']];
     $provider = new ScriptedProvider([[

@@ -49,7 +49,24 @@ final class PageTools
         private readonly ?SiteWorkspace $sites = null,
         private readonly bool $child = false,
         private readonly ?PageSubagents $subagents = null,
+        private readonly ?Closure $runId = null,
     ) {}
+
+    /**
+     * The harness run a sub-agent's not_ready count belongs to, read at call
+     * time (`$runId` is the child harness session's current run). Each child
+     * run gets its own allowance; null (a top-level turn, or no harness)
+     * counts session-wide.
+     */
+    private function run(): ?string
+    {
+        if (! $this->child || $this->runId === null) {
+            return null;
+        }
+        $run = ($this->runId)();
+
+        return is_string($run) && $run !== '' ? $run : null;
+    }
 
     /**
      * The tools the session's mode offers, in its order: {@see BuilderMode::TOOLS} for a page session or a page
@@ -191,7 +208,7 @@ final class PageTools
             if ($problem !== null) {
                 return $this->invalid($view['revision'], ...$problem);
             }
-            if (in_array($name, ['cms_apply', 'site_nav_set'], true) && $this->workspace->limited($session->id)) {
+            if (in_array($name, ['cms_apply', 'site_nav_set'], true) && $this->workspace->limited($session->id, $this->run())) {
                 // At the not_ready limit the agent stops instead of editing and retrying; reads still work.
                 throw new Refused('not_ready_limit', $view['revision'], ['limit' => $this->workspace->maxNotReady()]);
             }
@@ -338,7 +355,7 @@ final class PageTools
     {
         $site = $session->isSite() && $this->sites !== null;
         $id = $site ? $this->sites->selected($session) : $session->page;
-        $result = $this->workspace->finish($session, $basedOn, markSession: ! $site, skip: $site ? $this->sites->skipFor($session) : [], draftPage: $id);
+        $result = $this->workspace->finish($session, $basedOn, markSession: ! $site, skip: $site ? $this->sites->skipFor($session) : [], draftPage: $id, run: $this->run());
 
         return ['draft' => ['page' => $id, 'revision' => $result['revision']]] + $result;
     }

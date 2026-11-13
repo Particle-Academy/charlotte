@@ -169,7 +169,9 @@ final class CharlotteServiceProvider extends ServiceProvider
                 // at exactly this address (PageSubagents::boundSession).
                 $record = $this->app->make(PageSubagents::class)->boundSession($session);
 
-                return $record === null ? [] : (new PageTools($this->app->make(Workspace::class), $record->id, $this->app->make(SiteWorkspace::class), child: true))->prismTools();
+                // The child run id, read when a tool runs: each child run gets its own not_ready allowance.
+                return $record === null ? [] : (new PageTools($this->app->make(Workspace::class), $record->id, $this->app->make(SiteWorkspace::class), child: true,
+                    runId: fn (): ?string => is_string($session->run()['id'] ?? null) ? $session->run()['id'] : null))->prismTools();
             }
             if (! in_array($mode, [BuilderMode::NAME, BuilderMode::SITE_NAME], true)) {
                 return [];

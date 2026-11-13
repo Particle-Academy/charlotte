@@ -99,7 +99,7 @@ final class SiteWorkspace
             $this->workspace->pages()->ensure($session->tenant, $key,
                 NodeTypes::emptyDocument($key, $title, $route ?? ($kind === 'not_found' ? '/404' : '/')));
             // A new page is new work for the next page sub-agent: its refusal count starts again.
-            $this->sessions->update($session->id, ['page_key' => $key, 'finish_refusals' => 0]);
+            $this->sessions->update($session->id, ['page_key' => $key, 'finish_refusals' => 0, 'finish_refusals_run' => null]);
             $this->changed($session, $site, 'page_created', $id, ['kind' => $kind, 'route' => $route]);
 
             return ['page' => $id, 'selected' => $id, 'route' => $route, 'kind' => $kind,
@@ -127,7 +127,7 @@ final class SiteWorkspace
                 throw new Refused('site_page_missing', null, ['page' => $id]);
             }
             $key = $site->documentKey($id);
-            $this->sessions->update($session->id, ['page_key' => $key, 'finish_refusals' => 0]);
+            $this->sessions->update($session->id, ['page_key' => $key, 'finish_refusals' => 0, 'finish_refusals_run' => null]);
             $this->changed($session, $site, 'page_selected', $id);
 
             return ['selected' => $id, 'revision' => $this->workspace->view($session->onPage($key))['revision']];

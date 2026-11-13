@@ -199,7 +199,7 @@ final class Workspace
      * `$markSession` false (one page of a site, finished by its page sub-agent) records the page's
      * readiness without setting the session's ready revision, which on a site is the SITE revision.
      */
-    public function finish(SessionRecord $session, string $basedOn, bool $markSession = true, array $skip = [], ?string $draftPage = null): array
+    public function finish(SessionRecord $session, string $basedOn, bool $markSession = true, array $skip = [], ?string $draftPage = null, ?string $run = null): array
     {
         $result = $this->db->transaction(function () use ($session, $basedOn, $markSession, $skip): array {
             $view = $this->view($session);
@@ -219,7 +219,7 @@ final class Workspace
             return ['revision' => $view['revision'], 'ready' => true, 'staged' => $view['staged'], 'checks' => $checks['summary']];
         });
         if (isset($result['refused'])) {
-            $this->refuseFinish($session->id, $result['revision'], $result['refused'], $draftPage);
+            $this->refuseFinish($session->id, $result['revision'], $result['refused'], $draftPage, $run);
         }
         $this->sessions->resetRefusals($session->id);
 
@@ -232,10 +232,13 @@ final class Workspace
         return $this->maxNotReady;
     }
 
-    /** Whether this session's agent has hit the not_ready limit and must stop rather than retry. */
-    public function limited(string $sessionId): bool
+    /**
+     * Whether this session's agent has hit the not_ready limit and must stop
+     * rather than retry: within `$run` (a sub-agent's run), or session-wide.
+     */
+    public function limited(string $sessionId, ?string $run = null): bool
     {
-        return $this->sessions->refusals($sessionId) >= $this->maxNotReady;
+        return $this->sessions->refusals($sessionId, $run) >= $this->maxNotReady;
     }
 
     /** New work began (a turn, a page sub-agent): count refusals from zero. */
@@ -248,14 +251,15 @@ final class Workspace
      * Count one more consecutive refusal and refuse: `not_ready` with the
      * located defects, or at the limit `not_ready_limit`, which tells the
      * agent to stop and hand the defects back (with its draft reference
-     * when it is a page sub-agent).
+     * when it is a page sub-agent). A sub-agent passes its harness `$run`:
+     * each child run counts from zero, with no spawn hook needed.
      *
      * @param  list<array>  $defects  the gate defects
      */
-    public function refuseFinish(string $sessionId, string $revision, array $defects, ?string $draftPage = null): never
+    public function refuseFinish(string $sessionId, string $revision, array $defects, ?string $draftPage = null, ?string $run = null): never
     {
-        $count = $this->sessions->refusals($sessionId) + 1;
-        $this->sessions->update($sessionId, ['finish_refusals' => $count]);
+        $count = $this->sessions->refusals($sessionId, $run) + 1;
+        $this->sessions->setRefusals($sessionId, $count, $run);
         $limit = $count >= $this->maxNotReady;
 
         throw new Refused($limit ? 'not_ready_limit' : 'not_ready', $revision, ['defects' => $defects, 'refusals' => $count, 'limit' => $this->maxNotReady]

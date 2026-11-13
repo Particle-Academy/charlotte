@@ -40,8 +40,9 @@ return [
 
     // cms_finish refuses (not_ready) while a finish gate fails. After this
     // many refusals in a row it returns not_ready_limit instead: the agent
-    // stops, and edits and finishes are refused until new work starts (a new
-    // message, a page created or selected, a delegation). Min 1.
+    // stops, and edits and finishes are refused until new work starts. A page
+    // sub-agent's count is per run, so each child gets the full allowance; a
+    // top-level turn's resets on a new message or a page created or selected. Min 1.
     'finish' => [
         'max_not_ready' => (int) env('CHARLOTTE_FINISH_MAX_NOT_READY', 3),
     ],

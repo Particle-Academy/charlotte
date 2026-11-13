@@ -36,7 +36,7 @@ final class Refused extends RuntimeException
         'site_full' => 'This site already has the most pages the host allows.',
         'not_a_site' => 'This session edits one page, not a site.',
         'not_ready' => 'The draft is not ready for review, so cms_finish marked nothing. Fix every defect listed (each says what to change), run cms_check, then call cms_finish again with the new revision.',
-        'not_ready_limit' => 'Stop: cms_finish has refused this draft too many times in a row, so do not edit or retry. End your turn and report the remaining defects listed here to your caller; a page sub-agent replies with exactly {"draft": ..., "defects": ...} from this result. New work (a new message, or the page created or selected again) starts the count again.',
+        'not_ready_limit' => 'Stop: cms_finish has refused this draft too many times in a row, so do not edit or retry. End your turn and report the remaining defects listed here to your caller; a page sub-agent replies with exactly {"draft": ..., "defects": ...} from this result. New work (a new message, or a new page sub-agent) starts the count again.',
     ];
 
     /** @param array<string, scalar|array|null> $details  `not_ready` carries its `defects`, as cms_check reports them */

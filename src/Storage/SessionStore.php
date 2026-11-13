@@ -53,16 +53,31 @@ final class SessionStore
         );
     }
 
-    /** Consecutive cms_finish refusals in the current piece of work. */
-    public function refusals(string $id): int
+    /**
+     * Consecutive cms_finish refusals in the current piece of work: within
+     * `$run` (a sub-agent's harness run id), or session-wide when null. A
+     * count stored for any other run is a previous child's, so it reads as 0.
+     */
+    public function refusals(string $id, ?string $run = null): int
     {
-        return (int) ($this->db->table('charlotte_sessions')->where('id', $id)->value('finish_refusals') ?? 0);
+        $row = $this->db->table('charlotte_sessions')->where('id', $id)->first(['finish_refusals', 'finish_refusals_run']);
+        if ($row === null || $row->finish_refusals_run !== $run) {
+            return 0;
+        }
+
+        return (int) $row->finish_refusals;
+    }
+
+    /** Record the count for this run (null: session-wide). */
+    public function setRefusals(string $id, int $count, ?string $run = null): void
+    {
+        $this->db->table('charlotte_sessions')->where('id', $id)->update(['finish_refusals' => $count, 'finish_refusals_run' => $run]);
     }
 
     /** Start counting refusals again: new work began, or a finish succeeded. */
     public function resetRefusals(string $id): void
     {
-        $this->db->table('charlotte_sessions')->where('id', $id)->where('finish_refusals', '>', 0)->update(['finish_refusals' => 0]);
+        $this->db->table('charlotte_sessions')->where('id', $id)->update(['finish_refusals' => 0, 'finish_refusals_run' => null]);
     }
 
     /** @param array<string, mixed> $fields column => value */

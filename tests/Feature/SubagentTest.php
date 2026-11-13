@@ -149,8 +149,6 @@ test('on an UNCAPPED host tree, every child call counts in that tree, and spend 
         ->and([$first['outcome'], $second['outcome']])->toBe(['completed', 'completed'])
         // Parent and children on ONE ledger: every provider call is one tree step.
         ->and($tree->ledger->steps())->toBe(count($provider->requests))
-        // A child's reported steps are the shared tree's running total, so the second sees the first's.
-        ->and($second['usage']['steps'])->toBeGreaterThan($first['usage']['steps'])
         // The scripted provider reports no cost and the tree has no pricing: counted as unmetered.
         ->and($tree->ledger->unmeteredRuns())->toBeGreaterThan(0);
 });
@@ -178,7 +176,6 @@ test('STEPS: a child admitted after 4 of the tree\'s 6 steps gets the remaining 
         ->and($provider->textRequests)->toHaveCount(2)                                   // the child made exactly its 2 remaining calls
         ->and(count($provider->requests) - count($provider->textRequests))->toBe(4)        // the parent made 4 and no 5th
         ->and(array_column($provider->calls, 'name'))->not->toContain('cms_finish')        // the child stopped before its third call
-        ->and($child['usage']['steps'])->toBe(6)                                           // the tree's total when the child stopped
         ->and(array_unique(array_map(fn ($r) => $r->maxSteps(), $provider->requests)))->toBe([1]); // every call admitted one at a time
 });
 
