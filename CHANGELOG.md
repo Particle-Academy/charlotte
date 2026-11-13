@@ -183,21 +183,12 @@ instead of resolving it from the container need to change.
   person/select value as one id and an empty multiselect as no narrowing. A
   parity test runs against fancy-cms's own `tests/fixtures/data-queries.json`.
   Needs fancy-cms 0.9.0 (page inputs and data queries); see Changed.
-- **BREAKING (site sessions only, unreleased until now): a site turn needs a
-  cost-capped host `RunContext`.** Until prism-harness ships G-261 (an
-  uncapped `stream()` drops declared sub-agents) and G-262 (an uncapped run
-  does not count the parent's steps), a site turn with no host context, or one
-  with no `maxCostUsd`, fails `site_needs_capped_context` before any provider
-  call. On an uncapped tree an admitted page sub-agent could overshoot the cap
-  by a whole run; a capped tree reserves every call first, so a child admitted
-  near the cap stops before it spends. **What to do:** return a capped, priced
-  `RunContext` from `Charlotte::contextUsing()` for site sessions. Page
-  sessions and `Charlotte::delegate()` pages are unaffected. This guard comes
-  out when G-261 and G-262 ship.
 - **One run tree per site turn.** The orchestrator's stream and every page
-  sub-agent run on the host's capped `RunContext`: each child's spend lands in
-  it, and a child is refused `exhausted` once it no longer fits. A child
-  resolves only the `charlotte` mode's nine tools.
+  sub-agent run on the turn's `RunContext` (the host's, or the harness
+  default): prism-harness meters every parent and child call against it, a
+  child gets min(40, the steps the tree has left), its steps and spend land in
+  the tree, and a child resolves only the `charlotte` mode's nine tools. The
+  `charlotte_page` tool is the harness's own declared sub-agent tool.
 - Tool handlers pass every argument to the closed dispatch, so an undeclared
   one (`tenant`, `page`) is reported as `$.arguments.<field>: no such field`
   instead of failing inside the PHP call with a generic error.
@@ -241,8 +232,8 @@ instead of resolving it from the container need to change.
   refused `not_ready_limit` too, and a turn at the limit is not continued
   after an output-limit stop. The agent stops and hands the defects back
   instead of retrying. The count starts again on a successful finish, a new
-  message, a page created or selected, a page sub-agent spawned, or a
-  delegation bound.
+  message, a page created or selected, or a delegation bound. On a site the
+  orchestrator re-selects a page before handing it back to a new sub-agent.
 - **Cache tokens in telemetry.** `usage.observed` carries `cacheReadTokens`
   and `cacheWriteTokens` from Prism's usage (null when the provider does not
   report them), so prompt caching (prism#29) shows when it starts working.
@@ -262,6 +253,16 @@ instead of resolving it from the container need to change.
 
 ### Changed
 
+- **Requires `particle-academy/prism-harness` `>=0.23.2 <2.0`** (was
+  `>=0.17 <1.0`). 0.23.2 fixes G-261 (an uncapped stream dropped declared
+  sub-agents) and G-262 (a shared tree did not count the parent's steps), and
+  has no breaking changes. **Consumer action:** `composer update
+  particle-academy/prism-harness particle-academy/charlotte`. Widening the
+  upper bound only adds candidates.
+- **Site turns need no special host context.** Charlotte's own `charlotte_page`
+  tool and its cost-capped-only guard are gone: the harness offers its
+  declared sub-agent tool in every stream and enforces the tree's steps and
+  spend before every parent and child call. **What to do:** nothing.
 - **Requires `particle-academy/fancy-cms` `>=0.9.0 <2.0`** (was `>=0.8.1 <2.0`).
   Charlotte now reads fancy-cms 0.9.0's island catalogue, `input` nodes and
   `DataRequests::queries()`, which 0.8.1 does not have. **Consumer action:**

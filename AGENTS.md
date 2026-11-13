@@ -76,8 +76,10 @@ read config through the container.
   `charlotte.finish.max_not_ready` the code is `not_ready_limit`; `PageTools`
   then refuses `cms_apply`/`site_nav_set`, and `TurnRunner` does not continue
   a `length` stop. Reset on: successful finish, `Turns::send`, site page
-  create/select, `PageSubagents::bind()` and each `charlotte_page` spawn. Any
-  new "new work" entry point must reset it too, or an agent stays stopped.
+  create/select and `PageSubagents::bind()`. The harness spawns site children
+  itself, so there is no per-spawn hook: the site preamble tells the
+  orchestrator to re-select a page before handing it back. Any new "new work"
+  entry point must reset it too, or an agent stays stopped.
 - `Design\Starter`: the responsive skeleton/type/spacing data, in the guide
   as its closing section (`Starter::promptSection()`, appended by
   `PublishedGuide`), so it is in every mode prompt and the guide hash, NOT in
@@ -125,14 +127,14 @@ read config through the container.
   child harness address (`<parent scope>::sub::<suffix>`) to a Charlotte
   session as capability `charlotte {session, scope}` plus provider and model.
   `Charlotte::delegate()` does it for a host's own agent; `TurnRunner` does
-  it for a site orchestrator's `::sub::page` child each turn, and `begin()`s
-  the turn with the ONE `RunContext` the stream also gets (the host's; a site
-  turn without a cost-capped one is refused `site_needs_capped_context` until
-  prism-harness G-261/G-262), so `tool()` can offer `charlotte_page` through
-  the harness's
-  `SubagentRunner` (prism-harness 0.17's uncapped `stream()` drops declared
-  sub-agents; when the harness offers its own tool of that name, it replaces
-  ours). `site_page_create` / `site_page_select` retire the child's thread so
+  it for a site orchestrator's `::sub::page` child each turn. That binding is
+  ALL Charlotte does: `charlotte_page` is the harness's own tool for the site
+  mode's DECLARED sub-agent (prism-harness >=0.23.2 offers it in capped and
+  uncapped streams), and the harness meters every parent and child call on
+  the turn's one `RunContext` (child steps = min(declared, remaining)) and
+  resolves only the child mode's tools. Never re-add a Charlotte-side spawn,
+  meter or tool filter; `SubagentTest` proves the harness does all three with
+  none. `site_page_create` / `site_page_select` retire the child's thread so
   each page starts fresh. `PageTools(child: true)` = the nine tools, no site
   tools, and `cms_finish` returns `{draft: {page, revision}}` without setting
   the site's ready revision.
@@ -184,11 +186,8 @@ read config through the container.
   EVERY generation in the host: check the flags and the session key before
   resolving anything from the container (`TelemetryLazyTest`).
 - **Billing is optional.** Nothing may require a `TurnContextFactory`; with
-  none bound a page turn passes `context: null` and runs on harness config.
-  EXCEPTION until prism-harness G-261 and G-262 ship: a SITE turn refuses
-  (`site_needs_capped_context`) without a host context that has `maxCostUsd`,
-  because only a capped tree meters each page sub-agent call. Remove the guard
-  in `TurnRunner::run()` when both ship.
+  none bound a page or site turn passes `context: null` and runs on harness
+  config. (The 0.4 site-only cost-cap guard came out with prism-harness 0.23.2.)
 - **Event types**: adding one means updating `Events\EventTypes::ALL`,
   `resources/schema/events.v1.json`, `tests/fixtures/events.v1.json` and
   `docs/events.md`; `EventContractTest` fails until all agree.
@@ -217,6 +216,11 @@ from the session's or the mode prompt does not embed it exactly once.
 Pest, with a hand-built kernel (`tests/Support/TestApp.php`; no testbench):
 in-memory SQLite, array cache, sync queue, and `ScriptedProvider`, a Prism
 provider that executes the tools the run offers. Step arguments may be a
-closure over earlier results, which is how scripts pin `basedOn`. HTTP tests
+closure over earlier results, which is how scripts pin `basedOn`. It honours
+the request's `maxSteps`: a tree-metered call (maxSteps 1) plays ONE script
+step and the run's next call resumes the rest, and a tool-calling step
+finishes `tool-calls`. Without both, a whole script ran in one provider call
+and per-call step admission was invisible, so count runs and threads, not
+`requests`, when asserting how many things ran. HTTP tests
 dispatch through the real router; bind `request` before setting the user
 resolver, because the auth provider's rebinding hook replaces it.

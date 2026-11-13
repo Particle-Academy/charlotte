@@ -97,18 +97,11 @@ final class TurnRunner
             // observer), or null for the harness defaults. Inside the try: a
             // host refusing admission fails the turn with its code, before
             // any provider call.
+            // On a site the orchestrator's page sub-agent is the harness's own
+            // declared tool (prism-harness >=0.23.2): present in capped and
+            // uncapped streams, run on this same context, so a child's steps
+            // and spend count against the one tree (G-261, G-262).
             $context = $this->contexts->forTurn(new Turn($session, $harness, $text));
-            if ($session->isSite()) {
-                // GUARD until prism-harness G-261 and G-262 ship: only a
-                // cost-capped run meters every child call against the tree,
-                // so an uncapped orchestrator could overshoot its own cap by a
-                // whole child run. Refused before any provider call.
-                if ($context === null || $context->budget->maxCostUsd === null) {
-                    throw new Refused('site_needs_capped_context');
-                }
-                // ONE tree for the orchestrator and its page sub-agents.
-                $this->subagents?->begin($session, $harness, $context);
-            }
 
             // One turn may span several runs: a response cut off at the output
             // limit (`length`) before the page is ready is continued, up to
@@ -166,8 +159,6 @@ final class TurnRunner
                 $e instanceof HasErrorCode => $e->code(),
                 default => 'run_failed',
             });
-        } finally {
-            $this->subagents?->end($session->id);
         }
     }
 

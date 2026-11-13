@@ -20,6 +20,7 @@ use Prism\Prism\Text\Request as TextRequest;
 use Prism\Prism\Text\Response as TextResponse;
 use Prism\Prism\Text\Step;
 use Prism\Prism\ValueObjects\Messages\AssistantMessage;
+use Prism\Prism\ValueObjects\Messages\ToolResultMessage;
 use Prism\Prism\ValueObjects\Meta;
 use Prism\Prism\ValueObjects\ToolCall;
 use Prism\Prism\ValueObjects\ToolResult;
@@ -49,6 +50,42 @@ final class ScriptedProvider extends Provider
     /** @param list<list<array{text?:string,tools?:list<array{name:string,args:array|\Closure}>}>> $turns */
     public function __construct(public array $turns = []) {}
 
+    /**
+     * The unplayed rest of a script whose call stopped at the request's
+     * maxSteps, by run (system prompt), with the message count it stopped at.
+     *
+     * @var array<string, array{steps: list<array>, messages: int}>
+     */
+    private array $pending = [];
+
+    /**
+     * The steps this call plays, honouring the request's `maxSteps` the way a
+     * real provider's tool loop does: a run metered one call at a time
+     * (prism-harness's tree budget sends maxSteps 1) gets ONE script step per
+     * provider call, and the rest on its next call. Without this a whole
+     * multi-step script ran inside one call, so per-call step admission was
+     * invisible to every test (the instrument, not the harness, hid it).
+     *
+     * @return array{0: list<array>, 1: bool} [steps to play now, whether more remain]
+     */
+    private function next(TextRequest $request): array
+    {
+        $key = sha1(json_encode(array_map(fn ($m) => $m->content, $request->systemPrompts())) ?: '');
+        $count = count($request->messages());
+        $pending = $this->pending[$key] ?? null;
+        unset($this->pending[$key]);
+        $steps = $pending !== null && $count > $pending['messages']
+            ? $pending['steps']                              // the same run, continued
+            : (array_shift($this->turns) ?? [['text' => 'Done.']]);
+        $limit = max(1, $request->maxSteps());
+        if (count($steps) <= $limit) {
+            return [$steps, false];
+        }
+        $this->pending[$key] = ['steps' => array_slice($steps, $limit), 'messages' => $count];
+
+        return [array_slice($steps, 0, $limit), true];
+    }
+
     /** Called at the start of every stream call, e.g. to stop a session mid-turn. */
     public ?\Closure $onStream = null;
 
@@ -58,7 +95,7 @@ final class ScriptedProvider extends Provider
         if ($this->onStream !== null) {
             ($this->onStream)();
         }
-        $steps = array_shift($this->turns) ?? [['text' => 'Done.']];
+        [$steps, $more] = $this->next($request);
         $message = 'msg_'.count($this->requests);
         $at = time();
 
@@ -91,18 +128,22 @@ final class ScriptedProvider extends Provider
                 $this->calls[] = ['name' => $call['name'], 'args' => $args, 'result' => $result];
                 yield new ToolResultEvent('e-result-'.$i.'-'.$k, $at, new ToolResult($id, $call['name'], $args, $result), $message);
             }
-            // A step may END the call with a recorded finish reason, the way a
-            // provider does when output hits max_tokens (FinishReason::Length).
-            $finish = $step['finish'] ?? FinishReason::Stop;
+            // A step that called tools finishes `tool-calls`, as a real
+            // provider's does; Prism drops the tool calls of a step that
+            // finished any other way (they were never executed).
+            // A step may also END the call with a recorded finish reason, the
+            // way a provider does when output hits max_tokens (FinishReason::Length).
+            $finish = $step['finish'] ?? (($step['tools'] ?? []) === [] ? FinishReason::Stop : FinishReason::ToolCalls);
             yield new StepFinishEvent('e-sf-'.$i, $at, new Usage(100, 20), [], $finish);
-            if ($finish !== FinishReason::Stop) {
+            if (! in_array($finish, [FinishReason::Stop, FinishReason::ToolCalls], true)) {
                 yield new StreamEndEvent('e-end', $at, $finish, new Usage(100 * ($i + 1), 20 * ($i + 1)));
 
                 return;
             }
         }
 
-        yield new StreamEndEvent('e-end', $at, FinishReason::Stop, new Usage(100 * count($steps), 20 * count($steps)));
+        // Stopped at maxSteps with script left: end the call as a provider does mid tool loop.
+        yield new StreamEndEvent('e-end', $at, $more ? FinishReason::ToolCalls : FinishReason::Stop, new Usage(100 * count($steps), 20 * count($steps)));
     }
 
     /** @var list<TextRequest> the requests that came through text() (sub-agent runs use send, not stream) */
@@ -119,13 +160,14 @@ final class ScriptedProvider extends Provider
     {
         $this->requests[] = $request;
         $this->textRequests[] = $request;
-        $steps = array_shift($this->turns) ?? [['text' => 'Done.']];
+        [$steps, $more] = $this->next($request);
         $tools = [];
         foreach ($request->tools() as $tool) {
             $tools[$tool->name()] = $tool;
         }
         $meta = new Meta('scripted-'.count($this->requests), $request->model());
         $done = [];
+        $transcript = [];
         $allCalls = $allResults = [];
         $text = '';
         foreach ($steps as $i => $step) {
@@ -145,11 +187,17 @@ final class ScriptedProvider extends Provider
             }
             array_push($allCalls, ...$calls);
             array_push($allResults, ...$results);
-            $done[] = new Step($text, $calls === [] ? FinishReason::Stop : FinishReason::ToolCalls, $calls, $results, [], new Usage(100, 20), $meta, [], []);
+            $done[] = new Step($text, $calls === [] ? FinishReason::Stop : FinishReason::ToolCalls, $calls, $results, [], new Usage(100, 20), $meta, $request->messages(), []);
+            $transcript[] = new AssistantMessage($text, $calls);
+            if ($results !== []) {
+                $transcript[] = new ToolResultMessage($results);
+            }
         }
 
-        return new TextResponse(collect($done), $text, FinishReason::Stop, $allCalls, $allResults, new Usage(100 * count($done), 20 * count($done)), $meta,
-            collect([...$request->messages(), new AssistantMessage($text)]));
+        // Stopped at maxSteps with script left: report the tool calls, so the caller's loop continues.
+        return new TextResponse(collect($done), $text, $more ? FinishReason::ToolCalls : FinishReason::Stop,
+            $more ? end($done)->toolCalls : $allCalls, $more ? end($done)->toolResults : $allResults,
+            new Usage(100 * count($done), 20 * count($done)), $meta, collect([...$request->messages(), ...$transcript]));
     }
 
     /** The decoded result of the Nth call to a tool. */

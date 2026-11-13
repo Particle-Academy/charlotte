@@ -41,7 +41,7 @@ return [
     // cms_finish refuses (not_ready) while a finish gate fails. After this
     // many refusals in a row it returns not_ready_limit instead: the agent
     // stops, and edits and finishes are refused until new work starts (a new
-    // message, a new page sub-agent, a page selected, a delegation). Min 1.
+    // message, a page created or selected, a delegation). Min 1.
     'finish' => [
         'max_not_ready' => (int) env('CHARLOTTE_FINISH_MAX_NOT_READY', 3),
     ],

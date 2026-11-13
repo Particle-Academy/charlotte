@@ -120,21 +120,15 @@ judged on the document, and every check result says which ran.
 
 **How a site turn runs.** The site mode is an orchestrator. It plans the pages,
 creates and routes them, and hands each page (and `@header` / `@footer`) to a
-`charlotte` page sub-agent through prism-harness's sub-agent API. Each
-sub-agent gets 40 steps, a budget nested within the turn's, and a fresh
-context. The orchestrator never loads a whole document; it keeps page ids and
-outcomes. `charlotte.site.max_steps` bounds the whole tree.
-
-> **A site turn needs a cost-capped host `RunContext` for now.** Until
-> prism-harness ships **G-261** (an uncapped `stream()` drops declared
-> sub-agents) and **G-262** (an uncapped run does not count the parent's
-> steps), only a cost-capped run meters every page sub-agent call against the
-> tree. Without one, a page sub-agent admitted near the cap could overshoot it
-> by a whole run. So a site turn with no host context, or with one that has no
-> `maxCostUsd`, is refused with `site_needs_capped_context` before any
-> provider call. Return a capped, priced context from `Charlotte::contextUsing()`
-> (see "Host budgets" below). Page sessions and pages delegated with
-> `Charlotte::delegate()` don't need one.
+`charlotte` page sub-agent through prism-harness's sub-agent API: the site
+mode declares the sub-agent and the harness offers its tool, in capped and
+uncapped turns alike. Each sub-agent gets 40 steps or what the tree has left,
+whichever is smaller, and a fresh context. The harness meters every parent
+and child call against the one tree, so a child's steps and spend land in
+the turn's budget, and a child resolves only the page tools. The orchestrator
+never loads a whole document; it keeps page ids and outcomes.
+`charlotte.site.max_steps` bounds the whole tree. A host `RunContext` is
+optional for site turns, as for page turns.
 
 ## Reports / dashboards
 
@@ -369,8 +363,8 @@ the harness session and the person's message.
 ## Requirements
 
 - PHP 8.4, Laravel 13 (illuminate components), a queue worker.
-- `particle-academy/prism-harness` and `particle-academy/fancy-cms`, installed
-  with Charlotte.
+- `particle-academy/prism-harness` (0.23.2 or later) and
+  `particle-academy/fancy-cms`, installed with Charlotte.
 
 ## Security
 

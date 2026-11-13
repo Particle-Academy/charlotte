@@ -56,10 +56,7 @@ function openSession(array $options = []): CharlotteSession
     return $pending->open();
 }
 
-/**
- * A cost-capped, priced host run context (what a site turn requires until
- * prism-harness G-261 and G-262 ship), bound for every turn.
- */
+/** A cost-capped, priced host run context, bound for every turn. */
 function cappedTree(float $maxCostUsd = 5.0, int $maxSteps = 100): \Prism\Harness\Subagents\RunContext
 {
     $tree = \Prism\Harness\Subagents\RunContext::root('host-tree', new \Prism\Harness\Subagents\RunBudget(maxSteps: $maxSteps, maxCostUsd: $maxCostUsd, maxOutputTokensPerCall: 1024),

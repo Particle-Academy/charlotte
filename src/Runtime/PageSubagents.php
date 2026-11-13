@@ -10,14 +10,8 @@ use Charlotte\Sessions\SessionRecord;
 use Charlotte\Storage\SessionStore;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Closure;
-use Prism\Harness\Modes\ModeRegistry;
 use Prism\Harness\PrismHarness;
 use Prism\Harness\Sessions\Session;
-use Prism\Harness\Subagents\RunContext;
-use Prism\Harness\Subagents\Subagent;
-use Prism\Harness\Subagents\SubagentRunner;
-use Prism\Prism\Tool;
 
 /**
  * Charlotte as a prism-harness SUB-AGENT, on the harness's existing API.
@@ -31,71 +25,21 @@ use Prism\Prism\Tool;
  *
  * Two callers: {@see TurnRunner} for a site orchestrator's page sub-agent,
  * and {@see \Charlotte\Charlotte::delegate()} for a host's own agent.
+ *
+ * Charlotte does not spawn, meter or filter the child itself: the site mode
+ * DECLARES its `charlotte_page` sub-agent and prism-harness (>=0.23.2) offers
+ * that tool in every stream, nests the child's budget in the parent's tree
+ * (min(declared, remaining) steps, every call metered) and resolves only the
+ * child mode's tools.
  */
 final class PageSubagents
 {
     public const CAPABILITY = 'charlotte';
 
-    /** @var array<string, array{parent: Session, tree: RunContext}> site session id => the turn in flight */
-    private array $turns = [];
-
-    /**
-     * @param  (Closure(): SubagentRunner)|null  $runner
-     * @param  (Closure(): ModeRegistry)|null  $modes
-     */
     public function __construct(
         private readonly PrismHarness $harness,
         private readonly SessionStore $sessions,
-        private readonly ?Closure $runner = null,
-        private readonly ?Closure $modes = null,
     ) {}
-
-    /** A site turn starts: its harness session and the run tree its page sub-agents spend from. */
-    public function begin(SessionRecord $session, Session $parent, RunContext $tree): void
-    {
-        $this->turns[$session->id] = ['parent' => $parent, 'tree' => $tree];
-    }
-
-    public function end(string $sessionId): void
-    {
-        unset($this->turns[$sessionId]);
-    }
-
-    /**
-     * The orchestrator's page sub-agent tool, while one of its turns runs.
-     *
-     * It is prism-harness's own: the declared {@see Subagent} from the site
-     * mode, run by the harness's {@see SubagentRunner} (own address, own
-     * thread linked beneath the parent's, budget nested in the tree, a
-     * data-only framed result). Charlotte only offers it, because
-     * prism-harness 0.17's uncapped `stream()` does not add a mode's declared
-     * sub-agents to the run (its `send()` and capped stream do, and then the
-     * harness's tool of the same name replaces this one). Reported to the
-     * Prism maintainers as a harness gap.
-     */
-    public function tool(SessionRecord $session): ?Tool
-    {
-        $turn = $this->turns[$session->id] ?? null;
-        if ($turn === null || $this->runner === null || $this->modes === null) {
-            return null;
-        }
-        $subagent = ($this->modes)()->resolve(BuilderMode::SITE_NAME)->subagents[BuilderMode::SITE_SUBAGENT] ?? null;
-        if (! $subagent instanceof Subagent) {
-            return null;
-        }
-        $runner = ($this->runner)();
-
-        return (new Tool)
-            ->as($subagent->name)
-            ->for($subagent->description)
-            ->withStringParameter('task', 'What the subagent should do, stated as a complete instruction. It does not see this conversation.')
-            ->using(function (string $task) use ($runner, $subagent, $turn, $session): string {
-                $this->sessions->resetRefusals($session->id); // each page sub-agent is new work
-                return $runner
-                    ->run($subagent, $turn['parent'], $turn['tree'], (string) ($turn['parent']->run()['id'] ?? $turn['tree']->rootRunId()), $task)
-                    ->toToolResult();
-            });
-    }
 
     /** The address a site orchestrator's page sub-agent runs under. */
     public static function siteChildScope(SessionRecord $session): string

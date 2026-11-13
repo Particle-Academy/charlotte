@@ -50,7 +50,6 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\ServiceProvider;
 use Prism\Harness\Modes\ModeRegistry;
 use Prism\Harness\Sessions\Session;
-use Prism\Harness\Subagents\SubagentRunner;
 use Prism\Harness\Tools\ToolRegistry;
 
 /**
@@ -117,10 +116,9 @@ final class CharlotteServiceProvider extends ServiceProvider
             $app->make(SiteWorkspace::class),
             $app->make(PageSubagents::class),
         ));
-        // A singleton: it holds the site turn in flight for the page sub-agent tool.
+        // Host-side binding of sub-agent addresses to Charlotte sessions; the harness runs the child.
         $this->app->singleton(PageSubagents::class, fn (Application $app) => new PageSubagents(
             $app->make(PrismHarness::class), $app->make(SessionStore::class),
-            fn (): SubagentRunner => $app->make(SubagentRunner::class), fn (): ModeRegistry => $app->make(ModeRegistry::class),
         ));
         $this->app->singleton(Charlotte::class, fn (Application $app) => new Charlotte($app));
         $this->app->singletonIf(Authorizer::class, fn () => new DenyAll);

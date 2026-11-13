@@ -53,7 +53,8 @@ final class PageTools
 
     /**
      * The tools the session's mode offers, in its order: {@see BuilderMode::TOOLS} for a page session or a page
-     * sub-agent, {@see BuilderMode::SITE_TOOLS} for a site orchestrator.
+     * sub-agent, {@see BuilderMode::SITE_TOOLS} for a site orchestrator, less `charlotte_page`: that one is the
+     * harness's own declared sub-agent tool, which prism-harness adds to the run itself.
      *
      * @return list<Tool>
      */
@@ -63,11 +64,6 @@ final class PageTools
         $tools = [];
         foreach ([...$this->pageTools($orchestrator), ...($orchestrator ? $this->siteTools() : [])] as $tool) {
             $tools[$tool->name()] = $tool;
-        }
-        // The page sub-agent exists only while one of this site's turns runs.
-        $subagent = $orchestrator ? $this->subagents?->tool($this->workspace->session($this->sessionId)) : null;
-        if ($subagent !== null) {
-            $tools[$subagent->name()] = $subagent;
         }
         $names = $orchestrator ? BuilderMode::SITE_TOOLS : BuilderMode::TOOLS;
 

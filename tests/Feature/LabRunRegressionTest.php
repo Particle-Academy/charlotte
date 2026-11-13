@@ -186,7 +186,7 @@ test('continuations run on the host\'s one run context, so its caps bound the wh
     $provider = new ScriptedProvider([labRun146Turn(), finishingTurn()]);
     charlotteApp(['charlotte.autonomy' => 'full'], $provider);
     $contexts = 0;
-    $context = RunContext::root('lab-turn', new RunBudget(maxSteps: 10, maxCostUsd: 5.0, maxOutputTokensPerCall: 4096),
+    $context = RunContext::root('lab-turn', new RunBudget(maxSteps: 40, maxCostUsd: 5.0, maxOutputTokensPerCall: 4096),
         pricing: ['scripted' => ['test-model' => ['inputPerMTok' => 2.0, 'outputPerMTok' => 10.0, 'toolOverheadTokens' => 474]]]);
     Charlotte::contextUsing(function (Turn $turn) use (&$contexts, $context): RunContext {
         $contexts++;
@@ -197,9 +197,12 @@ test('continuations run on the host\'s one run context, so its caps bound the wh
 
     $session->send('Build it.', 'lab');
 
+    // A tree meters one provider call per step (prism-harness >=0.23), so the
+    // one ledger counts every call of BOTH runs: the cut-off one and its continuation.
     expect($contexts)->toBe(1)
-        ->and($provider->requests)->toHaveCount(2)
-        ->and($context->ledger->steps())->toBe(2)
+        ->and(eventsOf($session, 'run.started'))->toHaveCount(2)
+        ->and(count($provider->requests))->toBeGreaterThan(2)
+        ->and($context->ledger->steps())->toBe(count($provider->requests))
         ->and($session->record()->status)->toBe('idle');
 });
 
