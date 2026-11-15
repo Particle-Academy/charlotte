@@ -12,6 +12,78 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-15
+
+**0.4.0 was prepared on 2026-11-12 (`63257c4`) and not tagged then.** It
+ships now with everything below, including the render-critique-revise loop
+and the kit island lookup that landed after that commit.
+
+**BREAKING, `cms_describe` no longer returns every island schema.** Its
+`islands` carries `families`, `count`, `builtins` and `defs`; a host or kit
+island's full schema comes from the new `cms_island_schema` tool. **What to
+do:** nothing, unless your own host code reads `cms_describe`'s
+`islands.types`; read `families` and call `cms_island_schema` instead. The
+agent learns the new shape from the guide.
+
+**BREAKING, undeclared island props are refused.** A prop the island type's
+schema does not declare is refused `island_invalid`, unless the schema sets
+its own `additionalProperties`. **What to do:** nothing, unless you wrote
+undeclared props on purpose. The renderer already dropped them, so they
+never reached the page.
+
+Whole sites, kit islands and rendered contrast (lab plan
+`lab-full-kit-site-benchmark.md`, phase P2; findings K13, S10, S12), then
+report dashboards and Charlotte as a prism-harness sub-agent (plan
+`report-dashboards.md`, phase 3; charlotte#1).
+
+**Upgrading, dashboards and sub-agents:** nothing to do unless you use them.
+Two behaviours change for everyone: **every `$bind` is now checked against
+the host `DataCatalogue`**, and with none bound (the default) a write that
+adds or changes a binding is refused `binding_invalid`. A host that never
+bound data sees no difference; one that let pages bind `repeat.each` must
+declare those streams. And a **literal number in a data prop** (`value`,
+`delta`, `rows`, `series`, `data`, `categories` …) is now an
+`unsupported_claim` (kind `figure`) unless the brief carries it.
+
+**BREAKING, `cms_finish` now refuses a page that is not ready** (flabs runs
+423-463: 23 of 23 Charlotte pages had their facts right and were judged "bare
+default"). It returns `isError` with code `not_ready` and the failing defects,
+and marks nothing ready, while any of these errors remains: `layout_missing`,
+`link_spacing`, `responsive_layout`, `required_image_missing`,
+`meta_description`, `unsupported_claim`. One `not_ready` lists every blocking
+defect at once. The design gates `grid_orphan`, `hero_thin`, `tap_target` and
+`bare_list` (flabs runs 504-512) are **staged**: by default
+(`charlotte.finish.staged_gates`, env `CHARLOTTE_FINISH_STAGED_GATES`, true)
+they are reported as warnings marked `staged: true` and refuse nothing; set it
+false to make them block. Every other error is still only
+reported, as before. **What to do:** nothing in a host, unless your own tests
+finish deliberately bare pages; those now get `not_ready`. An agent reads the
+defects and fixes them. And **`unsupported_claim` is now an ERROR** for every
+kind except `quote` (still a warning), so `cms_check` summaries count more
+errors.
+
+**BREAKING, an agent may not write a `stack` or `grid` without `layout`.**
+`cms_apply` refuses it with `layout_required`, naming the node
+(`$.nodes.<id>.layout`) and the allowed values (`"stack"`, `"grid"`,
+`"free"`); no default is filled in. **What to do:** nothing in a host; human
+writes are not refused. A host script that drives the tools with layout-less
+stacks must add the layout.
+
+**Upgrading, also:** run the second new migration
+(`2026_11_12_000000_add_charlotte_finish_refusals`: an unsigned
+`charlotte_sessions.finish_refusals`, default 0, and a nullable
+`finish_refusals_run`).
+
+**Upgrading:** run the new migration (`2026_11_11_000000_add_charlotte_sites`:
+a `charlotte_sites` table, nullable `charlotte_sessions.site_key` and
+`charlotte_proposals.page_key`). **The guide text changed** (new sections),
+so the guide hash changes: a session opened before the upgrade refuses its
+next turn with `guide_mode_stale`, as on any guide change. Open a new session.
+Page sessions otherwise behave as before: same nine tools, same events, same
+proposals. **`Workspace`'s constructor gained two parameters** (island
+catalogue, rendered-report source); only hosts that construct it by hand
+instead of resolving it from the container need to change.
+
 ### Added
 
 - **Every kit component as an island** (owner, 2026-11-13). Set
@@ -28,24 +100,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `charlotte.islands.schema_max_types` (default 8) types per call.
 - `echart` options are checked with fancy-cms's own `EchartOption`
   validator in `IslandPolicy`, behind fancy-cms's document check.
-
-### Changed
-
-- **BREAKING (tool result shape):** `cms_describe` `islands` no longer
-  carries every type's schema under `types`. It has `families` (family =>
-  type => one-line description), `count`, `builtins` (fancy-cms's built-ins
-  with their full schemas, as before) and `defs`. The kit catalogue is about
-  300 KB of schemas, too big for one result. What to do: a host that reads
-  `cms_describe` itself reads `families`, and calls `cms_island_schema` for
-  a host or kit island's schema. The guide's island section says the same in
-  the same number of bytes, so the prompt size is unchanged.
-- **BREAKING (validation):** island props are now closed at the top level. A
-  prop the type's schema does not declare is refused `island_invalid`, unless
-  the schema sets its own `additionalProperties`. The renderer dropped such
-  props anyway, so they did nothing on the page. What to do: nothing, unless
-  you wrote undeclared props on purpose; every kit catalogue example passes.
-- `BuilderMode::TOOLS` has ten page tools (`cms_island_schema` after
-  `cms_describe`). A catalogue may hold up to 512 types (was 200).
 
 - **Render, critique, revise** (Prism maintainers' recommendation,
   2026-11-13). `Charlotte::screenshotsUsing()` (or bind
@@ -134,105 +188,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   refuses nothing. `PageChecks::themeTokens()` is public: the `--cms-*` tokens
   fancy-cms emits for a theme.
 
-### Changed
-
-- **The worked examples left the static guide.** Every session saw the same
-  two, and paid lab runs copied their motifs (stamp badges, tile panels, ids
-  like `hero-media-panel`) onto unrelated briefs. They now reach the model in
-  the conversation, not the system prompt: a page session's first run carries
-  its two ahead of the person's message (the thread replays them later; the
-  event log keeps only the person's text), and every fresh page sub-agent
-  conversation (a site's page child, a host's delegated Charlotte) opens with
-  them as one user message, since a child's prompt is its parent's task. The
-  system prompt stays per-install, so it caches across sessions and the guide
-  hash invariant (`guide_mode_stale`) holds; a tool result was ruled out
-  because tool results are framed as data. A site orchestrator gets none. The
-  guide shrank from 8960 to 7492 bytes for charlotte.md; with the largest
-  pair the per-session total is 8948, under the old size, and a test holds it
-  there. Consumers: nothing to do. Hosts that replay sessions get the same two
-  examples from the session id; a guide override no longer needs to account
-  for example text. A page sub-agent's first call now has two user messages
-  (examples, task), not one.
-- The Design rules no longer list stock motifs (pill shapes, a stamp-like
-  badge, an offset tint panel); they ask for one motif of your own. The
-  Composition aside "an unstyled link is 19px tall" went to pay for the
-  examples' bytes; the `tap_target` defect still carries it.
-
-### Fixed
-
-- **The document contrast check passed unreadable text when a theme token was
-  unset** (flabs run 514). The theme set only `accent`; a hero panel on
-  `var(--cms-color-primary)` with white text was reported `contrast_unchecked`
-  (info) while the reviewer gated it `unreadable_contrast`. fancy-cms emits a
-  custom property only for a token the theme sets, so in the browser that
-  declaration is invalid at computed-value time and the property is `unset`:
-  the panel was transparent over the hero's `#f5f3ef`. Contrast now resolves
-  tokens exactly as fancy-cms's `CssEmitter` does (same flattening, later key
-  wins, unsafe values dropped, held to the emitter's real output by a test),
-  and an unset token with no fallback lets the ancestor decide, as `unset`
-  does: a colour inherits, a background is transparent. An explicit
-  `transparent` background is now see-through too, rather than unchecked.
-  Custom property names are matched case-sensitively, as in CSS. A replay of
-  run 514's document now fails `contrast` on the two panel texts (1.11:1).
-  **Upgrading:** nothing to do. A page that leaned on an unset token may now
-  report `contrast` errors it always had; `contrast` is not a finish gate.
-
-## [0.4.0] - 2026-11-12
-
-Whole sites, kit islands and rendered contrast (lab plan
-`lab-full-kit-site-benchmark.md`, phase P2; findings K13, S10, S12), then
-report dashboards and Charlotte as a prism-harness sub-agent (plan
-`report-dashboards.md`, phase 3; charlotte#1).
-
-**Upgrading, dashboards and sub-agents:** nothing to do unless you use them.
-Two behaviours change for everyone: **every `$bind` is now checked against
-the host `DataCatalogue`**, and with none bound (the default) a write that
-adds or changes a binding is refused `binding_invalid`. A host that never
-bound data sees no difference; one that let pages bind `repeat.each` must
-declare those streams. And a **literal number in a data prop** (`value`,
-`delta`, `rows`, `series`, `data`, `categories` …) is now an
-`unsupported_claim` (kind `figure`) unless the brief carries it.
-
-**BREAKING, `cms_finish` now refuses a page that is not ready** (flabs runs
-423-463: 23 of 23 Charlotte pages had their facts right and were judged "bare
-default"). It returns `isError` with code `not_ready` and the failing defects,
-and marks nothing ready, while any of these errors remains: `layout_missing`,
-`link_spacing`, `responsive_layout`, `required_image_missing`,
-`meta_description`, `unsupported_claim`. One `not_ready` lists every blocking
-defect at once. The design gates `grid_orphan`, `hero_thin`, `tap_target` and
-`bare_list` (flabs runs 504-512) are **staged**: by default
-(`charlotte.finish.staged_gates`, env `CHARLOTTE_FINISH_STAGED_GATES`, true)
-they are reported as warnings marked `staged: true` and refuse nothing; set it
-false to make them block. Every other error is still only
-reported, as before. **What to do:** nothing in a host, unless your own tests
-finish deliberately bare pages; those now get `not_ready`. An agent reads the
-defects and fixes them. And **`unsupported_claim` is now an ERROR** for every
-kind except `quote` (still a warning), so `cms_check` summaries count more
-errors.
-
-**BREAKING, an agent may not write a `stack` or `grid` without `layout`.**
-`cms_apply` refuses it with `layout_required`, naming the node
-(`$.nodes.<id>.layout`) and the allowed values (`"stack"`, `"grid"`,
-`"free"`); no default is filled in. **What to do:** nothing in a host; human
-writes are not refused. A host script that drives the tools with layout-less
-stacks must add the layout.
-
-**Upgrading, also:** run the second new migration
-(`2026_11_12_000000_add_charlotte_finish_refusals`: an unsigned
-`charlotte_sessions.finish_refusals`, default 0, and a nullable
-`finish_refusals_run`).
-
-**Upgrading:** run the new migration (`2026_11_11_000000_add_charlotte_sites`:
-a `charlotte_sites` table, nullable `charlotte_sessions.site_key` and
-`charlotte_proposals.page_key`). **The guide text changed** (new sections),
-so the guide hash changes: a session opened before the upgrade refuses its
-next turn with `guide_mode_stale`, as on any guide change. Open a new session.
-Page sessions otherwise behave as before: same nine tools, same events, same
-proposals. **`Workspace`'s constructor gained two parameters** (island
-catalogue, rendered-report source); only hosts that construct it by hand
-instead of resolving it from the container need to change.
-
-### Added
 - **Whole-site sessions.** `Charlotte::for($user)->tenant($t)->site($key)->brief($b)->open()`
   (or `POST /sessions {site, brief}`) opens a session that builds several
   pages. It runs in a new harness mode, `charlotte_site_builder`, an
@@ -458,6 +413,44 @@ instead of resolving it from the container need to change.
 
 ### Changed
 
+- **BREAKING (tool result shape):** `cms_describe` `islands` no longer
+  carries every type's schema under `types`. It has `families` (family =>
+  type => one-line description), `count`, `builtins` (fancy-cms's built-ins
+  with their full schemas, as before) and `defs`. The kit catalogue is about
+  300 KB of schemas, too big for one result. What to do: a host that reads
+  `cms_describe` itself reads `families`, and calls `cms_island_schema` for
+  a host or kit island's schema. The guide's island section says the same in
+  the same number of bytes, so the prompt size is unchanged.
+- **BREAKING (validation):** island props are now closed at the top level. A
+  prop the type's schema does not declare is refused `island_invalid`, unless
+  the schema sets its own `additionalProperties`. The renderer dropped such
+  props anyway, so they did nothing on the page. What to do: nothing, unless
+  you wrote undeclared props on purpose; every kit catalogue example passes.
+- `BuilderMode::TOOLS` has ten page tools (`cms_island_schema` after
+  `cms_describe`). A catalogue may hold up to 512 types (was 200).
+
+- **The worked examples left the static guide.** Every session saw the same
+  two, and paid lab runs copied their motifs (stamp badges, tile panels, ids
+  like `hero-media-panel`) onto unrelated briefs. They now reach the model in
+  the conversation, not the system prompt: a page session's first run carries
+  its two ahead of the person's message (the thread replays them later; the
+  event log keeps only the person's text), and every fresh page sub-agent
+  conversation (a site's page child, a host's delegated Charlotte) opens with
+  them as one user message, since a child's prompt is its parent's task. The
+  system prompt stays per-install, so it caches across sessions and the guide
+  hash invariant (`guide_mode_stale`) holds; a tool result was ruled out
+  because tool results are framed as data. A site orchestrator gets none. The
+  guide shrank from 8960 to 7492 bytes for charlotte.md; with the largest
+  pair the per-session total is 8948, under the old size, and a test holds it
+  there. Consumers: nothing to do. Hosts that replay sessions get the same two
+  examples from the session id; a guide override no longer needs to account
+  for example text. A page sub-agent's first call now has two user messages
+  (examples, task), not one.
+- The Design rules no longer list stock motifs (pill shapes, a stamp-like
+  badge, an offset tint panel); they ask for one motif of your own. The
+  Composition aside "an unstyled link is 19px tall" went to pay for the
+  examples' bytes; the `tap_target` defect still carries it.
+
 - **Requires `particle-academy/prism-harness` `>=0.23.2 <2.0`** (was
   `>=0.17 <1.0`). 0.23.2 fixes G-261 (an uncapped stream dropped declared
   sub-agents) and G-262 (a shared tree did not count the parent's steps), and
@@ -483,6 +476,23 @@ instead of resolving it from the container need to change.
   pages (required facts and images).
 
 ### Fixed
+
+- **The document contrast check passed unreadable text when a theme token was
+  unset** (flabs run 514). The theme set only `accent`; a hero panel on
+  `var(--cms-color-primary)` with white text was reported `contrast_unchecked`
+  (info) while the reviewer gated it `unreadable_contrast`. fancy-cms emits a
+  custom property only for a token the theme sets, so in the browser that
+  declaration is invalid at computed-value time and the property is `unset`:
+  the panel was transparent over the hero's `#f5f3ef`. Contrast now resolves
+  tokens exactly as fancy-cms's `CssEmitter` does (same flattening, later key
+  wins, unsafe values dropped, held to the emitter's real output by a test),
+  and an unset token with no fallback lets the ancestor decide, as `unset`
+  does: a colour inherits, a background is transparent. An explicit
+  `transparent` background is now see-through too, rather than unchecked.
+  Custom property names are matched case-sensitively, as in CSS. A replay of
+  run 514's document now fails `contrast` on the two panel texts (1.11:1).
+  **Upgrading:** nothing to do. A page that leaned on an unset token may now
+  report `contrast` errors it always had; `contrast` is not a finish gate.
 
 - A missing `meta_description` now says how to set it, and says so when the
   description was written to `meta.description` (which nothing reads) instead
