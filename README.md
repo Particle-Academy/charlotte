@@ -13,6 +13,13 @@ UI you build reads it. A plain `fetch` loop is enough
 > **Pre-1.0.** Breaking changes land in minor releases; read the
 > [CHANGELOG](CHANGELOG.md) before upgrading.
 
+<!-- fancy-agents-note:start -->
+> **For agents.** Every Fancy package, this one included, is listed on the
+> Fancy MCP catalog server at `https://ui.particle.academy/mcp` (streamable HTTP, no API key;
+> MCP id `fancy-ui`), with install commands and docs. How an agent installs
+> and uses this package is in [AGENTS.md](https://github.com/Particle-Academy/charlotte/blob/main/AGENTS.md).
+<!-- fancy-agents-note:end -->
+
 ## What you get
 
 - **Page tools over a draft.** The agent edits a fancy-cms page through nine
